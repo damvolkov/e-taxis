@@ -1,4 +1,4 @@
-"""tests/unit/e_taxis: the harness — a real `taxis` per test on its own sqlite file, and an in-memory StorePort."""
+"""tests/unit/e_taxis: the harness — a real `taxis` per test on its own sqlite file, an in-memory StorePort, the fixture trees."""
 
 from typing import TYPE_CHECKING, ClassVar
 
@@ -9,6 +9,8 @@ from e_taxis.cli import build
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
     from pathlib import Path
+
+    from pytest_resources import Resources
 
 
 class MemoryStore:
@@ -57,3 +59,27 @@ def taxis(capfd: pytest.CaptureFixture[str]) -> Callable[..., tuple[int, str, st
         return code or 0, out, err
 
     return run
+
+
+@pytest.fixture
+def catalog_root(resources: Resources) -> Path:
+    """A sound catalog: five entries, one profile — `house` wants a part the catalog does not know."""
+    return resources.path / "catalog"
+
+
+@pytest.fixture
+def doctor_root(resources: Resources) -> Path:
+    """A broken catalog: unparsable and off-schema files, a duplicate id, a dangling require, a cycle, a clash."""
+    return resources.path / "doctor"
+
+
+@pytest.fixture
+def engineer_root(resources: Resources) -> Path:
+    """A fake e-engineer checkout: `core/common/stack.yaml` plus two facet stacks."""
+    return resources.path / "engineer"
+
+
+@pytest.fixture
+def broken_root(resources: Resources) -> Path:
+    """An e-engineer checkout whose registry is off-schema."""
+    return resources.path / "broken"

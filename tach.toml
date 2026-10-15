@@ -38,6 +38,11 @@ layer = "services"
 depends_on = []
 
 [[modules]]
+path = "e_taxis.adapters"
+layer = "adapters"
+depends_on = []
+
+[[modules]]
 path = "processors"
 layer = "processors"
 depends_on = []
