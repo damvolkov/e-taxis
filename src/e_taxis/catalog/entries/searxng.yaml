@@ -14,7 +14,7 @@ probe: claude mcp get searxng
 verify: claude mcp get searxng
 uninstall: {primitive: claude-mcp, with: {name: searxng, remove: true}}
 footprint: [~/.claude.json#mcpServers.searxng, ~/.config/opencode/opencode.json#mcp.searxng]
-owns: []
+owns: [mcp.searxng]
 gate: {licence: null, secrets: [], confirm: false}
 flags: {}
 status: {profile: {house: floor, company: out, minimal: out}, checked: 2026-10-15, evidence: "e-engineer core/engineer/config/mcp.yaml"}

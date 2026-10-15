@@ -14,7 +14,7 @@ probe: claude mcp get docling
 verify: claude mcp get docling
 uninstall: {primitive: claude-mcp, with: {name: docling, remove: true}}
 footprint: [~/.claude.json#mcpServers.docling, ~/.config/opencode/opencode.json#mcp.docling]
-owns: []
+owns: [mcp.docling]
 gate: {licence: null, secrets: [], confirm: false}
 flags: {}
 status: {profile: {house: floor, company: out, minimal: out}, checked: 2026-10-15, evidence: "e-engineer core/engineer/config/mcp.yaml"}

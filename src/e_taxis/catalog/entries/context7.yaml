@@ -14,7 +14,7 @@ probe: claude mcp get context7
 verify: claude mcp get context7
 uninstall: {primitive: claude-mcp, with: {name: context7, remove: true}}
 footprint: [~/.claude.json#mcpServers.context7]
-owns: []
+owns: [mcp.context7]
 gate: {licence: null, secrets: [], confirm: false}
 flags: {pin: "4.4.1", watch: "returned stale polars docs once (bench part 4, S5)"}
 status: {profile: {house: floor, company: floor, minimal: out}, checked: 2026-10-15, evidence: "e-engineer docs/bench/tools.md — owner's decision"}

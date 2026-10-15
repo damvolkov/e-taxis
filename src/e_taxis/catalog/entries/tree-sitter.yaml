@@ -14,7 +14,7 @@ probe: claude mcp get tree-sitter
 verify: claude mcp get tree-sitter
 uninstall: {primitive: claude-mcp, with: {name: tree-sitter, remove: true}}
 footprint: [~/.claude.json#mcpServers.tree-sitter]
-owns: []
+owns: [mcp.tree-sitter]
 gate: {licence: null, secrets: [], confirm: false}
 flags: {note: "mcp<2: the release still needs FastMCP"}
 status: {profile: {house: floor, company: out, minimal: out}, checked: 2026-10-15, evidence: "e-engineer core/engineer/config/mcp.yaml"}

@@ -6,7 +6,7 @@ requires: []
 recipes:
   any:
     primitive: uv-tool
-    with: {source: "git+https://github.com/NVIDIA/skillspector@v2.12.0", bin: skillspector}
+    with: {source: "git+https://github.com/NVIDIA/skillspector@v2.12.0", name: skillspector, bin: skillspector}
 probe: skillspector --version
 verify: skillspector --version
 uninstall: {primitive: uv-tool, with: {name: skillspector}}
