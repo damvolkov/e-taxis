@@ -19,3 +19,23 @@ def test_settings_environment_overrides(monkeypatch: pytest.MonkeyPatch, tmp_pat
     monkeypatch.setenv("TAXIS_TIMEOUT", "2.5")
     settings = TaxisSettings()
     assert (settings.taxis_catalog, settings.taxis_timeout) == (tmp_path, 2.5)
+
+
+def test_settings_writing_knobs_default_to_the_user_s_own(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("CLAUDE_CONFIG_DIR")
+    settings = TaxisSettings()
+    assert (settings.taxis_npm_prefix, settings.taxis_temp, settings.claude_config_dir) == (None, None, None)
+    assert settings.taxis_download_timeout == 300.0
+
+
+def test_settings_writing_knobs_from_the_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("TAXIS_NPM_PREFIX", str(tmp_path / "npm"))
+    monkeypatch.setenv("TAXIS_TEMP", str(tmp_path / "tmp"))
+    monkeypatch.setenv("TAXIS_DOWNLOAD_TIMEOUT", "30")
+    settings = TaxisSettings()
+    assert (settings.taxis_npm_prefix, settings.taxis_temp, settings.taxis_download_timeout) == (
+        tmp_path / "npm",
+        tmp_path / "tmp",
+        30.0,
+    )
+    assert settings.claude_config_dir == tmp_path / "claude"

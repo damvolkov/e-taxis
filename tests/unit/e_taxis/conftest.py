@@ -20,6 +20,8 @@ if TYPE_CHECKING:
 
     from pytest_resources import Resources
 
+    from e_taxis.models.journal import JournalEffect
+
 
 class MemoryStore:
     """StorePort over a dict: the services and the journal are tested against the port, not against sqlite."""
@@ -42,6 +44,20 @@ class MemoryStore:
         for key in sorted(self.data):
             if key.startswith(prefix):
                 yield key
+
+
+class ListUndo:
+    """UndoPort over a list: every effect it was asked to revert, in order; one in `failing` raises."""
+
+    def __init__(self) -> None:
+        self.reverted: list[JournalEffect] = []
+        self.failing: list[JournalEffect] = []
+
+    async def run(self, effect: JournalEffect) -> None:
+        if effect in self.failing:
+            msg = f"cannot revert {effect}"
+            raise RunnerError(msg)
+        self.reverted.append(effect)
 
 
 class FakeRunner:
@@ -92,6 +108,11 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 @pytest.fixture
 def claude_dir(tmp_path: Path) -> Path:
     return tmp_path / "claude"
+
+
+@pytest.fixture
+def undoer() -> ListUndo:
+    return ListUndo()
 
 
 @pytest.fixture

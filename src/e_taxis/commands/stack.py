@@ -29,6 +29,7 @@ STYLES: Final[Mapping[PlanAction, str]] = MappingProxyType(
         PlanAction.SKIP: "dim",
         PlanAction.INSTALL: "green",
         PlanAction.UPDATE: "yellow",
+        PlanAction.DEFERRED: "cyan",
         PlanAction.UNKNOWN: "red",
         PlanAction.BLOCKED: "red",
     }

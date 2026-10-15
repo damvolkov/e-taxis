@@ -1,14 +1,19 @@
 """runtime.deps: injection by declared type — the one place ports meet adapters, built on demand, once per run.
 
-This is the composition root of the hexagon: `SQLiteAdapter`, `FileCatalog` and `ShellProbe` are named here
-and nowhere else; the store is wrapped in the undo journal and handed on as a bare `StorePort`, the catalog
-and the probe reach the services as their ports. `Inject[T]` marks a parameter cyclopts must not parse (and `--help` must not show); the launcher resolves
+This is the composition root of the hexagon: `SQLiteAdapter`, `FileCatalog`, `ShellProbe`, the runner, the
+downloader and every primitive adapter are named here and nowhere else; the store is wrapped in the undo
+journal and handed on as a bare `StorePort` (and as the services' recorder), the catalog and the probe reach
+the services as their ports, the primitives as one frozen table Primitive → adapter. The run's home, Claude's
+config dir and the environment (gate secrets are named by the catalog, so they are read here, once) are
+resolved here too. `Inject[T]` marks a parameter cyclopts must not parse (and `--help` must not show); the launcher resolves
 each one from its type through `Deps.PROVIDERS`, a frozen table type → builder. A builder runs at most once
 per run, and every resource it opens enters the run's exit stack, so edges close in reverse on the way out.
 A command that never asks for the store never opens sqlite. Adding an injectable is one builder and one row in the table."""
 
+import os
 from collections.abc import Awaitable, Callable, Mapping
 from contextlib import AsyncExitStack
+from pathlib import Path
 from types import MappingProxyType
 from typing import Annotated, ClassVar, TypeVar, cast
 
@@ -20,13 +25,27 @@ from adapters.sqlite import SQLiteAdapter
 from core.settings import settings as st
 from core.state import State
 from e_taxis.adapters.catalog import FileCatalog
-from e_taxis.adapters.ports import CatalogPort, ProbePort
+from e_taxis.adapters.downloader import WreqDownloader
+from e_taxis.adapters.ports import CatalogPort, DownloaderPort, PrimitivePort, ProbePort, RunnerPort, UndoPort
+from e_taxis.adapters.primitives.binary import BinaryPrimitive
+from e_taxis.adapters.primitives.compose import ComposePrimitive
+from e_taxis.adapters.primitives.file import FilePrimitive
+from e_taxis.adapters.primitives.mcp import McpPrimitive
+from e_taxis.adapters.primitives.npm import NpmPrimitive
+from e_taxis.adapters.primitives.plugin import PluginPrimitive
+from e_taxis.adapters.primitives.settings import SettingsPrimitive
+from e_taxis.adapters.primitives.uv import UvPrimitive
 from e_taxis.adapters.probe import ShellProbe
+from e_taxis.adapters.runner import ProcessRunner
+from e_taxis.adapters.undo import EffectUndo
+from e_taxis.models.catalog import Primitive
 from e_taxis.runtime.journal import StoreJournal
 from e_taxis.runtime.settings import TaxisSettings
+from e_taxis.services.apply import ApplyService
 from e_taxis.services.doctor import DoctorService
 from e_taxis.services.plan import PlanService
 from e_taxis.services.resolver import ResolverService
+from e_taxis.services.uninstall import UninstallService
 from e_taxis.services.verify import VerifyService
 
 T = TypeVar("T")
@@ -58,7 +77,8 @@ class Deps:
     async def _resolve_store(self) -> StoreJournal:
         """The local store behind the undo journal: every command write is revertible by construction."""
         store = await self._stack.enter_async_context(SQLiteAdapter())
-        journal = StoreJournal(store, command=self._state.session.command, depth=st.cli.cli_history)
+        world = await self.resolve(UndoPort)
+        journal = StoreJournal(store, world=world, command=self._state.session.command, depth=st.cli.cli_history)
         return await self._stack.enter_async_context(journal)
 
     async def _resolve_settings(self) -> TaxisSettings:
@@ -82,6 +102,62 @@ class Deps:
     async def _resolve_doctor(self) -> DoctorService:
         return DoctorService(await self.resolve(CatalogPort))
 
+    async def _resolve_runner(self) -> ProcessRunner:
+        return ProcessRunner()
+
+    async def _resolve_downloader(self) -> WreqDownloader:
+        return WreqDownloader(timeout=(await self.resolve(TaxisSettings)).taxis_download_timeout)
+
+    async def _resolve_undo(self) -> EffectUndo:
+        return EffectUndo(await self.resolve(RunnerPort), SettingsPrimitive(), FilePrimitive())
+
+    async def _common_primitives(self) -> Mapping[Primitive, PrimitivePort]:
+        """One adapter per primitive; `env` is the settings primitive's env merge under its own name."""
+        settings, runner = await self.resolve(TaxisSettings), await self.resolve(RunnerPort)
+        merge = SettingsPrimitive()
+        return MappingProxyType(
+            {
+                Primitive.BINARY: BinaryPrimitive(await self.resolve(DownloaderPort), runner, settings.taxis_temp),
+                Primitive.UV_TOOL: UvPrimitive(runner),
+                Primitive.NPM: NpmPrimitive(runner, settings.taxis_npm_prefix),
+                Primitive.SETTINGS: merge,
+                Primitive.ENV: merge,
+                Primitive.FILE: FilePrimitive(),
+                Primitive.CLAUDE_MCP: McpPrimitive(runner),
+                Primitive.CLAUDE_PLUGIN: PluginPrimitive(runner),
+                Primitive.COMPOSE: ComposePrimitive(),
+            }
+        )
+
+    async def _common_homes(self) -> tuple[Path, Path]:
+        """(home, Claude's config dir): `~` and `~/.claude` as this run resolves them."""
+        home = Path.home()
+        return (home, (await self.resolve(TaxisSettings)).claude_config_dir or home / ".claude")
+
+    async def _resolve_apply(self) -> ApplyService:
+        home, claude = await self._common_homes()
+        return ApplyService(
+            await self.resolve(ResolverService),
+            await self.resolve(PlanService),
+            await self.resolve(ProbePort),
+            await self._common_primitives(),
+            await self.resolve(StoreJournal),
+            home=home,
+            claude=claude,
+            environ=os.environ,
+        )
+
+    async def _resolve_uninstall(self) -> UninstallService:
+        home, claude = await self._common_homes()
+        return UninstallService(
+            await self.resolve(ResolverService),
+            await self.resolve(ProbePort),
+            await self._common_primitives(),
+            await self.resolve(StoreJournal),
+            home=home,
+            claude=claude,
+        )
+
     ############################################################
 
     ##### PUBLIC #####
@@ -99,6 +175,11 @@ class Deps:
             PlanService: _resolve_plan,
             VerifyService: _resolve_verify,
             DoctorService: _resolve_doctor,
+            RunnerPort: _resolve_runner,
+            DownloaderPort: _resolve_downloader,
+            UndoPort: _resolve_undo,
+            ApplyService: _resolve_apply,
+            UninstallService: _resolve_uninstall,
         }
     )
 
