@@ -1,7 +1,8 @@
 """runtime.deps: injection by declared type — the one place ports meet adapters, built on demand, once per run.
 
-This is the composition root of the hexagon: `SQLiteAdapter` is named here and nowhere else, wrapped in the
-undo journal and handed to the services as a bare `StorePort`. `Inject[T]` marks a parameter cyclopts must not parse (and `--help` must not show); the launcher resolves
+This is the composition root of the hexagon: `SQLiteAdapter`, `FileCatalog` and `ShellProbe` are named here
+and nowhere else; the store is wrapped in the undo journal and handed on as a bare `StorePort`, the catalog
+and the probe reach the services as their ports. `Inject[T]` marks a parameter cyclopts must not parse (and `--help` must not show); the launcher resolves
 each one from its type through `Deps.PROVIDERS`, a frozen table type → builder. A builder runs at most once
 per run, and every resource it opens enters the run's exit stack, so edges close in reverse on the way out.
 A command that never asks for the store never opens sqlite. Adding an injectable is one builder and one row in the table."""
@@ -18,7 +19,15 @@ from adapters.ports import StorePort
 from adapters.sqlite import SQLiteAdapter
 from core.settings import settings as st
 from core.state import State
+from e_taxis.adapters.catalog import FileCatalog
+from e_taxis.adapters.ports import CatalogPort, ProbePort
+from e_taxis.adapters.probe import ShellProbe
 from e_taxis.runtime.journal import StoreJournal
+from e_taxis.runtime.settings import TaxisSettings
+from e_taxis.services.doctor import DoctorService
+from e_taxis.services.plan import PlanService
+from e_taxis.services.resolver import ResolverService
+from e_taxis.services.verify import VerifyService
 
 T = TypeVar("T")
 ### cyclopts reads `Annotated` metadata but does not unwrap PEP 695 `type` aliases: the classic generic alias is what it sees.
@@ -52,6 +61,27 @@ class Deps:
         journal = StoreJournal(store, command=self._state.session.command, depth=st.cli.cli_history)
         return await self._stack.enter_async_context(journal)
 
+    async def _resolve_settings(self) -> TaxisSettings:
+        return TaxisSettings()
+
+    async def _resolve_catalog(self) -> FileCatalog:
+        return FileCatalog((await self.resolve(TaxisSettings)).taxis_catalog)
+
+    async def _resolve_probe(self) -> ShellProbe:
+        return ShellProbe(timeout=(await self.resolve(TaxisSettings)).taxis_timeout)
+
+    async def _resolve_resolver(self) -> ResolverService:
+        return ResolverService(await self.resolve(CatalogPort))
+
+    async def _resolve_plan(self) -> PlanService:
+        return PlanService(await self.resolve(ResolverService), await self.resolve(ProbePort))
+
+    async def _resolve_verify(self) -> VerifyService:
+        return VerifyService(await self.resolve(ResolverService), await self.resolve(ProbePort))
+
+    async def _resolve_doctor(self) -> DoctorService:
+        return DoctorService(await self.resolve(CatalogPort))
+
     ############################################################
 
     ##### PUBLIC #####
@@ -62,6 +92,13 @@ class Deps:
             Console: _resolve_console,
             StorePort: _resolve_store,
             StoreJournal: _resolve_store,
+            TaxisSettings: _resolve_settings,
+            CatalogPort: _resolve_catalog,
+            ProbePort: _resolve_probe,
+            ResolverService: _resolve_resolver,
+            PlanService: _resolve_plan,
+            VerifyService: _resolve_verify,
+            DoctorService: _resolve_doctor,
         }
     )
 

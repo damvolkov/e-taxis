@@ -9,6 +9,10 @@ Adding a command is one row in `CARDS` plus one plain function; a command that n
 row in `GROUPS`, parents before children. `tests/unit/e_taxis/test_cli.py` resolves every target, so a
 typo fails the gate, never a user.
 
+    taxis map      [--target T] [--json]
+    taxis plan     --target T (--profile P | --engineer PATH) [--json]
+    taxis verify   --target T (--profile P | --engineer PATH) [--json]
+    taxis doctor   [--json]
     taxis history  list · undo
 """
 
@@ -26,6 +30,10 @@ GROUPS: tuple[CommandGroup, ...] = (
 )
 
 CARDS: tuple[CommandCard, ...] = (
+    CommandCard(path="map", target="e_taxis.commands.catalog:mapping", summary="The catalog, per target and profile."),
+    CommandCard(path="plan", target="e_taxis.commands.stack:plan", summary="What apply would do; writes nothing."),
+    CommandCard(path="verify", target="e_taxis.commands.stack:verify", summary="Run every wanted part's verify."),
+    CommandCard(path="doctor", target="e_taxis.commands.catalog:doctor", summary="Check the catalog's integrity."),
     CommandCard(path="history list", target="e_taxis.commands.history:listing", summary="Every recorded run."),
     CommandCard(path="history undo", target="e_taxis.commands.history:undo", summary="Revert the last recorded run."),
 )
