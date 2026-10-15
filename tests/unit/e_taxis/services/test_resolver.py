@@ -33,6 +33,14 @@ async def test_resolver_resolve_pulls_in_what_a_part_requires(resolver: Resolver
     ]
 
 
+async def test_resolver_resolve_reports_a_dangling_require_as_unknown(dangling_root: Path, listed) -> None:
+    resolution = await ResolverService(FileCatalog(dangling_root)).resolve(
+        listed(WantedPart(id="lone", source="test")), Target.CLAUDECODE
+    )
+    assert [item.entry.id for item in resolution.resolved] == ["lone"]
+    assert [(part.id, part.source) for part in resolution.unknown] == [("nowhere", "requires:lone")]
+
+
 async def test_resolver_resolve_refuses_a_cycle(cycle_root: Path, listed) -> None:
     with pytest.raises(CatalogCycleError, match="requires cycle"):
         await ResolverService(FileCatalog(cycle_root)).resolve(listed(), Target.CLAUDECODE)

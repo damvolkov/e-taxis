@@ -89,3 +89,9 @@ def broken_root(resources: Resources) -> Path:
 def cycle_root(resources: Resources) -> Path:
     """A catalog whose two entries require each other."""
     return resources.path / "cycle"
+
+
+@pytest.fixture
+def dangling_root(resources: Resources) -> Path:
+    """A catalog whose one entry requires an id no entry provides."""
+    return resources.path / "dangling"
