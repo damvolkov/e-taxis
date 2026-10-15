@@ -1,0 +1,15 @@
+servers:
+  local:
+    command: [npx, -y, local-mcp]
+    env: { CONFIG: "{out}/mcp/pw.json" }
+    smoke: { tool: probe, arguments: { source: "https://example.com/" } }
+  remote:
+    url: "https://mcp.example.com/mcp"
+  bare:
+    command: [bare-mcp]
+  off:
+    command: [off-mcp]
+    enabled: false
+  other:
+    command: [other-mcp]
+    backends: [opencode]

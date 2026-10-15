@@ -75,6 +75,18 @@ class UninstallError(CliError):
     exit_code: ClassVar[int] = 11
 
 
+class CoreError(CliError):
+    """The core cannot be read: no checkout, a ref git cannot archive, a manifest that fails its contract."""
+
+    exit_code: ClassVar[int] = 13
+
+
+class BrainError(CliError):
+    """The brain cannot be installed: no projection for the target, or a write failed — undo reaches what landed."""
+
+    exit_code: ClassVar[int] = 14
+
+
 ##### PRIMITIVES #####
 class PrimitiveError(CliError):
     """A primitive could not finish. `effects` is what it had already changed: the journal keeps it for undo.

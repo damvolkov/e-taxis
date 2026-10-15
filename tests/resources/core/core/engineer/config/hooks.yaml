@@ -1,0 +1,5 @@
+SessionStart:
+  - matchers: [startup, resume]
+    run: [bash, "{out}/hooks/remind"]
+Stop:
+  - run: [node, "{out}/hooks/remind", stop]

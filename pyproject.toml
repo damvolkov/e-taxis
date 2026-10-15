@@ -48,6 +48,7 @@ dependencies = [
     ##### documents — liteparse (Rust, in-process) first, docling-serve for what it reads better; polars frames #####
     "liteparse>=2.14",
     "polars>=2.0",
+    "e-serde>=0.5",
 ]
 
 [project.scripts]

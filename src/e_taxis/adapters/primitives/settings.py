@@ -125,21 +125,33 @@ class SettingsPrimitive:
 
     ##### PUBLIC #####
 
-    async def install(self, entry: CatalogEntry, recipe: CatalogRecipe, ctx: PrimitiveContext) -> PrimitiveStep:
-        args = recipe.args(RecipeSettings)
-        pairs = self._install_pairs(args)
-        self._install_owned(entry, pairs)
-        file = ctx.expand(args.file)
+    async def read(self, file: Path) -> Document:
+        """The document as it stands; an empty one where the file is missing."""
+        doc, _ = await self._common_load(file)
+        return doc
+
+    async def merge(self, file: Path, pairs: tuple[tuple[KeyPath, Any], ...]) -> tuple[JournalKey, ...]:
+        """Each key set to its value, the file rewritten once and only if one moved; the effects that reverse it."""
         doc, missing = await self._common_load(file)
         effects = [effect for path, value in pairs if (effect := self._common_set(file, doc, path, value))]
         match effects:
             case [first, *rest]:
                 await self._common_dump(file, doc)
                 ### the file's creation rides on the first key: reverted last, it removes the file once it is empty.
-                head = msgspec.structs.replace(first, fresh=missing)
-                return PrimitiveStep(effects=(head, *rest), detail=f"{len(effects)} key(s) in {file}")
+                return (msgspec.structs.replace(first, fresh=missing), *rest)
             case _:
+                return ()
+
+    async def install(self, entry: CatalogEntry, recipe: CatalogRecipe, ctx: PrimitiveContext) -> PrimitiveStep:
+        args = recipe.args(RecipeSettings)
+        pairs = self._install_pairs(args)
+        self._install_owned(entry, pairs)
+        file = ctx.expand(args.file)
+        match await self.merge(file, pairs):
+            case ():
                 return PrimitiveStep(detail=f"{file} already holds every key")
+            case effects:
+                return PrimitiveStep(effects=effects, detail=f"{len(effects)} key(s) in {file}")
 
     async def uninstall(self, entry: CatalogEntry, recipe: CatalogRecipe, ctx: PrimitiveContext) -> PrimitiveStep:
         file = ctx.expand(recipe.args(RecipeSettings).file)

@@ -1,12 +1,13 @@
 """adapters.undo: one recorded effect put back — the reverting end of the journal.
 
-A whole file is restored (or removed where the run created it); a JSON key and a marked block go back
-through the primitive that wrote them, which knows their shape; a CLI registration runs its recorded inverse."""
+A whole file is restored, or removed where the run created it — with the directories the run made for it,
+while they are empty; a JSON key and a marked block go back through the primitive that wrote them, which knows
+their shape; a CLI registration runs its recorded inverse."""
 
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from e_taxis.adapters.disk import remove_file, write_file
+from e_taxis.adapters.disk import remove_dirs, remove_file, write_file
 from e_taxis.models.journal import JournalBlock, JournalFile, JournalKey
 
 if TYPE_CHECKING:
@@ -29,8 +30,9 @@ class EffectUndo:
 
     async def run(self, effect: JournalEffect) -> None:
         match effect:
-            case JournalFile(path=path, before=before, mode=mode):
+            case JournalFile(path=path, before=before, mode=mode, created=created):
                 await (remove_file(Path(path)) if before is None else write_file(Path(path), before, mode))
+                await remove_dirs(Path(path), created if before is None else 0)
             case JournalKey():
                 await self._settings.revert(effect)
             case JournalBlock():

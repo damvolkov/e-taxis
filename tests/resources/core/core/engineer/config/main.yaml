@@ -1,0 +1,10 @@
+user: demo
+model:
+  default: builder
+  alias: { claudecode: opus }
+instructions:
+  - ~/notes.md
+  - "{out}/skills/demo/SKILL.md"
+effort: high
+display:
+  tui: fullscreen

@@ -12,11 +12,13 @@ from msgspec import Struct
 
 ##### EFFECTS #####
 class JournalFile(Struct, frozen=True, kw_only=True, tag_field="kind", tag="file"):
-    """A whole file written or removed: `before` is None where the run created it, `mode` its prior bits."""
+    """A whole file written or removed: `before` is None where the run created it, `mode` its prior bits, `created`
+    how many of its innermost parent directories the run made."""
 
     path: str
     before: bytes | None
     mode: int | None = None
+    created: int = 0
 
 
 class JournalKey(Struct, frozen=True, kw_only=True, tag_field="kind", tag="key"):
