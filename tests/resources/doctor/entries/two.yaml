@@ -1,0 +1,10 @@
+id: two
+kind: cli
+targets: [system]
+scope: machine
+requires: [one]
+recipes: {any: {primitive: binary}}
+probe: "true"
+verify: "true"
+owns: [mcpServers.shared]
+status: {profile: {}, checked: 2026-10-15, evidence: fixture}

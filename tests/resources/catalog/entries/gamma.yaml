@@ -1,0 +1,11 @@
+id: gamma
+kind: plugin
+targets: [opencode]
+scope: user
+recipes:
+  opencode:
+    primitive: npm
+    with: {package: gamma}
+probe: "true"
+verify: "true"
+status: {profile: {house: per-project}, checked: 2026-10-15, evidence: fixture}

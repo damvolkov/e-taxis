@@ -1,0 +1,11 @@
+id: epsilon
+kind: cli
+targets: [system]
+scope: machine
+recipes:
+  any:
+    primitive: binary
+    with: {path: ~/.local/bin/epsilon}
+probe: echo 1.2.3
+verify: "true"
+status: {profile: {house: out}, checked: 2026-10-15, evidence: fixture}

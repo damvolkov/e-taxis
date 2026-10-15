@@ -1,0 +1,3 @@
+id: house
+description: Fixture house.
+parts: {alpha: floor, beta: floor, gamma: per-project, delta: floor, ghost: floor, epsilon: out}

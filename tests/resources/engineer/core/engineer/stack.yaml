@@ -1,0 +1,11 @@
+parts:
+  beta:
+    kind: mcp
+    pin:
+    used: [claudecode]
+  gamma:
+    kind: plugin
+    used: [opencode]
+  ghost:
+    kind: mcp
+    used: [claudecode]
