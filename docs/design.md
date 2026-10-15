@@ -83,3 +83,9 @@ harness is new adapters and catalog rows; the core does not change.
 | P4 | the transpiler's export target → a versioned artifact per harness (Claude plugin, OpenCode config dir) | — |
 | P5 | OpenCode and OpenHuman adapters | — |
 | P6 | the stack review workflow: scheduled, deterministic, reports + PR | — |
+
+Status (2026-10-15): P1 and P2 shipped. P2 writes the user and machine scopes; `env` is the `settings`
+primitive's env merge under its own name; `compose` answers `NotSupportedYet` and the plan reports it, and
+every project-scope entry, as `deferred`. World effects (files placed, JSON keys with prior values, marked
+blocks, CLI registrations with their inverse) live in the journal entry, so `taxis history undo` reverts an
+apply or an uninstall — a failed one included.
