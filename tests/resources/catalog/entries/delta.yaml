@@ -1,11 +1,11 @@
 id: delta
-kind: service
+kind: cli
 targets: [claudecode]
-scope: service
+scope: machine
 recipes:
   any:
-    primitive: compose
-    with: {path: ~/.config/compose/delta}
+    primitive: binary
+    with: {url: "https://delta.invalid/delta", path: ~/.local/bin/delta}
 probe: "false"
 verify: "true"
 gate: {licence: Elastic-2.0, secrets: [], confirm: false}

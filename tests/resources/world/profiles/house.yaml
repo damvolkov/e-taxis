@@ -1,0 +1,3 @@
+id: house
+description: Fixture world — every primitive P2 writes, a skip, a deferral, a gate.
+parts: {tool: floor, env: floor, guide: floor, here: floor, svc: floor, gated: floor}

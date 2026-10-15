@@ -1,0 +1,11 @@
+id: flaky
+kind: cli
+targets: [system]
+scope: machine
+recipes:
+  any:
+    primitive: npm
+    with: {package: "flaky@2"}
+probe: "false"
+verify: "false"
+status: {profile: {house: floor}, checked: 2026-10-15, evidence: fixture}

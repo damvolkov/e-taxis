@@ -6,6 +6,7 @@ from e_taxis.models.catalog import Target
 from e_taxis.models.plan import PlanAction
 
 if TYPE_CHECKING:
+    from e_taxis.services.apply import ApplyService
     from e_taxis.services.plan import PlanService
 
 
@@ -26,3 +27,11 @@ async def test_plan_run_engineer_compares_the_pin(planner: PlanService, engineer
         ("alpha", PlanAction.SKIP, "present · 1.2.3 matches pin v1.2.3"),
         ("epsilon", PlanAction.UPDATE, "found 1.2.3, pin 9.9"),
     ]
+
+
+async def test_plan_run_defers_what_p3_writes_and_holds_the_gated_action(applier: ApplyService, profile) -> None:
+    plan = await applier.plan(profile("house"), Target.CLAUDECODE, frozenset())
+    steps = {step.id: step for step in plan.steps}
+    assert (steps["svc"].action, steps["svc"].reason) == (PlanAction.DEFERRED, "deferred: compose lands in P3")
+    assert (steps["gated"].action, steps["gated"].held) == (PlanAction.BLOCKED, PlanAction.INSTALL)
+    assert (steps["here"].action, steps["tool"].action) == (PlanAction.SKIP, PlanAction.INSTALL)

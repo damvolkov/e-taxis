@@ -1,0 +1,13 @@
+id: split
+kind: mcp
+targets: [claudecode, opencode]
+scope: user
+recipes:
+  opencode:
+    primitive: settings
+    with: {file: ~/.config/opencode/opencode.json, key: mcp.split, value: {type: remote, url: "https://split.invalid"}}
+probe: "true"
+verify: "true"
+uninstall: {primitive: claude-mcp, with: {name: split}}
+owns: [mcp.split]
+status: {profile: {house: out}, checked: 2026-10-15, evidence: fixture}

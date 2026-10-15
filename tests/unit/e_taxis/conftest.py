@@ -105,7 +105,7 @@ def downloader() -> FakeDownloader:
 
 
 @pytest.fixture(autouse=True)
-def world(monkeypatch: pytest.MonkeyPatch, runner: FakeRunner, downloader: FakeDownloader) -> None:
+def sandbox(monkeypatch: pytest.MonkeyPatch, runner: FakeRunner, downloader: FakeDownloader) -> None:
     """Every `taxis` run builds the fake runner and downloader in place of the real ones."""
 
     async def fake_runner(deps: Deps) -> FakeRunner:
@@ -164,6 +164,12 @@ def broken_root(resources: Resources) -> Path:
 def cycle_root(resources: Resources) -> Path:
     """A catalog whose two entries require each other."""
     return resources.path / "cycle"
+
+
+@pytest.fixture
+def world_root(resources: Resources) -> Path:
+    """A catalog that writes: uv-tool, settings, file, claude-mcp and npm parts, a skip, a deferral, a gate."""
+    return resources.path / "world"
 
 
 @pytest.fixture
