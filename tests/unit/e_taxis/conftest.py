@@ -83,3 +83,9 @@ def engineer_root(resources: Resources) -> Path:
 def broken_root(resources: Resources) -> Path:
     """An e-engineer checkout whose registry is off-schema."""
     return resources.path / "broken"
+
+
+@pytest.fixture
+def cycle_root(resources: Resources) -> Path:
+    """A catalog whose two entries require each other."""
+    return resources.path / "cycle"

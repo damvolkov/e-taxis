@@ -1,0 +1,9 @@
+id: a
+kind: cli
+targets: [system]
+scope: machine
+requires: [b]
+recipes: {any: {primitive: binary}}
+probe: "true"
+verify: "true"
+status: {profile: {house: floor}, checked: 2026-10-15, evidence: fixture}
