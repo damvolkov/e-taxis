@@ -6,7 +6,18 @@ from typing import Any
 import msgspec
 import pytest
 
-from e_taxis.models.catalog import CatalogEntry, CatalogGate, Kind, Primitive, RecipeKey, Rollout, Target
+from e_taxis.models.catalog import (
+    CatalogEntry,
+    CatalogGate,
+    CatalogRecipe,
+    Kind,
+    Primitive,
+    RecipeKey,
+    Rollout,
+    Target,
+)
+from e_taxis.models.error import RecipeError
+from e_taxis.models.recipe import RecipeUv
 
 
 def test_catalog_entry_decodes_the_schema(alpha: dict[str, Any]) -> None:
@@ -49,3 +60,41 @@ def test_catalog_entry_serves(alpha: dict[str, Any], targets: list[str], target:
 )
 def test_catalog_gate_needed(gate: dict[str, Any], expected: bool) -> None:
     assert msgspec.convert(gate, CatalogGate).needed is expected
+
+
+@pytest.mark.parametrize(
+    ("recipes", "target", "expected"),
+    [
+        ({"any": {"primitive": "npm"}}, Target.CLAUDECODE, Primitive.NPM),
+        ({"any": {"primitive": "npm"}, "claudecode": {"primitive": "uv-tool"}}, Target.CLAUDECODE, Primitive.UV_TOOL),
+        ({"opencode": {"primitive": "npm"}}, Target.CLAUDECODE, None),
+    ],
+    ids=["any", "own-target-first", "none"],
+)
+def test_catalog_entry_recipe(alpha: dict[str, Any], recipes: dict[str, Any], target: Target, expected) -> None:
+    recipe = msgspec.convert(alpha | {"recipes": recipes}, CatalogEntry).recipe(target)
+    assert (recipe and recipe.primitive) == expected
+
+
+def test_catalog_recipe_args_converts_and_ignores_annotations() -> None:
+    recipe = CatalogRecipe(primitive=Primitive.UV_TOOL, with_={"source": "x@1", "name": "x", "note": "kept out"})
+    assert recipe.args(RecipeUv) == RecipeUv(source="x@1", name="x")
+
+
+def test_catalog_recipe_args_off_schema_is_a_recipe_error() -> None:
+    with pytest.raises(RecipeError, match="uv-tool recipe"):
+        CatalogRecipe(primitive=Primitive.UV_TOOL, with_={"name": "x"}).args(RecipeUv)
+
+
+@pytest.mark.parametrize(
+    ("change", "expected"),
+    [
+        ({}, None),
+        ({"scope": "user"}, None),
+        ({"scope": "project"}, "deferred: the project scope lands in P3"),
+        ({"recipes": {"any": {"primitive": "compose"}}}, "deferred: compose lands in P3"),
+    ],
+    ids=["machine", "user", "project", "compose"],
+)
+def test_catalog_entry_deferral(alpha: dict[str, Any], change: dict[str, Any], expected: str | None) -> None:
+    assert msgspec.convert(alpha | change, CatalogEntry).deferral(Target.CLAUDECODE) == expected

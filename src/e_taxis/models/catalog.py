@@ -8,7 +8,10 @@ from datetime import date
 from enum import StrEnum
 from typing import Any
 
+import msgspec
 from msgspec import Struct, field
+
+from e_taxis.models.error import RecipeError
 
 
 ##### ENUMS #####
@@ -77,12 +80,26 @@ class Rollout(StrEnum):
     OUT = "out"
 
 
+##### DEFAULTS #####
+### P2 writes the user and machine scopes; compose and the project scope arrive in P3 (design §6).
+WRITABLE: frozenset[Scope] = frozenset({Scope.USER, Scope.MACHINE})
+DEFERRED: frozenset[Primitive] = frozenset({Primitive.COMPOSE})
+
+
 ##### TYPES #####
 class CatalogRecipe(Struct, frozen=True, kw_only=True, forbid_unknown_fields=True):
     """One primitive and its arguments — `with` in YAML, a keyword in Python."""
 
     primitive: Primitive
     with_: dict[str, Any] = field(default_factory=dict, name="with")
+
+    def args[T](self, kind: type[T]) -> T:
+        """`with`, typed as the primitive reads it; off-schema is a RecipeError naming the primitive."""
+        try:
+            return msgspec.convert(self.with_, kind)
+        except msgspec.ValidationError as exc:
+            msg = f"{self.primitive} recipe: {exc}"
+            raise RecipeError(msg) from exc
 
 
 class CatalogGate(Struct, frozen=True, kw_only=True, forbid_unknown_fields=True):
@@ -125,6 +142,20 @@ class CatalogEntry(Struct, frozen=True, kw_only=True, forbid_unknown_fields=True
 
     def serves(self, target: Target) -> bool:
         return target in self.targets or Target.SYSTEM in self.targets
+
+    def recipe(self, target: Target) -> CatalogRecipe | None:
+        """The recipe keyed by the target itself, else the `any` one."""
+        return self.recipes.get(RecipeKey(target)) or self.recipes.get(RecipeKey.ANY)
+
+    def deferral(self, target: Target) -> str | None:
+        """Why this phase does not write the entry for `target`, or None when it does."""
+        match self.recipe(target):
+            case CatalogRecipe(primitive=primitive) if primitive in DEFERRED:
+                return f"deferred: {primitive} lands in P3"
+            case _ if self.scope not in WRITABLE:
+                return f"deferred: the {self.scope} scope lands in P3"
+            case _:
+                return None
 
 
 class Catalog(Struct, frozen=True, kw_only=True):

@@ -5,6 +5,8 @@ or calls `sys.exit` itself."""
 
 from typing import ClassVar
 
+from e_taxis.models.journal import JournalEffect
+
 
 ##### ROOT #####
 class CliError(Exception):
@@ -59,3 +61,56 @@ class DoctorError(CliError):
     """The catalog breaks an integrity rule."""
 
     exit_code: ClassVar[int] = 9
+
+
+class ApplyError(CliError):
+    """Apply refused before writing (unknown parts, an unmet gate, `--only` naming no step), or a step or verify failed."""
+
+    exit_code: ClassVar[int] = 10
+
+
+class UninstallError(CliError):
+    """Uninstall named no entry serving the target, or a step failed."""
+
+    exit_code: ClassVar[int] = 11
+
+
+##### PRIMITIVES #####
+class PrimitiveError(CliError):
+    """A primitive could not finish. `effects` is what it had already changed: the journal keeps it for undo.
+
+    The services turn it into a failed step; it reaches the launcher only from `history undo`."""
+
+    exit_code: ClassVar[int] = 12
+
+    def __init__(self, message: str, effects: tuple[JournalEffect, ...] = ()) -> None:
+        super().__init__(message)
+        self.effects = effects
+
+
+class RecipeError(PrimitiveError):
+    """A recipe's `with` does not fit its primitive's schema."""
+
+
+class DigestError(PrimitiveError):
+    """A download has no sha256 to check, or does not match it."""
+
+
+class DownloadError(PrimitiveError):
+    """A download failed: status, connection, timeout."""
+
+
+class RunnerError(PrimitiveError):
+    """A command exited non-zero, or could not start."""
+
+
+class OwnsError(PrimitiveError):
+    """A settings recipe writes a key its entry does not list in `owns`."""
+
+
+class SettingsError(PrimitiveError):
+    """A settings file cannot take the merge: its root or a parent of the key is not a JSON object."""
+
+
+class JsoncError(SettingsError):
+    """A settings file is not plain JSON — comments or trailing commas a rewrite would destroy."""

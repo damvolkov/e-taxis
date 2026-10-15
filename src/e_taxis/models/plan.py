@@ -15,6 +15,7 @@ class PlanAction(StrEnum):
     SKIP = "skip"
     INSTALL = "install"
     UPDATE = "update"
+    DEFERRED = "deferred"
     UNKNOWN = "unknown"
     BLOCKED = "blocked"
 
@@ -44,9 +45,12 @@ class Probe(Struct, frozen=True, kw_only=True):
 
 
 class PlanStep(Struct, frozen=True, kw_only=True):
+    """`held` is the install or update a blocked step holds back until its gate opens."""
+
     id: str
     action: PlanAction
     reason: str
+    held: PlanAction | None = None
 
 
 class Plan(Struct, frozen=True, kw_only=True):
