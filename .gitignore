@@ -11,3 +11,6 @@ prek.toml
 .github/dependabot.yml
 .github/CODEOWNERS
 data/
+__pycache__/
+.coverage
+.coverage.*
