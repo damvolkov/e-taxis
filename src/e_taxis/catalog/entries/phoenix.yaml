@@ -7,7 +7,7 @@ recipes:
   any:
     primitive: compose
     with: {path: ~/.config/compose/phoenix, image: "arizephoenix/phoenix", port: 45900}
-probe: docker inspect -f '{{.State.Running}}' phoenix
+probe: docker inspect -f '{{.Config.Image}}' phoenix
 verify: curl -fs http://127.0.0.1:45900/healthz
 uninstall: {primitive: compose, with: {path: ~/.config/compose/phoenix, down: true}}
 footprint: [~/.config/compose/phoenix, ~/.config/compose/data/phoenix]

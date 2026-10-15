@@ -14,7 +14,7 @@ recipes:
         OTEL_LOGS_EXPORTER: otlp
         OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
         OTEL_EXPORTER_OTLP_ENDPOINT: "http://127.0.0.1:45910"
-probe: python3 -c "import json,os;print(json.load(open(os.path.expanduser('~/.claude/settings.json'))).get('env',{}).get('CLAUDE_CODE_ENABLE_TELEMETRY',''))"
+probe: python3 -c "import json,os,sys;v=json.load(open(os.path.expanduser('~/.claude/settings.json'))).get('env',{}).get('CLAUDE_CODE_ENABLE_TELEMETRY');print(v or '');sys.exit(0 if v=='1' else 1)"
 verify: python3 -c "import json,os,sys;sys.exit(0 if json.load(open(os.path.expanduser('~/.claude/settings.json'))).get('env',{}).get('CLAUDE_CODE_ENABLE_TELEMETRY')=='1' else 1)"
 uninstall: {primitive: settings, with: {file: ~/.claude/settings.json, remove_env: true}}
 footprint: ["~/.claude/settings.json#env.CLAUDE_CODE_ENABLE_TELEMETRY", "~/.claude/settings.json#env.OTEL_*"]
