@@ -1,6 +1,4 @@
-"""tests/unit/e_taxis/commands/history: the journal as a user sees it — list, undo in order, failed runs never filed."""
-
-TOKEN = ("--token", "tk-test-0001")
+"""tests/unit/e_taxis/commands/history: the journal as a user sees it — list newest first, undo one run at a time."""
 
 
 def test_history_list_empty_says_so(taxis) -> None:
@@ -8,26 +6,18 @@ def test_history_list_empty_says_so(taxis) -> None:
     assert "nothing recorded" in out
 
 
-def test_history_list_shows_runs_newest_first(taxis) -> None:
-    taxis(*TOKEN, "project", "create", "demo")
-    taxis(*TOKEN, "project", "env", "set", "demo", "KEY", "v")
+def test_history_list_shows_runs_newest_first(taxis, filed) -> None:
+    filed("first run", {"k": b"1"})
+    filed("second run", {"k": b"2"})
     _, out, _ = taxis("history", "list")
-    assert out.index("project env set") < out.index("project create")
+    assert out.index("second run") < out.index("first run")
 
 
-def test_history_undo_walks_back_one_run_at_a_time(taxis) -> None:
-    taxis(*TOKEN, "project", "create", "demo")
-    taxis(*TOKEN, "project", "env", "set", "demo", "KEY", "v")
-    assert "undid `project env set`" in taxis("history", "undo")[1]
-    assert "no variables" in taxis("project", "env", "list", "demo")[1]
-    assert "undid `project create`" in taxis("history", "undo")[1]
+def test_history_undo_walks_back_one_run_at_a_time(taxis, filed) -> None:
+    filed("first run", {"k": b"1"})
+    filed("second run", {"k": b"2"})
+    assert "undid `second run`" in taxis("history", "undo")[1]
+    assert "undid `first run`" in taxis("history", "undo")[1]
     code, _, err = taxis("history", "undo")
     assert code == 4
     assert "nothing to undo" in err
-
-
-def test_history_failed_run_is_never_filed(taxis) -> None:
-    taxis(*TOKEN, "project", "create", "demo")
-    taxis(*TOKEN, "project", "create", "demo")
-    _, out, _ = taxis("history", "list")
-    assert out.count("project create") == 1

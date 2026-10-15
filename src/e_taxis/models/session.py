@@ -2,14 +2,11 @@
 
 from dataclasses import dataclass
 
-from e_taxis.models.identity import Identity
-
 
 ##### TYPES #####
 @dataclass(frozen=True, slots=True)
 class Session:
-    """The run: its command path, its verbosity, and the identity the flag or env already gave (None → the store)."""
+    """The run: its command path and its verbosity."""
 
     command: str
     verbose: bool = False
-    identity: Identity | None = None

@@ -40,7 +40,7 @@ def test_cli_main_exits_with_the_run_code(monkeypatch: pytest.MonkeyPatch) -> No
     assert exit_.value.code == 4
 
 
-@pytest.mark.parametrize("tokens", [(), ("project",), ("project", "env")], ids=["root", "group", "nested"])
+@pytest.mark.parametrize("tokens", [(), ("history",)], ids=["root", "group"])
 def test_cli_bare_group_prints_its_help(taxis, tokens: tuple[str, ...]) -> None:
     code, out, _ = taxis(*tokens)
     assert code == 0

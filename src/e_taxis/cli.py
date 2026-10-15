@@ -9,9 +9,6 @@ Adding a command is one row in `CARDS` plus one plain function; a command that n
 row in `GROUPS`, parents before children. `tests/unit/e_taxis/test_cli.py` resolves every target, so a
 typo fails the gate, never a user.
 
-    taxis auth     login · status · logout
-    taxis project  list · create · remove
-    taxis project env   set · list
     taxis history  list · undo
 """
 
@@ -25,21 +22,10 @@ from e_taxis.runtime.launcher import Launcher
 
 ##### TREE #####
 GROUPS: tuple[CommandGroup, ...] = (
-    CommandGroup(path="auth", help="The credential the cli acts with: store, inspect, drop."),
-    CommandGroup(path="project", help="Projects of the demo domain."),
-    CommandGroup(path="project env", help="Environment variables of one project."),
     CommandGroup(path="history", help="Every run that wrote to the store, and the undo of the last one."),
 )
 
 CARDS: tuple[CommandCard, ...] = (
-    CommandCard(path="auth login", target="e_taxis.commands.auth:login", summary="Store a credential for later runs."),
-    CommandCard(path="auth status", target="e_taxis.commands.auth:status", summary="Show who this run acts as."),
-    CommandCard(path="auth logout", target="e_taxis.commands.auth:logout", summary="Drop the stored credential."),
-    CommandCard(path="project list", target="e_taxis.commands.project:listing", summary="Every project."),
-    CommandCard(path="project create", target="e_taxis.commands.project:create", summary="Create an empty project."),
-    CommandCard(path="project remove", target="e_taxis.commands.project:remove", summary="Delete a project."),
-    CommandCard(path="project env set", target="e_taxis.commands.project:env_set", summary="Set one variable."),
-    CommandCard(path="project env list", target="e_taxis.commands.project:env_list", summary="Every variable."),
     CommandCard(path="history list", target="e_taxis.commands.history:listing", summary="Every recorded run."),
     CommandCard(path="history undo", target="e_taxis.commands.history:undo", summary="Revert the last recorded run."),
 )
@@ -47,7 +33,12 @@ CARDS: tuple[CommandCard, ...] = (
 
 def build() -> App:
     """Composition root: the tree from the tables, the launcher on the meta app. Imports no command module."""
-    root = App(name="taxis", help="e-stack cli template.", version=version("e-taxis"), result_action="return_value")
+    root = App(
+        name="taxis",
+        help="e-taxis — mounts agent harnesses after the transpile",
+        version=version("e-taxis"),
+        result_action="return_value",
+    )
     apps = {"": root}
     for group in GROUPS:
         apps[group.path] = App(name=group.name, help=group.help)

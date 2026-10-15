@@ -4,8 +4,7 @@ This is the composition root of the hexagon: `SQLiteAdapter` is named here and n
 undo journal and handed to the services as a bare `StorePort`. `Inject[T]` marks a parameter cyclopts must not parse (and `--help` must not show); the launcher resolves
 each one from its type through `Deps.PROVIDERS`, a frozen table type → builder. A builder runs at most once
 per run, and every resource it opens enters the run's exit stack, so edges close in reverse on the way out.
-A command that never asks for the store never opens sqlite; one that never asks for an `Identity` never
-needs a login. Adding an injectable is one builder and one row in the table."""
+A command that never asks for the store never opens sqlite. Adding an injectable is one builder and one row in the table."""
 
 from collections.abc import Awaitable, Callable, Mapping
 from contextlib import AsyncExitStack
@@ -19,10 +18,7 @@ from adapters.ports import StorePort
 from adapters.sqlite import SQLiteAdapter
 from core.settings import settings as st
 from core.state import State
-from e_taxis.models.identity import Identity
 from e_taxis.runtime.journal import StoreJournal
-from e_taxis.services.auth import AuthService
-from e_taxis.services.project import ProjectService
 
 T = TypeVar("T")
 ### cyclopts reads `Annotated` metadata but does not unwrap PEP 695 `type` aliases: the classic generic alias is what it sees.
@@ -56,15 +52,6 @@ class Deps:
         journal = StoreJournal(store, command=self._state.session.command, depth=st.cli.cli_history)
         return await self._stack.enter_async_context(journal)
 
-    async def _resolve_projects(self) -> ProjectService:
-        return ProjectService(await self.resolve(StoreJournal))
-
-    async def _resolve_auth(self) -> AuthService:
-        return AuthService(await self.resolve(StoreJournal))
-
-    async def _resolve_identity(self) -> Identity:
-        return await (await self.resolve(AuthService)).identify(self._state.session.identity)
-
     ############################################################
 
     ##### PUBLIC #####
@@ -75,9 +62,6 @@ class Deps:
             Console: _resolve_console,
             StorePort: _resolve_store,
             StoreJournal: _resolve_store,
-            ProjectService: _resolve_projects,
-            AuthService: _resolve_auth,
-            Identity: _resolve_identity,
         }
     )
 

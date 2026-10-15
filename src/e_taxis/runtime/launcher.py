@@ -16,10 +16,8 @@ from cyclopts import App, Parameter
 from rich.console import Console
 from rich.markup import escape
 
-from core.settings import settings as st
 from e_taxis.models.command import CommandCard
 from e_taxis.models.error import CliError
-from e_taxis.models.identity import Identity, IdentityOrigin
 from e_taxis.models.session import Session
 from e_taxis.runtime.lifespan import lifespan
 
@@ -39,13 +37,6 @@ class Launcher:
     def _run_path(self, command: Callable[..., object]) -> str:
         name = getattr(command, "__name__", "")
         return self._paths.get(f"{command.__module__}:{name}", name)
-
-    @staticmethod
-    def _run_identity(token: str) -> Identity | None:
-        """The flag beats CLI_TOKEN; neither leaves the stored login to `Deps`."""
-        env = st.cli.cli_token
-        offered = ((token, IdentityOrigin.FLAG), ("" if env is None else env.get_secret_value(), IdentityOrigin.ENV))
-        return next((Identity(origin=origin, token=value) for value, origin in offered if value), None)
 
     @staticmethod
     async def _run_command(
@@ -71,19 +62,17 @@ class Launcher:
     async def run(
         self,
         *tokens: Annotated[str, Parameter(show=False, allow_leading_hyphen=True)],
-        token: str = "",
         verbose: bool = False,
     ) -> int:
         """Global options, valid before any command.
 
         Args:
-            token: credential for this run only; beats CLI_TOKEN and the stored login.
             verbose: diagnostics on stderr at debug level.
         """
         command, bound, injected = self._app.parse_args(tokens)
         match inspect.iscoroutinefunction(command):
             case True:
-                session = Session(command=self._run_path(command), verbose=verbose, identity=self._run_identity(token))
+                session = Session(command=self._run_path(command), verbose=verbose)
                 return await self._run_command(command, bound, injected, session)
             case _:
                 ### cyclopts' own sync actions (the help of a bare group): not a run — no session, no lifespan.

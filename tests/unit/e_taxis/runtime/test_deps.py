@@ -9,7 +9,6 @@ from core.state import State
 from e_taxis.models.session import Session
 from e_taxis.runtime.deps import Deps
 from e_taxis.runtime.journal import StoreJournal
-from e_taxis.services.project import ProjectService
 
 
 def _state() -> State:
@@ -21,7 +20,6 @@ async def test_deps_builds_each_kind_once_per_run() -> None:
         deps = Deps(stack, _state())
         store = await deps.resolve(StorePort)
         assert store is await deps.resolve(StoreJournal)
-        assert (await deps.resolve(ProjectService)) is await deps.resolve(ProjectService)
 
 
 async def test_deps_injects_by_name_from_the_declared_type() -> None:

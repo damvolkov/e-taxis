@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 async def test_lifespan_seals_core_and_session_into_the_graph() -> None:
-    session = Session(command="project list")
+    session = Session(command="history list")
     async with lifespan(session) as deps:
         graph = await deps.resolve(State)
         assert isinstance(graph.core, CoreState)
@@ -26,9 +26,9 @@ async def test_lifespan_seals_core_and_session_into_the_graph() -> None:
 
 def test_lifespan_verbose_logs_to_stderr_never_stdout(workdir: Path) -> None:
     """A real process: the logger is a per-process singleton, so its routing is a property of one run."""
-    probe = "import sys; from e_taxis.cli import main; sys.argv = ['taxis', '--verbose', 'project', 'list']; main()"
+    probe = "import sys; from e_taxis.cli import main; sys.argv = ['taxis', '--verbose', 'history', 'list']; main()"
     run = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, cwd=workdir, check=False)  # noqa: S603 — fixed argv, own interpreter
     assert run.returncode == 0
     assert "run start" in run.stderr
     assert "run start" not in run.stdout
-    assert "no projects yet" in run.stdout
+    assert "nothing recorded" in run.stdout
