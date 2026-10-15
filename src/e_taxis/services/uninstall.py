@@ -82,6 +82,8 @@ class UninstallService:
                 except PrimitiveError as exc:
                     self._recorder.record(*exc.effects)
                     return UninstallStep(id=entry.id, status=UninstallStatus.FAILED, detail=exc.message)
+                except OSError as exc:
+                    return UninstallStep(id=entry.id, status=UninstallStatus.FAILED, detail=str(exc))
         match result:
             case NotSupportedYet(detail=detail):
                 return UninstallStep(id=entry.id, status=UninstallStatus.DEFERRED, detail=detail)

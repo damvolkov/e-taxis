@@ -76,16 +76,16 @@ class ApplyService:
         """What the run still lacks to open the entry's gate: flags to pass, secrets to set."""
         gate = entry.gate
         return (
-            *((f"pass --accept-licence {entry.id}",) if gate.licence and entry.id not in options.licences else ()),
+            *((f"--accept-licence {entry.id}",) if gate.licence and entry.id not in options.licences else ()),
             *((f"--confirm {entry.id}",) if gate.confirm and entry.id not in options.confirms else ()),
-            *(f"set ${name}" for name in gate.secrets if not self._environ.get(name)),
+            *(f"${name} set" for name in gate.secrets if not self._environ.get(name)),
         )
 
     def _run_refusals(self, plan: Plan, entries: dict[str, CatalogEntry], options: ApplyOptions) -> None:
         refused = [
-            *(f"{step.id}: no catalog entry" for step in plan.steps if step.action is PlanAction.UNKNOWN),
+            *(f"{step.id} has no catalog entry" for step in plan.steps if step.action is PlanAction.UNKNOWN),
             *(
-                f"{step.id}: {', '.join(lacking)}"
+                f"{step.id} needs {', '.join(lacking)}"
                 for step in plan.steps
                 if step.action is PlanAction.BLOCKED and (lacking := self._run_closed(entries[step.id], options))
             ),
@@ -110,6 +110,9 @@ class ApplyService:
                 except PrimitiveError as exc:
                     self._recorder.record(*exc.effects)
                     return ApplyStep(id=entry.id, status=ApplyStatus.FAILED, detail=exc.message)
+                except OSError as exc:
+                    ### the disk refused (permissions, a directory where a file goes): a failed step, not a crash.
+                    return ApplyStep(id=entry.id, status=ApplyStatus.FAILED, detail=str(exc))
         match result:
             case NotSupportedYet(detail=detail):
                 return ApplyStep(id=entry.id, status=ApplyStatus.DEFERRED, detail=detail)

@@ -53,7 +53,7 @@ def test_install_apply_json_report(taxis, on_world) -> None:
 def test_install_apply_refuses_a_closed_gate(taxis, on_world, claude_dir: Path) -> None:
     code, _, err = taxis(*APPLY, "--yes")
     assert code == 10
-    assert "gated: pass --accept-licence gated" in err
+    assert "gated needs --accept-licence gated" in err
     assert not claude_dir.exists()
 
 

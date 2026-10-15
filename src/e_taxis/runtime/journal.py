@@ -70,6 +70,8 @@ class StoreJournal:
             await self._world.run(effect)
         except PrimitiveError as exc:
             return exc.message
+        except OSError as exc:
+            return str(exc)
         return None
 
     async def _common_ids(self) -> list[str]:

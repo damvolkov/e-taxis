@@ -89,3 +89,12 @@ async def test_journal_undo_reverts_what_it_can_and_names_the_rest(store, undoer
         await StoreJournal(store, world=undoer, command="undo", depth=5).undo()
     assert undoer.reverted == [PLACED]
     assert await StoreJournal(store, world=undoer, command="list", depth=5).entries() == []
+
+
+async def test_journal_undo_names_a_filesystem_refusal(store, undoer) -> None:
+    undoer.failing.append(PLACED)
+    undoer.oserror = True
+    async with StoreJournal(store, world=undoer, command="apply", depth=5) as journal:
+        journal.record(PLACED)
+    with pytest.raises(JournalError, match="Permission denied"):
+        await StoreJournal(store, world=undoer, command="undo", depth=5).undo()

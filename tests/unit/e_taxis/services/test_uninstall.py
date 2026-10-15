@@ -109,3 +109,14 @@ async def test_uninstall_cascade_over_a_cycle_is_refused(cycle_root: Path, probe
     )
     with pytest.raises(CatalogCycleError):
         await service.run("a", Target.CLAUDECODE, cascade=True, write=False)
+
+
+async def test_uninstall_a_filesystem_refusal_is_a_failed_step(
+    uninstaller: UninstallService, installed, claude_dir: Path
+) -> None:
+    claude_dir.chmod(0o500)
+    try:
+        report = await uninstaller.run("guide", Target.CLAUDECODE, cascade=False, write=True)
+    finally:
+        claude_dir.chmod(0o700)
+    assert (report.steps[0].status, "Permission denied" in report.steps[0].detail) == (UninstallStatus.FAILED, True)

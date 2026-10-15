@@ -52,7 +52,7 @@ async def test_apply_run_writes_in_requires_order_and_records_every_effect(
 async def test_apply_run_skips_defers_and_refuses_a_closed_gate_before_writing(
     applier: ApplyService, profile, runner, claude_dir: Path
 ) -> None:
-    with pytest.raises(ApplyError, match=r"gated: pass --accept-licence gated, --confirm gated, set \$GATED_TOKEN"):
+    with pytest.raises(ApplyError, match=r"gated needs --accept-licence gated, --confirm gated, \$GATED_TOKEN set"):
         await applier.run(profile("house"), Target.CLAUDECODE, ApplyOptions())
     assert (runner.calls, claude_dir.exists()) == ([], False)
 
@@ -81,7 +81,7 @@ async def test_apply_run_opened_gate_installs(applier: ApplyService, profile, ru
 
 
 async def test_apply_run_refuses_unknown_parts(applier: ApplyService, profile) -> None:
-    with pytest.raises(ApplyError, match="ghost: no catalog entry"):
+    with pytest.raises(ApplyError, match="ghost has no catalog entry"):
         await applier.run(profile("ghosted"), Target.CLAUDECODE, ApplyOptions())
 
 
@@ -126,3 +126,10 @@ async def test_apply_run_a_primitive_not_supported_yet_is_deferred(applier: Appl
     primitives[Primitive.UV_TOOL] = ComposePrimitive()
     report = await applier.run(listed(WantedPart(id="tool", source="t")), Target.CLAUDECODE, ApplyOptions())
     assert (report.steps[0].status, report.verify) == (ApplyStatus.DEFERRED, ())
+
+
+async def test_apply_run_a_filesystem_refusal_is_a_failed_step(applier: ApplyService, listed, claude_dir: Path) -> None:
+    (claude_dir / "settings.json").mkdir(parents=True)
+    report = await applier.run(listed(WantedPart(id="env", source="t")), Target.CLAUDECODE, ApplyOptions())
+    assert [step.id for step in report.steps] == ["tool", "env"]
+    assert (report.steps[1].status, "Is a directory" in report.steps[1].detail) == (ApplyStatus.FAILED, True)

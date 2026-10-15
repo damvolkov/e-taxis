@@ -52,8 +52,11 @@ class ListUndo:
     def __init__(self) -> None:
         self.reverted: list[JournalEffect] = []
         self.failing: list[JournalEffect] = []
+        self.oserror = False
 
     async def run(self, effect: JournalEffect) -> None:
+        if effect in self.failing and self.oserror:
+            raise PermissionError(13, "Permission denied", "/x")
         if effect in self.failing:
             msg = f"cannot revert {effect}"
             raise RunnerError(msg)
