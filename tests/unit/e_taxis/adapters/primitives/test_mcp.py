@@ -6,7 +6,7 @@ import pytest
 from e_taxis.adapters.ports import PrimitivePort
 from e_taxis.models.error import RecipeError
 
-REMOVE = ("claude", "mcp", "remove", "--scope", "user", "srv")
+REMOVE = ("claude", "mcp", "remove", "srv")
 
 
 async def test_mcp_satisfies_the_port(mcp) -> None:

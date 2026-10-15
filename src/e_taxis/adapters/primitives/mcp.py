@@ -49,7 +49,8 @@ class McpPrimitive:
 
     @staticmethod
     def _common_remove(args: RecipeMcp) -> tuple[str, ...]:
-        return ("claude", "mcp", "remove", "--scope", args.scope, args.name)
+        ### `claude mcp remove` takes no --scope (verified on Claude Code 2.1.296): the name alone.
+        return ("claude", "mcp", "remove", args.name)
 
     ############################################################
 
