@@ -1,0 +1,17 @@
+id: skillspector
+kind: cli
+targets: [system]
+scope: machine
+requires: []
+recipes:
+  any:
+    primitive: uv-tool
+    with: {source: "git+https://github.com/NVIDIA/skillspector@v2.12.0", bin: skillspector}
+probe: skillspector --version
+verify: skillspector --version
+uninstall: {primitive: uv-tool, with: {name: skillspector}}
+footprint: [~/.local/bin/skillspector]
+owns: []
+gate: {licence: null, secrets: [], confirm: false}
+flags: {pin: "v2.12.0", mode: "static by default (--no-llm)"}
+status: {profile: {house: floor, company: floor, minimal: out}, checked: 2026-10-15, evidence: "e-engineer docs/bench/self-learning.md"}

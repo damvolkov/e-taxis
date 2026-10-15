@@ -1,0 +1,3 @@
+id: house
+description: "Damien's machine — the transpiler writes the brain; e-taxis adds the world around it."
+parts: {claude-code: floor, context7: floor, gitnexus: per-project, searxng: floor, searxng-mcp: floor, playwright: floor, playwright-mcp: floor, docling: floor, docling-mcp: floor, otel: floor, phoenix: floor, otel-env: floor, memory-guidance: out, skillspector: floor, landrun: floor, beads: per-project, ccusage: per-project}

@@ -1,0 +1,17 @@
+id: ccusage
+kind: cli
+targets: [claudecode]
+scope: machine
+requires: []
+recipes:
+  claudecode:
+    primitive: npm
+    with: {package: "ccusage@20.0.33", bin: ccusage}
+probe: ccusage --version
+verify: ccusage --version
+uninstall: {primitive: npm, with: {package: ccusage}}
+footprint: [~/.local/share/npm/bin/ccusage]
+owns: []
+gate: {licence: null, secrets: [], confirm: false}
+flags: {}
+status: {profile: {house: per-project, company: per-project, minimal: out}, checked: 2026-10-15, evidence: "e-engineer docs/bench/observability.md — exact cost, offline"}

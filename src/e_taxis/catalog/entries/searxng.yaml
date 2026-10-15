@@ -1,0 +1,17 @@
+id: searxng
+kind: service
+targets: [system]
+scope: service
+requires: []
+recipes:
+  any:
+    primitive: compose
+    with: {path: ~/.config/compose/searxng, port: 45600}
+probe: docker inspect -f '{{.State.Running}}' searxng
+verify: docker inspect -f '{{.State.Running}}' searxng | grep -q true
+uninstall: {primitive: compose, with: {path: ~/.config/compose/searxng, down: true}}
+footprint: [~/.config/compose/searxng, ~/.config/compose/data/searxng]
+owns: []
+gate: {licence: null, secrets: [], confirm: false}
+flags: {}
+status: {profile: {house: floor, company: out, minimal: out}, checked: 2026-10-15, evidence: "e-engineer core/engineer/stack.yaml"}
