@@ -103,6 +103,10 @@ style = "pep440"
 bump = true
 fallback-version = "0.0.0"
 
+[tool.hatch.build]
+### core/ops/adapters are materialized, not committed (.gitignore): artifacts ship them despite the VCS ignore.
+artifacts = ["src/core/", "src/ops/", "src/adapters/"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/e_taxis", "src/core", "src/ops", "src/adapters"]
 

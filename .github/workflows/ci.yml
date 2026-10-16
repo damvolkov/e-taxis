@@ -20,10 +20,26 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
+      - name: Read the e-templates pin
+        id: pin
+        shell: bash
+        run: echo "ref=$(cat .e-templates-ref)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: damvolkov/e-templates
+          ref: ${{ steps.pin.outputs.ref }}
+          path: .e-templates
+          persist-credentials: false
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
+      - name: Sync env
+        run: uv sync
+      - name: Materialize core/ops/adapters from the pinned e-templates
+        shell: bash
+        env:
+          E_CORE_SRC: .e-templates/systems/core/src/e_core
+        run: uv run python scripts/materialize.py
       - name: Static gates
         run: |
-          uv sync --group lint --no-install-project
           uv run ruff check --output-format=github src tests scripts
           uv run ruff format --check src tests scripts
           uv run ty check
@@ -43,8 +59,23 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
+      - name: Read the e-templates pin
+        id: pin
+        shell: bash
+        run: echo "ref=$(cat .e-templates-ref)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: damvolkov/e-templates
+          ref: ${{ steps.pin.outputs.ref }}
+          path: .e-templates
+          persist-credentials: false
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
       - name: Sync env
         run: uv sync
+      - name: Materialize core/ops/adapters from the pinned e-templates
+        shell: bash
+        env:
+          E_CORE_SRC: .e-templates/systems/core/src/e_core
+        run: uv run python scripts/materialize.py
       - name: Unit tests + coverage gate
         run: uv run pytest -m "not slow" --cov --cov-report=term

@@ -3,7 +3,9 @@ PROJECT  ?= e-taxis
 PACKAGE  ?= src/e_taxis
 MODULE   ?= e_taxis
 TEMPLATES ?= ../e-templates
-### The committed HEAD of e-templates, never its working tree: another session's half-done work stays out.
+### The pinned commit of e-templates (.e-templates-ref, the one CI checks out), never its working tree:
+### another session's half-done work stays out, and a template change lands here only by bumping the pin.
+TEMPLATES_REF ?= $(shell cat .e-templates-ref)
 CORE_HEAD ?= $(HOME)/.cache/e-taxis/e-templates-head
 CORE_SRC ?= $(CORE_HEAD)/systems/core/src/e_core
 export E_CORE_SRC := $(CORE_SRC)
@@ -44,8 +46,8 @@ lock: core ## refresh uv lockfile (against the current materialized core)
 # — common —
 COMMON_SRC ?= $(CORE_HEAD)/systems/core/common
 
-core-src: ## export the committed HEAD of e-templates' systems/core into the cache
-	@rm -rf $(CORE_HEAD) && mkdir -p $(CORE_HEAD) && git -C $(TEMPLATES) archive HEAD systems/core | tar -x -C $(CORE_HEAD)
+core-src: ## export e-templates' systems/core at the pinned ref (.e-templates-ref) into the cache
+	@rm -rf $(CORE_HEAD) && mkdir -p $(CORE_HEAD) && git -C $(TEMPLATES) archive $(TEMPLATES_REF) systems/core | tar -x -C $(CORE_HEAD)
 
 core: core-src ## materialize shared core/ + ops/ + adapters/ from systems/core (source of truth) via a structural rewrite
 	@uv run python scripts/materialize.py
