@@ -30,6 +30,9 @@ jobs:
           ref: ${{ steps.pin.outputs.ref }}
           path: .e-templates
           persist-credentials: false
+      - name: Pin Python as the template does (make common)
+        shell: bash
+        run: cp .e-templates/systems/core/common/python-version .python-version
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
       - name: Sync env
         run: uv sync
@@ -37,6 +40,7 @@ jobs:
         shell: bash
         env:
           E_CORE_SRC: .e-templates/systems/core/src/e_core
+          PYTHONUTF8: "1"
         run: uv run python scripts/materialize.py
       - name: Static gates
         run: |
@@ -69,6 +73,9 @@ jobs:
           ref: ${{ steps.pin.outputs.ref }}
           path: .e-templates
           persist-credentials: false
+      - name: Pin Python as the template does (make common)
+        shell: bash
+        run: cp .e-templates/systems/core/common/python-version .python-version
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
       - name: Sync env
         run: uv sync
@@ -76,6 +83,7 @@ jobs:
         shell: bash
         env:
           E_CORE_SRC: .e-templates/systems/core/src/e_core
+          PYTHONUTF8: "1"
         run: uv run python scripts/materialize.py
       - name: Unit tests + coverage gate
         run: uv run pytest -m "not slow" --cov --cov-report=term
