@@ -2,6 +2,8 @@
 src/core/
 src/ops/
 src/adapters/
+# the pinned e-templates checkout CI materializes them from
+.e-templates/
 .venv/
 .env
 # materialized from ../core/common — run `make common`; do not edit or commit these

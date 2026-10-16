@@ -71,7 +71,20 @@ jobs:
         with:
           ref: ${{ needs.bump.outputs.tag }}
           persist-credentials: false
+      - name: Read the e-templates pin
+        id: pin
+        run: echo "ref=$(cat .e-templates-ref)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: damvolkov/e-templates
+          ref: ${{ steps.pin.outputs.ref }}
+          path: .e-templates
+          persist-credentials: false
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
+      - name: Materialize core/ops/adapters from the pinned e-templates — the wheel ships them
+        env:
+          E_CORE_SRC: .e-templates/systems/core/src/e_core
+        run: uv run python scripts/materialize.py
       - name: Build (version resolved from the checked-out tag)
         run: uv build
       - name: Smoke — install the wheel in a clean env and import
