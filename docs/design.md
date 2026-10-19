@@ -1,19 +1,26 @@
 # e-taxis — design
 
-τάξις, *arrangement, order of battle*: e-taxis mounts an agent harness. After the transpiler has written a harness's
-brain (skills, agents, commands, persona, config), e-taxis makes the world that brain expects exist — the CLIs, MCP
-servers, plugins, hooks, environment, managed files and services — in order, verified, and undoable.
+τάξις, *arrangement, order of battle*: e-taxis mounts an agent harness in two halves. First the brain: an
+e-engineer core (persona, skills, agents, commands, config, MCP) projected into the harness's tree. Then the world
+that brain expects — the CLIs, MCP servers, plugins, hooks, environment, managed files and services — in order,
+verified, and undoable.
 
 It runs two ways from one core: as the installer plane of e-engineer (`op` drives it after `op transpiler apply`) and
 standalone, for anyone with Claude Code (`uvx e-taxis …`), from its own catalog and profiles.
 
 ## 1. Boundary
 
-| | Transpiler (e-engineer, later e-taxis) | e-taxis installer |
+e-engineer owns the **content**: `core/base`, `core/<facet>`. e-taxis owns everything **operational**: the content
+contract (`models/core.py` — every entity, its slots, where it lives), each harness's projection of it, the
+catalog, and the install. The e-engineer transpiler migrates here harness by harness; a projection lands only when
+it renders byte for byte what the transpiler wrote (Claude Code: 202 files identical, settings and MCP equal,
+2026-10-15).
+
+| | brain (`taxis brain`) | world (`taxis apply`) |
 |---|---|---|
-| writes | the brain: what the harness **reads** | the world: what the brain **needs to exist** |
-| order | first | after the transpile; `transpile → install → verify` |
-| config keys | the keys its specs own | only the keys **its** recipes declare (`owns`); never one the transpiler owns |
+| writes | what the harness **reads** | what the brain **needs to exist** |
+| order | first | second; `taxis install` runs both as one undoable run |
+| config keys | the keys its projection owns | only the keys **its** recipes declare (`owns`); never one the brain owns |
 
 Every key of every harness config file has exactly one owner. A recipe that merges into `settings.json` lists the keys
 it owns; a key the transpiler also claims is a catalog error, caught by `taxis doctor`.
@@ -73,7 +80,23 @@ install · uninstall per primitive), `ProbePort` (run a shell probe). Adapters: 
 Services: `ResolverService` (join + DAG through `graphlib`), `PlanService` (probe + diff), `VerifyService`. A new
 harness is new adapters and catalog rows; the core does not change.
 
-## 6. Phases
+## 6. The brain
+
+| core entity | where it lives in the core | Claude Code |
+|---|---|---|
+| persona | `core/base/persona.yaml` + `core/engineer/persona.yaml` (a slot lives in one layer) | `CLAUDE.md`, fixed blocks |
+| skill | `core/engineer/skills/<id>/skill.yaml` + body + `references/` | `skills/<id>/SKILL.md` + references |
+| agent | `core/engineer/agents/<id>/agent.yaml` + prompt | `agents/<id>.md`; denied tools → `disallowedTools` |
+| command | `core/engineer/commands/<id>/command.yaml` + template | `commands/<id>.md`; named arguments |
+| main · permissions · hooks | `core/engineer/config/*.yaml` | `settings.json` owned keys; `rules/instructions.md`; `hooks/*` |
+| mcp | `core/engineer/config/mcp.yaml` + `mcp/*` | user-scope registrations; `mcp/*` |
+
+The plan is three-way — render, live tree, the digests of the last install (`brain:<target>` in the store) — so an
+edit by hand is an `overwrite`, shown before it happens. Nothing is deleted: a governed folder's leftovers are
+`orphan`s. Every file, key and registration is a journal effect: undo restores bytes, prior key values, prior
+registrations, and the directories a run created.
+
+## 7. Phases
 
 | Phase | Delivers | Writes |
 |---|---|---|
@@ -84,7 +107,7 @@ harness is new adapters and catalog rows; the core does not change.
 | P5 | OpenCode and OpenHuman adapters | — |
 | P6 | the stack review workflow: scheduled, deterministic, reports + PR | — |
 
-Status (2026-10-15): P1 and P2 shipped. P2 writes the user and machine scopes; `env` is the `settings`
+Status (2026-10-15): P1, P2 and the Claude Code brain shipped. P2 writes the user and machine scopes; `env` is the `settings`
 primitive's env merge under its own name; `compose` answers `NotSupportedYet` and the plan reports it, and
 every project-scope entry, as `deferred`. World effects (files placed, JSON keys with prior values, marked
 blocks, CLI registrations with their inverse) live in the journal entry, so `taxis history undo` reverts an

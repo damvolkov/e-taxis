@@ -13,6 +13,9 @@ typo fails the gate, never a user.
     taxis plan     --target T (--profile P | --engineer PATH) [--json]
     taxis verify   --target T (--profile P | --engineer PATH) [--json]
     taxis doctor   [--json]
+    taxis brain    --target T --engineer PATH [--ref REF | --worktree] [--yes] [--json]
+    taxis install  --target T --engineer PATH [--profile P] [--ref REF | --worktree] [--yes]
+                   [--accept-licence ID] [--confirm ID] [--json]
     taxis apply    --target T (--profile P | --engineer PATH) [--only id,...] [--dry-run] [--yes]
                    [--accept-licence ID] [--confirm ID] [--json]
     taxis uninstall ID --target T [--cascade] [--yes]
@@ -37,7 +40,13 @@ CARDS: tuple[CommandCard, ...] = (
     CommandCard(path="plan", target="e_taxis.commands.stack:plan", summary="What apply would do; writes nothing."),
     CommandCard(path="verify", target="e_taxis.commands.stack:verify", summary="Run every wanted part's verify."),
     CommandCard(path="doctor", target="e_taxis.commands.catalog:doctor", summary="Check the catalog's integrity."),
+    CommandCard(
+        path="brain", target="e_taxis.commands.brain:brain", summary="Install a core's brain; dry unless --yes."
+    ),
     CommandCard(path="apply", target="e_taxis.commands.install:apply", summary="Carry the plan out; dry unless --yes."),
+    CommandCard(
+        path="install", target="e_taxis.commands.install:install", summary="Brain, then systems; dry unless --yes."
+    ),
     CommandCard(
         path="uninstall", target="e_taxis.commands.install:uninstall", summary="Take one part out; dry unless --yes."
     ),

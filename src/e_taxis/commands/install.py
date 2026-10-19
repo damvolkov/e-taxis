@@ -1,9 +1,10 @@
-"""commands.install: driving adapter for the writing half — `apply` carries a target's plan out, `uninstall`
-takes one part back out.
+"""commands.install: driving adapter for the writing half — `install` mounts a harness whole (the core's brain,
+then the systems around it), `apply` carries a target's plan out, `uninstall` takes one part back out.
 
-Both are dry by default: without `--yes` they print what they would do and exit 0, having written
+All are dry by default: without `--yes` they print what they would do and exit 0, having written
 nothing (`--dry-run` keeps it so even beside `--yes`). With `--yes`, every change goes through the
-undo journal — `taxis history undo` reverts the run. A refused apply, a failed step or a failed verify
+undo journal — `taxis history undo` reverts the run, an install's two halves together. A brain that
+cannot land exits 14 before any system is touched; a refused apply, a failed step or a failed verify
 exits 10; a failed uninstall exits 11 — always after the full report."""
 
 from collections.abc import Mapping
@@ -15,6 +16,7 @@ import msgspec
 from rich.console import Console
 from rich.table import Table
 
+from e_taxis.commands.brain import brain
 from e_taxis.commands.stack import HEADER, STYLES
 from e_taxis.models.apply import ApplyOptions, ApplyStatus
 from e_taxis.models.catalog import Target
@@ -24,6 +26,7 @@ from e_taxis.runtime.deps import Inject
 from e_taxis.runtime.settings import TaxisSettings
 from e_taxis.runtime.source import FlagSource
 from e_taxis.services.apply import ApplyService
+from e_taxis.services.brain import BrainService
 from e_taxis.services.uninstall import UninstallService
 
 ##### DEFAULTS #####
@@ -148,3 +151,56 @@ async def uninstall(
         case _:
             msg = f"{len(report.failed)} part(s) failed to uninstall: {', '.join(report.failed)}"
             raise UninstallError(msg)
+
+
+async def install(
+    *,
+    target: Target,
+    engineer: Path,
+    profile: str | None = None,
+    ref: str = "HEAD",
+    worktree: bool = False,
+    yes: bool = False,
+    accept_licence: tuple[str, ...] = (),
+    confirm: tuple[str, ...] = (),
+    json: bool = False,
+    projector: Inject[BrainService],
+    applier: Inject[ApplyService],
+    settings: Inject[TaxisSettings],
+    console: Inject[Console],
+) -> None:
+    """Mount a harness in order: the core's brain, then the systems and plugins it expects. Dry unless --yes.
+
+    Args:
+        target: the harness to mount.
+        engineer: the e-engineer checkout: its core is the brain, its stack registry the systems.
+        profile: take the systems from this profile instead of the checkout's stack registry.
+        ref: the git ref the core is read at.
+        worktree: read the core from the working tree instead of a ref.
+        yes: write. Without it, install only prints both plans.
+        accept_licence: open the licence gate of this entry id (repeatable).
+        confirm: open the confirmation gate of this entry id (repeatable).
+        json: each half's plan or report as one JSON line.
+    """
+    await brain(
+        target=target,
+        engineer=engineer,
+        ref=ref,
+        worktree=worktree,
+        yes=yes,
+        json=json,
+        projector=projector,
+        console=console,
+    )
+    await apply(
+        target=target,
+        profile=profile,
+        engineer=None if profile else engineer,
+        yes=yes,
+        accept_licence=accept_licence,
+        confirm=confirm,
+        json=json,
+        applier=applier,
+        settings=settings,
+        console=console,
+    )

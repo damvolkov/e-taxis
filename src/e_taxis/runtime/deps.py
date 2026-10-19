@@ -3,9 +3,9 @@
 This is the composition root of the hexagon: `SQLiteAdapter`, `FileCatalog`, `ShellProbe`, the runner, the
 downloader and every primitive adapter are named here and nowhere else; the store is wrapped in the undo
 journal and handed on as a bare `StorePort` (and as the services' recorder), the catalog and the probe reach
-the services as their ports, the primitives as one frozen table Primitive → adapter. The run's home, Claude's
-config dir and the environment (gate secrets are named by the catalog, so they are read here, once) are
-resolved here too. `Inject[T]` marks a parameter cyclopts must not parse (and `--help` must not show); the launcher resolves
+the services as their ports, the primitives as one frozen table Primitive → adapter, the brain's projections as
+one frozen table Target → harness adapter. The run's home, Claude's config dir and the environment (gate
+secrets are named by the catalog, so they are read here, once) are resolved here too. `Inject[T]` marks a parameter cyclopts must not parse (and `--help` must not show); the launcher resolves
 each one from its type through `Deps.PROVIDERS`, a frozen table type → builder. A builder runs at most once
 per run, and every resource it opens enters the run's exit stack, so edges close in reverse on the way out.
 A command that never asks for the store never opens sqlite. Adding an injectable is one builder and one row in the table."""
@@ -26,7 +26,16 @@ from core.settings import settings as st
 from core.state import State
 from e_taxis.adapters.catalog import FileCatalog
 from e_taxis.adapters.downloader import WreqDownloader
-from e_taxis.adapters.ports import CatalogPort, DownloaderPort, PrimitivePort, ProbePort, RunnerPort, UndoPort
+from e_taxis.adapters.harness.claudecode import ClaudecodeHarness
+from e_taxis.adapters.ports import (
+    CatalogPort,
+    DownloaderPort,
+    HarnessPort,
+    PrimitivePort,
+    ProbePort,
+    RunnerPort,
+    UndoPort,
+)
 from e_taxis.adapters.primitives.binary import BinaryPrimitive
 from e_taxis.adapters.primitives.compose import ComposePrimitive
 from e_taxis.adapters.primitives.file import FilePrimitive
@@ -38,10 +47,11 @@ from e_taxis.adapters.primitives.uv import UvPrimitive
 from e_taxis.adapters.probe import ShellProbe
 from e_taxis.adapters.runner import ProcessRunner
 from e_taxis.adapters.undo import EffectUndo
-from e_taxis.models.catalog import Primitive
+from e_taxis.models.catalog import Primitive, Target
 from e_taxis.runtime.journal import StoreJournal
 from e_taxis.runtime.settings import TaxisSettings
 from e_taxis.services.apply import ApplyService
+from e_taxis.services.brain import BrainService
 from e_taxis.services.doctor import DoctorService
 from e_taxis.services.plan import PlanService
 from e_taxis.services.resolver import ResolverService
@@ -147,6 +157,26 @@ class Deps:
             environ=os.environ,
         )
 
+    async def _resolve_brain(self) -> BrainService:
+        """One projection per harness that has one; the run's store is both the record and the recorder.
+
+        Claude keeps user-scope servers in `~/.claude.json` — inside CLAUDE_CONFIG_DIR whenever it is set, even
+        to `~/.claude` (seen on Claude Code 2.1.296)."""
+        home, claude = await self._common_homes()
+        relocated = (await self.resolve(TaxisSettings)).claude_config_dir
+        registry = relocated / ".claude.json" if relocated else home / ".claude.json"
+        journal = await self.resolve(StoreJournal)
+        harnesses: Mapping[Target, HarnessPort] = MappingProxyType({Target.CLAUDECODE: ClaudecodeHarness()})
+        return BrainService(
+            harnesses,
+            SettingsPrimitive(),
+            await self.resolve(RunnerPort),
+            journal,
+            journal,
+            claude=claude,
+            registry=registry,
+        )
+
     async def _resolve_uninstall(self) -> UninstallService:
         home, claude = await self._common_homes()
         return UninstallService(
@@ -179,6 +209,7 @@ class Deps:
             DownloaderPort: _resolve_downloader,
             UndoPort: _resolve_undo,
             ApplyService: _resolve_apply,
+            BrainService: _resolve_brain,
             UninstallService: _resolve_uninstall,
         }
     )

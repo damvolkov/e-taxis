@@ -1,15 +1,19 @@
-"""adapters.ports: what the e-taxis services may ask of the world — the catalog, a source of wanted parts, a probe,
-and on the writing side a command runner, a downloader, one primitive per installer, the journal's two ends.
+"""adapters.ports: what the e-taxis services may ask of the world — the catalog, a source of wanted parts, a core
+and its projection per harness, a probe; and on the writing side a command runner, a downloader, one primitive
+per installer, the journal's two ends.
 
 Structural contracts only: an adapter satisfies its port by shape. A new source (another harness's
-registry), another probe (a container exec) or another primitive is a new adapter, never an edited service."""
+registry), another probe (a container exec), another primitive or another harness's projection is a new
+adapter, never an edited service."""
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from e_taxis.models.brain import BrainRender
     from e_taxis.models.catalog import Catalog, CatalogEntry, CatalogRecipe, Target
+    from e_taxis.models.core import Core
     from e_taxis.models.journal import JournalEffect
     from e_taxis.models.plan import Probe
     from e_taxis.models.primitive import PrimitiveContext, PrimitiveResult
@@ -29,6 +33,20 @@ class SourcePort(Protocol):
     """The parts one target wants, in the order the source lists them."""
 
     async def wanted(self, target: Target) -> tuple[WantedPart, ...]: ...
+
+
+@runtime_checkable
+class CorePort(Protocol):
+    """One read of an e-engineer core into the content contract; a CoreError when it cannot be read."""
+
+    async def load(self) -> Core: ...
+
+
+@runtime_checkable
+class HarnessPort(Protocol):
+    """A core projected for one harness, landing in `tree`. Pure: nothing is read or written."""
+
+    def render(self, core: Core, tree: Path) -> BrainRender: ...
 
 
 @runtime_checkable

@@ -4,6 +4,7 @@ A write is staged beside its target and renamed over it, so a crash leaves the o
 never half of either; the stage is cleaned up whatever happens."""
 
 import secrets
+from contextlib import suppress
 from typing import TYPE_CHECKING
 
 import anyio
@@ -51,3 +52,14 @@ async def write_file(path: Path, data: bytes, mode: int | None = None) -> None:
 async def remove_file(path: Path) -> None:
     """Nothing at `path` afterwards; already nothing is fine."""
     await anyio.Path(path).unlink(missing_ok=True)
+
+
+async def missing_dirs(path: Path) -> int:
+    """How many parents of `path` do not exist yet: the innermost ones, since a parent implies its own."""
+    return sum([not await anyio.Path(parent).exists() for parent in path.parents])
+
+
+async def remove_dirs(path: Path, levels: int) -> None:
+    """The `levels` innermost parents of `path` removed, innermost first, stopping at the first one not empty."""
+    with suppress(OSError):
+        _ = [await anyio.Path(parent).rmdir() for parent in path.parents[:levels]]
