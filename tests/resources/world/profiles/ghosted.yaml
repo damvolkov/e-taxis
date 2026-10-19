@@ -1,0 +1,3 @@
+id: ghosted
+description: Fixture world — wants a part no entry provides.
+parts: {tool: floor, ghost: floor}

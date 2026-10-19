@@ -1,0 +1,13 @@
+id: alpha
+kind: cli
+targets: [system]
+scope: machine
+recipes:
+  any:
+    primitive: uv-tool
+    with: {source: alpha}
+probe: echo 1.2.3
+verify: "true"
+uninstall: {primitive: uv-tool, with: {name: alpha}}
+footprint: [~/.local/bin/alpha]
+status: {profile: {house: floor, minimal: out}, checked: 2026-10-15, evidence: fixture}

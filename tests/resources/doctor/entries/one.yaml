@@ -1,0 +1,10 @@
+id: one
+kind: mcp
+targets: [claudecode, opencode]
+scope: user
+requires: [two, missing]
+recipes: {any: {primitive: claude-mcp}}
+probe: "true"
+verify: "true"
+owns: [mcpServers.shared]
+status: {profile: {}, checked: 2026-10-15, evidence: fixture}

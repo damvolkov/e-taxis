@@ -1,0 +1,20 @@
+id: tree-sitter
+kind: mcp
+targets: [claudecode, opencode]
+scope: user
+requires: []
+recipes:
+  claudecode:
+    primitive: claude-mcp
+    with: {name: tree-sitter, command: uvx, args: ["--from", "mcp-server-tree-sitter", "--with", "mcp<2", "mcp-server-tree-sitter"], env: {MCP_TS_LOG_LEVEL: WARNING}}
+  opencode:
+    primitive: settings
+    with: {file: ~/.config/opencode/opencode.json, key: "mcp.tree-sitter", value: {type: local, command: [uvx, --from, mcp-server-tree-sitter, --with, "mcp<2", mcp-server-tree-sitter], environment: {MCP_TS_LOG_LEVEL: WARNING}}}
+probe: claude mcp get tree-sitter
+verify: claude mcp get tree-sitter
+uninstall: {primitive: claude-mcp, with: {name: tree-sitter, remove: true}}
+footprint: [~/.claude.json#mcpServers.tree-sitter]
+owns: [mcp.tree-sitter]
+gate: {licence: null, secrets: [], confirm: false}
+flags: {note: "mcp<2: the release still needs FastMCP"}
+status: {profile: {house: floor, company: out, minimal: out}, checked: 2026-10-15, evidence: "e-engineer core/engineer/config/mcp.yaml"}

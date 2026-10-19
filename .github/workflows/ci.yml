@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: lint · types · arch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Read the e-templates pin
+        id: pin
+        shell: bash
+        run: echo "ref=$(cat .e-templates-ref)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: damvolkov/e-templates
+          ref: ${{ steps.pin.outputs.ref }}
+          path: .e-templates
+          persist-credentials: false
+      - name: Pin Python as the template does (make common)
+        shell: bash
+        run: cp .e-templates/systems/core/common/python-version .python-version
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
+      - name: Sync env
+        run: uv sync
+      - name: Materialize core/ops/adapters from the pinned e-templates
+        shell: bash
+        env:
+          E_CORE_SRC: .e-templates/systems/core/src/e_core
+          PYTHONUTF8: "1"
+        run: uv run python scripts/materialize.py
+      - name: Static gates
+        run: |
+          uv run ruff check --output-format=github src tests scripts
+          uv run ruff format --check src tests scripts
+          uv run ty check
+          uv run tach check
+          uv run validate-pyproject pyproject.toml
+      - name: Workflow hardening scan
+        run: uv run zizmor --persona=regular .github/workflows
+
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        ### POSIX only: probes run through `sh`, a timed-out probe is killed by process group, recipes set file modes.
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Read the e-templates pin
+        id: pin
+        shell: bash
+        run: echo "ref=$(cat .e-templates-ref)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: damvolkov/e-templates
+          ref: ${{ steps.pin.outputs.ref }}
+          path: .e-templates
+          persist-credentials: false
+      - name: Pin Python as the template does (make common)
+        shell: bash
+        run: cp .e-templates/systems/core/common/python-version .python-version
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
+      - name: Sync env
+        run: uv sync
+      - name: Materialize core/ops/adapters from the pinned e-templates
+        shell: bash
+        env:
+          E_CORE_SRC: .e-templates/systems/core/src/e_core
+          PYTHONUTF8: "1"
+        run: uv run python scripts/materialize.py
+      - name: Unit tests + coverage gate
+        run: uv run pytest -m "not slow" --cov --cov-report=term

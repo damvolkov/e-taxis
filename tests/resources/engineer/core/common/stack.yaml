@@ -1,0 +1,11 @@
+# the common stack: what both facets need
+parts:
+  alpha:
+    kind: tool
+    what: a fixture part with fields e-taxis ignores
+    pin: v1.2.3
+    used: [opencode, claudecode]
+  epsilon:
+    kind: tool
+    pin: 9.9
+    used: [claudecode]

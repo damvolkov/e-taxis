@@ -1,0 +1,12 @@
+id: svc
+kind: service
+targets: [system]
+scope: service
+recipes:
+  any:
+    primitive: compose
+    with: {path: ~/.config/compose/svc}
+probe: test -e ~/.svc
+verify: "true"
+uninstall: {primitive: compose, with: {path: ~/.config/compose/svc}}
+status: {profile: {house: floor}, checked: 2026-10-15, evidence: fixture}

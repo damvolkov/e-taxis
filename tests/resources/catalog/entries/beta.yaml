@@ -1,0 +1,13 @@
+id: beta
+kind: mcp
+targets: [claudecode]
+scope: user
+requires: [alpha]
+recipes:
+  claudecode:
+    primitive: claude-mcp
+    with: {name: beta}
+probe: "false"
+verify: "false"
+owns: [mcpServers.beta]
+status: {profile: {house: floor}, checked: 2026-10-14, evidence: fixture}

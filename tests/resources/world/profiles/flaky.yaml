@@ -1,0 +1,3 @@
+id: flaky
+description: Fixture world — a part that installs and then fails its verify.
+parts: {flaky: floor}

@@ -1,0 +1,3 @@
+id: minimal
+description: "Claude Code and its memory floor, nothing else."
+parts: {claude-code: floor, memory-guidance: floor}

@@ -1,0 +1,17 @@
+id: landrun
+kind: cli
+targets: [system]
+scope: machine
+requires: []
+recipes:
+  any:
+    primitive: binary
+    with: {url: "https://github.com/Zouuup/landrun/releases/download/v0.1.17/landrun-linux-amd64", sha256: 6ada66a06669e8994e174a7271af2db636308e55a0d6ec896cc7d326b46727f6, path: ~/.local/bin/landrun}
+probe: landrun --version
+verify: landrun --version
+uninstall: {primitive: binary, with: {path: ~/.local/bin/landrun}}
+footprint: [~/.local/bin/landrun]
+owns: []
+gate: {licence: null, secrets: [], confirm: false}
+flags: {pin: "v0.1.17"}
+status: {profile: {house: floor, company: per-project, minimal: out}, checked: 2026-10-15, evidence: "e-engineer Makefile fence"}

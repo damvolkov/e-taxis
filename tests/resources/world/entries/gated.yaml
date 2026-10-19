@@ -1,0 +1,14 @@
+id: gated
+kind: mcp
+targets: [claudecode]
+scope: user
+requires: [tool]
+recipes:
+  claudecode:
+    primitive: claude-mcp
+    with: {name: gated, transport: http, url: "https://gated.invalid/mcp"}
+probe: test -e ~/.gated
+verify: "true"
+uninstall: {primitive: claude-mcp, with: {name: gated}}
+gate: {licence: Elastic-2.0, secrets: [GATED_TOKEN], confirm: true}
+status: {profile: {house: floor}, checked: 2026-10-15, evidence: fixture}

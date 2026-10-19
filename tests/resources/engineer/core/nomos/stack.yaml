@@ -1,0 +1,4 @@
+parts:
+  nomad:
+    kind: service
+    used: [openhuman]

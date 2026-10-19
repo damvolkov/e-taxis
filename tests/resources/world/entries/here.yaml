@@ -1,0 +1,11 @@
+id: here
+kind: cli
+targets: [system]
+scope: machine
+recipes:
+  any:
+    primitive: npm
+    with: {package: "here@1"}
+probe: echo here 1
+verify: "true"
+status: {profile: {house: floor}, checked: 2026-10-15, evidence: fixture}

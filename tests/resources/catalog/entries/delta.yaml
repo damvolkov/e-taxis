@@ -1,0 +1,12 @@
+id: delta
+kind: cli
+targets: [claudecode]
+scope: machine
+recipes:
+  any:
+    primitive: binary
+    with: {url: "https://delta.invalid/delta", path: ~/.local/bin/delta}
+probe: "false"
+verify: "true"
+gate: {licence: Elastic-2.0, secrets: [], confirm: false}
+status: {profile: {house: floor}, checked: 2026-10-15, evidence: fixture}

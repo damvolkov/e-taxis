@@ -1,0 +1,13 @@
+id: guide
+kind: file
+targets: [claudecode]
+scope: user
+requires: [env]
+recipes:
+  claudecode:
+    primitive: file
+    with: {file: ~/.claude/CLAUDE.md, block: guide, text: "Use the tool."}
+probe: grep -qs e-taxis:guide "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/CLAUDE.md"
+verify: grep -qs e-taxis:guide "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/CLAUDE.md"
+uninstall: {primitive: file, with: {file: ~/.claude/CLAUDE.md, block: guide}}
+status: {profile: {house: floor}, checked: 2026-10-15, evidence: fixture}

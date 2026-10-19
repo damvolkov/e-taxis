@@ -1,0 +1,12 @@
+id: tool
+kind: cli
+targets: [system]
+scope: machine
+recipes:
+  any:
+    primitive: uv-tool
+    with: {source: "tool==1.0", name: tool}
+probe: test -e ~/.tool
+verify: "true"
+uninstall: {primitive: uv-tool, with: {name: tool}}
+status: {profile: {house: floor}, checked: 2026-10-15, evidence: fixture}
