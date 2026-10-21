@@ -9,8 +9,9 @@ root_module = "forbid"
 
 ##### LAYERS #####
 # Ordered high → low: a layer may import lower layers, importing upward fails.
-# `cli`: the root and the commands it mounts (driving adapters) · `runtime`: the run's lifecycle and the
-# port→adapter binding · `services`: the use cases, which see ports only · then the shared core, and data.
+# The harness branch owns the command tree (cli), its composition root (runtime), the use cases (services)
+# and its contracts (models). The materialized sections and the shared floor — `adapters` (e-core files beside
+# the project's own), `core`, `ops`, `processors` — sit below and serve every branch, harness and project alike.
 layers = ["cli", "runtime", "services", "processors", "adapters", "core", "ops", "models"]
 
 [rules]
@@ -23,17 +24,17 @@ layer = "cli"
 depends_on = []
 
 [[modules]]
-path = "e_taxis.commands"
+path = "e_taxis.harness.commands"
 layer = "cli"
 depends_on = []
 
 [[modules]]
-path = "e_taxis.runtime"
+path = "e_taxis.harness.runtime"
 layer = "runtime"
 depends_on = []
 
 [[modules]]
-path = "e_taxis.services"
+path = "e_taxis.harness.services"
 layer = "services"
 depends_on = []
 
@@ -43,26 +44,26 @@ layer = "adapters"
 depends_on = []
 
 [[modules]]
-path = "processors"
+path = "e_taxis.project"
+layer = "services"
+depends_on = []
+
+[[modules]]
+path = "e_taxis.processors"
 layer = "processors"
 depends_on = []
 
 [[modules]]
-path = "adapters"
-layer = "adapters"
-depends_on = []
-
-[[modules]]
-path = "core"
+path = "e_taxis.core"
 layer = "core"
 depends_on = []
 
 [[modules]]
-path = "ops"
+path = "e_taxis.ops"
 layer = "ops"
 depends_on = []
 
 [[modules]]
-path = "e_taxis.models"
+path = "e_taxis.harness.models"
 layer = "models"
 depends_on = []

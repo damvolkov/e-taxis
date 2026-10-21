@@ -1,34 +1,48 @@
-"""scripts/materialize: the hardened sed — copy `systems/core` sections into `src/` with a structural rewrite.
+"""scripts/materialize: the hardened sed — copy `systems/core` sections into the project package with a structural rewrite.
 
 libcst parses each source file as real 3.14 syntax (PEP 695 included, verified against the whole
-`e_core` tree) and rewrites *only* the import nodes `e_core.{core,ops,adapters,processors} → {core,ops,adapters,processors}`;
-every result is re-parsed with `ast.parse` and scanned for leftovers before it is written. `make core`
-materializes into `src/`; `make core-check` materializes into a throwaway tree under `/tmp` and diffs,
-so both modes run the exact same generation path and the drift-check cannot lie about a second one.
+`e_core` tree) and rewrites *only* the import nodes: `e_core.<section> → e_taxis.<section>`; every
+result is re-parsed with `ast.parse` and scanned for leftovers before it is written. Sections land
+under their upstream names — `src/e_taxis/{core,ops,adapters,processors}` — because materialized code
+is part of the project and the wheel ships one root, never a global `core` or `adapters`. `ops` and
+`adapters` are shared homes — the project keeps code beside generated files there — so the write is
+never destructive: each run lands what the sections expect, prunes only what its own manifest lists
+and the new run does not, and records the rest in `src/e_taxis/.materialized.json` — the generator's
+memory, because untracked project code is never its to touch. `make core` materializes into `src/`;
+`make core-check` materializes into a throwaway tree under `/tmp` and diffs, so both modes run the
+exact same generation path and the drift-check cannot lie about a second one.
 """
 
 import argparse
 import ast
 import filecmp
+import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Final
 
 import libcst as cst
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
 ROOT: Path = Path(__file__).resolve().parents[1]
+PACKAGE: Final[str] = "e_taxis"
 ### a standalone repo: the core lives in the e-templates checkout beside it; E_CORE_SRC points elsewhere.
 CORE_SRC: Path = Path(os.environ.get("E_CORE_SRC", ROOT.parent / "e-templates" / "systems" / "core" / "src" / "e_core"))
 SECTIONS: tuple[str, ...] = ("adapters", "core", "ops", "processors")
+DEST: Final[Mapping[str, str]] = MappingProxyType({section: f"{PACKAGE}/{section}" for section in SECTIONS})
 ### the TUI header belongs to the boilerplate wizard, not to a running service: same topology as the old sed.
 ### the compose tool belongs to stack management (management materializes the whole ops area), not to a running service.
 EXCLUDES: frozenset[str] = frozenset({"ops/tui.py", "ops/snap.py", "ops/compose.py"})
+### `ops` and `adapters` are shared homes: only the manifest owns there — committed code is the project's.
+### `core` and `processors` are dedicated: anything tracked inside is a violation the gate must flag.
+SHARED: Final[frozenset[str]] = frozenset({"ops", "adapters"})
 
 
 ##### REWRITE #####
@@ -55,25 +69,25 @@ def _dotted(parts: Sequence[str]) -> cst.BaseExpression:
             return cst.Attribute(value=_dotted(init), attr=cst.Name(last))
 
 
-def _strip_e_core(name: cst.BaseExpression) -> cst.BaseExpression:
-    """`e_core.core.x` → `core.x`; anything outside a materialized section is returned untouched."""
+def _reroot_e_core(name: cst.BaseExpression) -> cst.BaseExpression:
+    """`e_core.core.x` → `e_taxis.core.x`; anything outside a materialized section untouched."""
     parts = _parts(name)
     hit = parts is not None and parts[0] == "e_core" and len(parts) > 1 and parts[1] in SECTIONS
-    return _dotted(parts[1:]) if hit else name
+    return _dotted([*DEST[parts[1]].split("/"), *parts[2:]]) if hit else name
 
 
 def _strip_alias(alias: object) -> object:
-    """One `import a.b [as c]` alias, stripped whatever its wrapper shape; anything else passes through."""
+    """One `import a.b [as c]` alias, rerooted whatever its wrapper shape; anything else passes through."""
     match alias:
         case cst.ImportAlias(name=name):
-            return alias.with_changes(name=_strip_e_core(name))
+            return alias.with_changes(name=_reroot_e_core(name))
         case cst.Element(node=cst.ImportAlias() as inner):
             return alias.with_changes(node=_strip_alias(inner))
         case _:
             return alias
 
 
-class _StripECore(cst.CSTTransformer):
+class _RerootECore(cst.CSTTransformer):
     """Import statements only: docstrings and comments keep naming the source of truth verbatim."""
 
     def leave_Import(  # noqa: N802 — libcst dispatches visitor methods by node class name
@@ -92,7 +106,7 @@ class _StripECore(cst.CSTTransformer):
             case None:
                 return updated_node
             case module:
-                return updated_node.with_changes(module=_strip_e_core(module))
+                return updated_node.with_changes(module=_reroot_e_core(module))
 
 
 ##### VALIDATION #####
@@ -106,7 +120,7 @@ def _is_e_core_import(node: ast.AST) -> bool:
 
 def rewrite_source(text: str, path: str) -> str:
     """One file rewritten structurally, then hard-validated: parseable by `ast`, free of `e_core` imports."""
-    out = cst.parse_module(text).visit(_StripECore()).code
+    out = cst.parse_module(text).visit(_RerootECore()).code
     match [node for node in ast.walk(ast.parse(out, filename=path)) if _is_e_core_import(node)]:
         case []:
             return out
@@ -116,6 +130,9 @@ def rewrite_source(text: str, path: str) -> str:
 
 
 ##### MATERIALIZATION #####
+MANIFEST: Final[Path] = Path("src/e_taxis/.materialized.json")
+
+
 def _sources(section: str) -> list[Path]:
     """Every .py of one section, in stable order, minus the excluded files."""
     return [
@@ -125,25 +142,70 @@ def _sources(section: str) -> list[Path]:
     ]
 
 
-def materialize(dest_root: Path) -> None:
-    """Write the three rewritten sections under `dest_root/src`, replacing any previous copy."""
-    for section in SECTIONS:
-        shutil.rmtree(dest_root / "src" / section, ignore_errors=True)
-    for section in SECTIONS:
-        for path in _sources(section):
-            rel = path.relative_to(CORE_SRC)
-            target = dest_root / "src" / rel
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(rewrite_source(path.read_text(), str(rel)))
+def _target(section: str, rel: Path) -> Path:
+    """Where one upstream file lands under `src`: its section's destination root, same tail."""
+    return Path(DEST[section]) / rel.relative_to(section)
 
 
-def _materialized(dest_root: Path) -> set[Path]:
-    """The .py files currently materialized under `dest_root/src`, relative to `src`."""
+def _expected() -> dict[Path, str]:
+    """Every file the sections must hold, keyed by its path under `src`, rewritten and ready to write."""
     return {
-        path.relative_to(dest_root / "src")
+        _target(section, path.relative_to(CORE_SRC)): rewrite_source(path.read_text(), str(path.relative_to(CORE_SRC)))
         for section in SECTIONS
-        for path in (dest_root / "src" / section).rglob("*.py")
+        for path in _sources(section)
     }
+
+
+def _manifest(dest_root: Path) -> frozenset[Path]:
+    """What the last run materialized, relative to `src`. No manifest is a tree that was never generated:
+    the previous set is empty, and this run only writes and remembers. The manifest is what keeps a
+    project file beside generated code safe between `make core` runs: git knows only what is committed."""
+    listing = dest_root / MANIFEST
+    return frozenset(map(Path, json.loads(listing.read_text()) if listing.is_file() else []))
+
+
+def _recorded(dest_root: Path) -> frozenset[Path]:
+    """What git tracks under `src`, relative to it: the drift view's second owner — a stray committed
+    inside a dedicated section is a violation the gate flags, and outside a repository it finds nothing."""
+    found = subprocess.run(
+        ("git", "-C", str(dest_root), "ls-files", "--", "src"), capture_output=True, text=True, check=False
+    )
+    return frozenset(Path(line).relative_to("src") for line in found.stdout.splitlines())
+
+
+def _under(dest_root: Path, rel: Path) -> Path:
+    return dest_root / "src" / rel
+
+
+def _materialized(dest_root: Path) -> frozenset[Path]:
+    """The files under the section roots that the generator owns: what the manifest lists, plus what git
+    tracks in the dedicated sections; in a shared folder a tracked file is the project's, never drift."""
+    strays = {rel for rel in _recorded(dest_root) if len(rel.parts) > 1 and rel.parts[1] not in SHARED}
+    owned = _manifest(dest_root) | strays
+    return frozenset(
+        rel
+        for rel in owned
+        if len(rel.parts) > 1
+        and rel.parts[0] == PACKAGE
+        and rel.parts[1] in SECTIONS
+        and _under(dest_root, rel).is_file()
+    )
+
+
+def materialize(dest_root: Path) -> None:
+    """Land the rerooted sections under `dest_root/src`, prune what the last run wrote and this one does
+    not, and record what remains — the manifest is the generator's memory between runs."""
+    previous = _manifest(dest_root)
+    expected = _expected()
+    for rel, text in expected.items():
+        target = _under(dest_root, rel)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text)
+    for stale in previous - set(expected):
+        _under(dest_root, stale).unlink(missing_ok=True)
+    listing = dest_root / MANIFEST
+    listing.parent.mkdir(parents=True, exist_ok=True)
+    listing.write_text(json.dumps(sorted(map(str, expected)), indent=1))
 
 
 def check(dest_root: Path) -> int:
@@ -151,7 +213,7 @@ def check(dest_root: Path) -> int:
     tmp = Path(tempfile.mkdtemp(prefix="e-taxis-materialize-"))
     try:
         materialize(tmp)
-        expected = {path.relative_to(CORE_SRC) for section in SECTIONS for path in _sources(section)}
+        expected = set(_expected())
         actual = _materialized(dest_root)
         issues = [
             *(f"{rel}: missing" for rel in sorted(expected - actual)),
@@ -164,7 +226,7 @@ def check(dest_root: Path) -> int:
         ]
         match issues:
             case []:
-                print("✓ materialized core/ops/adapters in sync")
+                print("✓ materialized e_taxis.{core,ops,adapters,processors} in sync")
                 return 0
             case _:
                 print("✗ drift from systems/core (run make core):")
@@ -185,7 +247,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return check(ROOT)
         case _:
             materialize(ROOT)
-            print("✓ materialized adapters/, core/, ops/ from systems/core")
+            print("✓ materialized systems/core into e_taxis.{core,ops,adapters,processors}")
             return 0
 
 

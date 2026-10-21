@@ -2,14 +2,17 @@
 PROJECT  ?= e-taxis
 PACKAGE  ?= src/e_taxis
 MODULE   ?= e_taxis
-TEMPLATES ?= ../e-templates
-### The pinned commit of e-templates (.e-templates-ref, the one CI checks out), never its working tree:
-### another session's half-done work stays out, and a template change lands here only by bumping the pin.
+E_TEMPLATES_URL ?= https://github.com/damvolkov/e-templates.git
+### The pinned ref of e-templates (.e-templates-ref: a tag, a branch or a commit), read off its public remote
+### by `taxis repo` — deterministic git plumbing, never a working tree: a change lands here only by bumping the
+### pin. An offline box points the url at the checkout beside it: `make core E_TEMPLATES_URL=file://../e-templates`.
 TEMPLATES_REF ?= $(shell cat .e-templates-ref)
 CORE_HEAD ?= $(HOME)/.cache/e-taxis/e-templates-head
 CORE_SRC ?= $(CORE_HEAD)/systems/core/src/e_core
 export E_CORE_SRC := $(CORE_SRC)
 TESTARGS  =
+LOGO_ARGS =
+NAMES     =
 ARGS      = $(filter-out $@,$(MAKECMDGOALS))
 
 RESET   := \033[0m
@@ -25,10 +28,10 @@ MAKEFLAGS += --no-print-directory
 export PYTHONPATH := $(CURDIR)/src
 
 ##### TARGETS #####
-.PHONY: core-src help install sync lock core common core-check common-check lint type arch validate harden hooks test cov check ci run release ci-vars clean
+.PHONY: core-src help install sync lock core common core-check common-check lint type arch validate harden hooks test cov check ci run logo release ci-vars clean
 
 help:
-	@printf "$(BOLD)$(CYAN)$(PROJECT)$(RESET) $(GRAY)· uv · cyclopts · ruff · ty · tach · pytest — core/ops/adapters materialized from $(CORE_SRC)$(RESET)\n\n"
+	@printf "$(BOLD)$(CYAN)$(PROJECT)$(RESET) $(GRAY)· uv · cyclopts · ruff · ty · tach · pytest — systems/core materialized into e_taxis from $(CORE_SRC)$(RESET)\n\n"
 	@awk 'BEGIN{FS=":.*##"} /^[a-z][a-zA-Z0-9_-]*:.*##/{printf "  $(GREEN)%-12s$(RESET) $(GRAY)%s$(RESET)\n",$$1,$$2}' $(MAKEFILE_LIST)
 
 # — env —
@@ -46,13 +49,14 @@ lock: core ## refresh uv lockfile (against the current materialized core)
 # — common —
 COMMON_SRC ?= $(CORE_HEAD)/systems/core/common
 
-core-src: ## export e-templates' systems/core at the pinned ref (.e-templates-ref) into the cache
-	@rm -rf $(CORE_HEAD) && mkdir -p $(CORE_HEAD) && git -C $(TEMPLATES) archive $(TEMPLATES_REF) systems/core | tar -x -C $(CORE_HEAD)
+core-src: ## resolve the pinned ref on e-templates' remote and fetch systems/core into the cache via `taxis repo`
+	@rm -rf $(CORE_HEAD) && mkdir -p $(CORE_HEAD)
+	@uv run taxis repo extract $(E_TEMPLATES_URL) $(TEMPLATES_REF) systems/core --dest $(CORE_HEAD)
 
-core: core-src ## materialize shared core/ + ops/ + adapters/ from systems/core (source of truth) via a structural rewrite
+core: core-src ## materialize systems/core into e_taxis.{core,ops,adapters,processors} via a structural rewrite
 	@uv run python scripts/materialize.py
 
-core-check: core-src ## fail if the materialized core/ops/adapters drifted from systems/core
+core-check: core-src ## fail if the materialized sections drifted from systems/core
 	@uv run python scripts/materialize.py --check
 
 ### prek.toml is not committed in e-templates yet: copied and checked only when its HEAD carries it.
@@ -73,8 +77,8 @@ common-check: core-src ## fail if the materialized shared files drifted from sys
 
 # — gates —
 lint: ## ruff check + format
-	@uv run ruff check --fix $(PACKAGE) src/core src/ops src/adapters src/processors scripts tests
-	@uv run ruff format $(PACKAGE) src/core src/ops src/adapters src/processors scripts tests
+	@uv run ruff check --fix $(PACKAGE) scripts tests
+	@uv run ruff format $(PACKAGE) scripts tests
 
 type: ## ty type check
 	@uv run ty check
@@ -116,9 +120,15 @@ ci-vars: ## list optional CI/CD gates (all inert by default) and their defaults
 run: ## run the cli, `taxis` [args: forwarded, e.g. make run project list]
 	@uv run taxis $(ARGS)
 
+logo: ## deterministic wordmarks into assets/ [names: make logo NAMES="taxis templates" — knobs: LOGO_ARGS="--force"; bare names as goals only while they spell no target]
+	@uv run taxis logo $(ARGS) $(NAMES) $(LOGO_ARGS)
+
 clean: ## remove caches + build artifacts + materialized core
 	@find . -type d \( -name __pycache__ -o -name .pytest_cache -o -name .ruff_cache \) -exec rm -rf {} + 2>/dev/null || true
-	@rm -rf dist build *.egg-info .coverage .coverage.* .ty_cache src/core src/ops src/adapters src/processors prek.toml .gitattributes .python-version
+	@rm -rf dist build *.egg-info .coverage .coverage.* .ty_cache prek.toml .gitattributes .python-version src/e_taxis/.materialized.json
+	@rm -rf src/e_taxis/core src/e_taxis/processors
+	@rm -f src/e_taxis/ops/file.py src/e_taxis/ops/image.py src/e_taxis/ops/registry.py src/e_taxis/ops/wrappers.py
+	@rm -f src/e_taxis/adapters/anytomd.py src/e_taxis/adapters/base.py src/e_taxis/adapters/docling.py src/e_taxis/adapters/http.py src/e_taxis/adapters/otel.py src/e_taxis/adapters/ports.py src/e_taxis/adapters/redis.py src/e_taxis/adapters/sqlite.py
 	@printf "$(GREEN)✓ clean$(RESET)\n"
 
 %:
