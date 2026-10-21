@@ -2,14 +2,14 @@
 
 from typing import TYPE_CHECKING
 
-from e_taxis.models.journal import JournalCommand
-from e_taxis.models.primitive import PrimitiveStep
-from e_taxis.models.recipe import RecipeUv, RecipeUvName
+from e_taxis.harness.models.journal import JournalCommand
+from e_taxis.harness.models.primitive import PrimitiveStep
+from e_taxis.harness.models.recipe import RecipeUv, RecipeUvName
 
 if TYPE_CHECKING:
-    from e_taxis.adapters.ports import RunnerPort
-    from e_taxis.models.catalog import CatalogEntry, CatalogRecipe
-    from e_taxis.models.primitive import PrimitiveContext
+    from e_taxis.harness.models.catalog import CatalogEntry, CatalogRecipe
+    from e_taxis.harness.models.ports import RunnerPort
+    from e_taxis.harness.models.primitive import PrimitiveContext
 
 
 ##### TYPES #####

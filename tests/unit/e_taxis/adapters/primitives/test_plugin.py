@@ -2,9 +2,9 @@
 
 import pytest
 
-from e_taxis.adapters.ports import PrimitivePort
-from e_taxis.models.error import RunnerError
-from e_taxis.models.journal import JournalCommand
+from e_taxis.harness.models.error import RunnerError
+from e_taxis.harness.models.journal import JournalCommand
+from e_taxis.harness.models.ports import PrimitivePort
 
 ADD = ("claude", "plugin", "marketplace", "add", "owner/repo")
 DROP = ("claude", "plugin", "marketplace", "remove", "shop")

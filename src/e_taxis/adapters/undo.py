@@ -8,13 +8,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from e_taxis.adapters.disk import remove_dirs, remove_file, write_file
-from e_taxis.models.journal import JournalBlock, JournalFile, JournalKey
+from e_taxis.harness.models.journal import JournalBlock, JournalFile, JournalKey
 
 if TYPE_CHECKING:
-    from e_taxis.adapters.ports import RunnerPort
     from e_taxis.adapters.primitives.file import FilePrimitive
     from e_taxis.adapters.primitives.settings import SettingsPrimitive
-    from e_taxis.models.journal import JournalEffect
+    from e_taxis.harness.models.journal import JournalEffect
+    from e_taxis.harness.models.ports import RunnerPort
 
 
 ##### TYPES #####

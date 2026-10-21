@@ -9,12 +9,12 @@ import pytest
 
 from e_taxis.adapters.core import GitCore
 from e_taxis.adapters.harness.claudecode import ClaudecodeHarness
-from e_taxis.models.catalog import Target
-from e_taxis.models.core import Core, CoreMain, CoreModel
-from e_taxis.models.error import CoreError
+from e_taxis.harness.models.catalog import Target
+from e_taxis.harness.models.core import Core, CoreMain, CoreModel
+from e_taxis.harness.models.error import CoreError
 
 if TYPE_CHECKING:
-    from e_taxis.models.brain import BrainRender
+    from e_taxis.harness.models.brain import BrainRender
 
 TREE = Path("/tree")
 

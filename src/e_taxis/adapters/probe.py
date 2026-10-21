@@ -9,7 +9,7 @@ import signal
 from asyncio.subprocess import DEVNULL, PIPE, STDOUT, Process
 from contextlib import suppress
 
-from e_taxis.models.plan import Probe
+from e_taxis.harness.models.plan import Probe
 
 ##### DEFAULTS #####
 LIMIT: int = 8

@@ -1,4 +1,4 @@
-"""adapters.core: an e-engineer core read into the content contract — from a git ref, or from the working tree.
+"""adapters.core: an e-nous core read into the content contract — from a git ref, or from the working tree.
 
 By default the core is the committed HEAD: `git archive` exports `core/` into a temporary directory, so
 whatever another hand left uncommitted in the checkout never reaches a harness. `ref=None` reads the
@@ -17,7 +17,7 @@ import anyio
 import eserde
 import msgspec
 
-from e_taxis.models.core import (
+from e_taxis.harness.models.core import (
     BASE,
     CARRIED,
     CONFIG,
@@ -34,12 +34,12 @@ from e_taxis.models.core import (
     CorePersona,
     CoreSkill,
 )
-from e_taxis.models.error import CoreError
+from e_taxis.harness.models.error import CoreError
 
 
 ##### TYPES #####
 class GitCore:
-    """Satisfies CorePort over an e-engineer checkout."""
+    """Satisfies CorePort over an e-nous checkout."""
 
     __slots__ = ("_ref", "_root")
 

@@ -1,0 +1,17 @@
+id: playwright-server
+kind: service
+targets: [system]
+scope: service
+requires: []
+recipes:
+  any:
+    primitive: compose
+    with: {path: ~/.config/compose/playwright, port: 45810}
+probe: docker inspect -f '{{.Config.Image}}' playwright
+verify: docker inspect -f '{{.State.Running}}' playwright | grep -q true
+uninstall: {primitive: compose, with: {path: ~/.config/compose/playwright, down: true}}
+footprint: [~/.config/compose/playwright, ~/.config/compose/data/playwright]
+owns: []
+gate: {licence: null, secrets: [], confirm: false}
+flags: {}
+status: {profile: {house: floor, company: out, minimal: out}, checked: 2026-10-15, evidence: "e-nous core/tekton/stack.yaml"}

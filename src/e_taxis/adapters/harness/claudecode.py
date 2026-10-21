@@ -10,7 +10,7 @@
     config/mcp             → user-scope registrations (`claude mcp add-json`); config/mcp/* → mcp/*
 
 Pure: a core and the tree it lands in, in; a render out. `{out}` in the core binds to that tree. Frontmatter is
-YAML as e-serde writes it, so a render is byte for byte what the e-engineer transpiler wrote before it."""
+YAML as e-serde writes it, so a render is byte for byte what the e-nous transpiler wrote before it."""
 
 import re
 import shlex
@@ -20,15 +20,15 @@ from typing import TYPE_CHECKING, Any, Final
 
 import eserde
 
-from e_taxis.models.brain import BrainFile, BrainKey, BrainRender, BrainServer
-from e_taxis.models.catalog import Target
-from e_taxis.models.error import CoreError
+from e_taxis.harness.models.brain import BrainFile, BrainKey, BrainRender, BrainServer
+from e_taxis.harness.models.catalog import Target
+from e_taxis.harness.models.error import CoreError
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
     from pathlib import Path
 
-    from e_taxis.models.core import Core, CoreAgent, CoreCommand, CoreHook, CoreServer, CoreSkill
+    from e_taxis.harness.models.core import Core, CoreAgent, CoreCommand, CoreHook, CoreServer, CoreSkill
 
 ##### DEFAULTS #####
 SCHEMA: str = "https://json.schemastore.org/claude-code-settings.json"

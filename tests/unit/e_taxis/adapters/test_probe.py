@@ -2,9 +2,9 @@
 
 import pytest
 
-from e_taxis.adapters.ports import ProbePort
 from e_taxis.adapters.probe import ShellProbe
-from e_taxis.models.plan import Probe
+from e_taxis.harness.models.plan import Probe
+from e_taxis.harness.models.ports import ProbePort
 
 
 def test_probe_satisfies_the_port() -> None:

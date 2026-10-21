@@ -1,0 +1,20 @@
+id: playwright
+kind: mcp
+targets: [claudecode, opencode]
+scope: user
+requires: [playwright-server]
+recipes:
+  claudecode:
+    primitive: claude-mcp
+    with: {name: playwright, command: npx, args: ["-y", "@playwright/mcp@0.0.56"], env: {}}
+  opencode:
+    primitive: settings
+    with: {file: ~/.config/opencode/opencode.json, key: "mcp.playwright", value: {type: local, command: ["npx", "-y", "@playwright/mcp@0.0.56"], environment: {}}}
+probe: claude mcp get playwright 2>/dev/null | grep -oE '@playwright/mcp@[0-9.]+' | head -1 | grep .
+verify: claude mcp get playwright
+uninstall: {primitive: claude-mcp, with: {name: playwright, remove: true}}
+footprint: [~/.claude.json#mcpServers.playwright, ~/.config/opencode/opencode.json#mcp.playwright]
+owns: [mcp.playwright]
+gate: {licence: null, secrets: [], confirm: false}
+flags: {}
+status: {profile: {house: floor, company: out, minimal: out}, checked: 2026-10-15, evidence: "e-nous core/tekton/config/mcp.yaml"}

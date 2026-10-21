@@ -1,0 +1,17 @@
+id: opencode
+kind: harness
+targets: [opencode]
+scope: machine
+requires: []
+recipes:
+  opencode:
+    primitive: npm
+    with: {package: opencode-ai, bin: opencode}
+probe: opencode --version
+verify: opencode --version
+uninstall: {primitive: npm, with: {package: opencode-ai}}
+footprint: [~/.config/opencode, ~/.local/share/opencode]
+owns: []
+gate: {licence: null, secrets: [], confirm: false}
+flags: {}
+status: {profile: {house: floor, company: out, minimal: out}, checked: 2026-10-15, evidence: "e-nous core/tekton/stack.yaml"}

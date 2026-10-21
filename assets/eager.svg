@@ -1,0 +1,9 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="eager">
+  <rect width="1024" height="1024" fill="#060c15"/>
+  <g fill="#166b7e">
+    <rect x="384" y="257" width="49"  height="436"/>
+    <rect x="384" y="257" width="255" height="45"/>
+    <rect x="384" y="429" width="219" height="45"/>
+    <rect x="384" y="648" width="255" height="45"/>
+  </g>
+</svg>

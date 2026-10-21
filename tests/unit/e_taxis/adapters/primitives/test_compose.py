@@ -1,9 +1,9 @@
 """tests/unit/e_taxis/adapters/primitives/compose: not in P2 — a typed answer, nothing touched."""
 
-from e_taxis.adapters.ports import PrimitivePort
 from e_taxis.adapters.primitives.compose import ComposePrimitive
-from e_taxis.models.catalog import Primitive
-from e_taxis.models.primitive import NotSupportedYet
+from e_taxis.harness.models.catalog import Primitive
+from e_taxis.harness.models.ports import PrimitivePort
+from e_taxis.harness.models.primitive import NotSupportedYet
 
 
 async def test_compose_is_not_supported_yet(entry, ctx) -> None:

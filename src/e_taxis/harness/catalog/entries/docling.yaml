@@ -1,0 +1,20 @@
+id: docling
+kind: mcp
+targets: [claudecode, opencode]
+scope: user
+requires: [docling-serve]
+recipes:
+  claudecode:
+    primitive: claude-mcp
+    with: {name: docling, command: uvx, args: ["--from", "docling-mcp", "docling-mcp-server", "--transport", "stdio"], env: {"DOCLING_MCP_CONVERSION_MODE": "remote", "DOCLING_MCP_SERVICE_URL": "http://localhost:45800"}}
+  opencode:
+    primitive: settings
+    with: {file: ~/.config/opencode/opencode.json, key: "mcp.docling", value: {type: local, command: ["uvx", "--from", "docling-mcp", "docling-mcp-server", "--transport", "stdio"], environment: {"DOCLING_MCP_CONVERSION_MODE": "remote", "DOCLING_MCP_SERVICE_URL": "http://localhost:45800"}}}
+probe: claude mcp get docling
+verify: claude mcp get docling
+uninstall: {primitive: claude-mcp, with: {name: docling, remove: true}}
+footprint: [~/.claude.json#mcpServers.docling, ~/.config/opencode/opencode.json#mcp.docling]
+owns: [mcp.docling]
+gate: {licence: null, secrets: [], confirm: false}
+flags: {}
+status: {profile: {house: floor, company: out, minimal: out}, checked: 2026-10-15, evidence: "e-nous core/tekton/config/mcp.yaml"}

@@ -1,0 +1,17 @@
+id: otel
+kind: service
+targets: [system]
+scope: service
+requires: [phoenix]
+recipes:
+  any:
+    primitive: compose
+    with: {path: ~/.config/compose/otel, image: "otel/opentelemetry-collector-contrib:0.162.0", ports: ["127.0.0.1:45910:4318", "127.0.0.1:45911:4317"]}
+probe: docker inspect -f '{{.Config.Image}}' otel
+verify: docker logs otel 2>&1 | grep -q 'Everything is ready'
+uninstall: {primitive: compose, with: {path: ~/.config/compose/otel, down: true}}
+footprint: [~/.config/compose/otel, ~/.config/compose/data/otel]
+owns: []
+gate: {licence: null, secrets: [], confirm: false}
+flags: {pin: "0.162.0"}
+status: {profile: {house: floor, company: floor, minimal: out}, checked: 2026-10-15, evidence: "e-nous docs/bench/observability.md"}

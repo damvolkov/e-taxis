@@ -1,0 +1,20 @@
+id: serena
+kind: mcp
+targets: [claudecode, opencode]
+scope: user
+requires: []
+recipes:
+  claudecode:
+    primitive: claude-mcp
+    with: {name: serena, command: uvx, args: ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "ide-assistant"]}
+  opencode:
+    primitive: settings
+    with: {file: ~/.config/opencode/opencode.json, key: "mcp.serena", value: {type: local, command: [uvx, --from, "git+https://github.com/oraios/serena", serena, start-mcp-server, --context, ide-assistant]}}
+probe: claude mcp get serena
+verify: claude mcp get serena
+uninstall: {primitive: claude-mcp, with: {name: serena, remove: true}}
+footprint: [~/.claude.json#mcpServers.serena, ~/.serena]
+owns: [mcp.serena]
+gate: {licence: "GPL-3.0-or-later — internal use; never bundled", secrets: [], confirm: false}
+flags: {floating: "uvx from git HEAD, unpinned", bench: "never called unguided (part 2)"}
+status: {profile: {house: floor, company: out, minimal: out}, checked: 2026-10-15, evidence: "e-nous docs/bench/tools.md"}

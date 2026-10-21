@@ -14,14 +14,14 @@ from e_taxis.adapters.primitives.plugin import PluginPrimitive
 from e_taxis.adapters.primitives.settings import SettingsPrimitive
 from e_taxis.adapters.primitives.uv import UvPrimitive
 from e_taxis.adapters.undo import EffectUndo
-from e_taxis.models.catalog import CatalogEntry, Target
-from e_taxis.models.primitive import PrimitiveContext
+from e_taxis.harness.models.catalog import CatalogEntry, Target
+from e_taxis.harness.models.primitive import PrimitiveContext
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
-    from e_taxis.models.journal import JournalEffect
+    from e_taxis.harness.models.journal import JournalEffect
 
 
 @pytest.fixture

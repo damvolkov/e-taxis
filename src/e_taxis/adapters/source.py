@@ -1,7 +1,7 @@
-"""adapters.source: where the wanted parts come from — a profile shipped with the catalog, or an e-engineer checkout.
+"""adapters.source: where the wanted parts come from — a profile shipped with the catalog, or an e-nous checkout.
 
 A profile wants every part it does not leave `out`, for any target: the resolver filters by target. An
-e-engineer checkout wants, per target, the parts whose `used` lists that backend, across
+e-nous checkout wants, per target, the parts whose `used` lists that backend, across
 `core/common/stack.yaml` and every `core/<facet>/stack.yaml`."""
 
 from typing import TYPE_CHECKING
@@ -10,11 +10,11 @@ import anyio
 import msgspec
 import yaml
 
-from e_taxis.models.catalog import Rollout, Target
-from e_taxis.models.error import CatalogError, SourceError
-from e_taxis.models.profile import Profile
-from e_taxis.models.stack import Stack
-from e_taxis.models.wanted import WantedPart
+from e_taxis.harness.models.catalog import Rollout, Target
+from e_taxis.harness.models.error import CatalogError, SourceError
+from e_taxis.harness.models.profile import Profile
+from e_taxis.harness.models.stack import Stack
+from e_taxis.harness.models.wanted import WantedPart
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -64,8 +64,8 @@ class ProfileSource:
         )
 
 
-class EngineerSource:
-    """Satisfies SourcePort with an e-engineer checkout's stack registry."""
+class NousSource:
+    """Satisfies SourcePort with an e-nous checkout's stack registry."""
 
     __slots__ = ("_root",)
 
@@ -78,7 +78,7 @@ class EngineerSource:
         """Common first, then each facet in name order: the order the registry reads in."""
         match await anyio.Path(self._root / COMMON).is_file():
             case False:
-                msg = f"not an e-engineer checkout: {self._root / COMMON} is missing"
+                msg = f"not an e-nous checkout: {self._root / COMMON} is missing"
                 raise SourceError(msg)
             case _:
                 facets = sorted(
@@ -92,7 +92,7 @@ class EngineerSource:
         try:
             return msgspec.convert(yaml.load(raw, Loader=yaml.CBaseLoader), Stack)  # noqa: S506 — BaseLoader builds no objects
         except msgspec.ValidationError as exc:
-            msg = f"e-engineer {relative}: {exc}"
+            msg = f"e-nous {relative}: {exc}"
             raise SourceError(msg) from exc
 
     ############################################################
@@ -102,7 +102,7 @@ class EngineerSource:
     async def wanted(self, target: Target) -> tuple[WantedPart, ...]:
         stacks = [(relative, await self._wanted_stack(relative)) for relative in await self._wanted_files()]
         return tuple(
-            WantedPart(id=part_id, source=f"engineer:{relative}", pin=part.pin or None)
+            WantedPart(id=part_id, source=f"nous:{relative}", pin=part.pin or None)
             for relative, stack in stacks
             for part_id, part in stack.parts.items()
             if target.value in part.used

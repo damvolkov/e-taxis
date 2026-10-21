@@ -1,0 +1,20 @@
+id: autolearn
+kind: plugin
+targets: [claudecode, opencode]
+scope: user
+requires: []
+recipes:
+  claudecode:
+    primitive: file
+    with: {note: "the hook script and its settings are rendered by the transpiler (core/tekton/config/hooks.yaml); e-taxis checks the reviewer it calls", reviewer: ~/.agents/skills/autolearn-reviewer}
+  opencode:
+    primitive: file
+    with: {note: "an OpenCode plugin file carried by the transpiler", core: ~/.config/opencode/plugins/autolearn-core.mjs}
+probe: test -f ~/.agents/skills/autolearn-reviewer/scripts/autolearn.py && echo present
+verify: uv run ~/.agents/skills/autolearn-reviewer/scripts/autolearn.py memory list
+uninstall: {primitive: file, with: {note: "remove through the transpiler (hooks.yaml), not here"}}
+footprint: [~/.autolearn, ~/.agents/skills/autolearn-reviewer, ~/.config/opencode/plugins/autolearn-core.mjs]
+owns: []
+gate: {licence: null, secrets: [], confirm: true}
+flags: {}
+status: {profile: {house: floor, company: out, minimal: out}, checked: 2026-10-15, evidence: "e-nous docs/bench/memory.md — incumbent, measured live next"}

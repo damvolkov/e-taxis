@@ -3,8 +3,8 @@
 import msgspec
 import pytest
 
-from e_taxis.adapters.ports import PrimitivePort
-from e_taxis.models.error import RecipeError
+from e_taxis.harness.models.error import RecipeError
+from e_taxis.harness.models.ports import PrimitivePort
 
 REMOVE = ("claude", "mcp", "remove", "srv")
 

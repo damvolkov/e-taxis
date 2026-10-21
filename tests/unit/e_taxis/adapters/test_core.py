@@ -1,4 +1,4 @@
-"""tests/unit/e_taxis/adapters/core: an e-engineer core read into the contract — from HEAD by git archive, or from the
+"""tests/unit/e_taxis/adapters/core: an e-nous core read into the contract — from HEAD by git archive, or from the
 working tree; bodies embedded, envelopes lifted, every broken input a CoreError."""
 
 import shutil
@@ -8,8 +8,8 @@ import anyio
 import pytest
 
 from e_taxis.adapters.core import GitCore
-from e_taxis.models.core import CoreHook, CoreServer
-from e_taxis.models.error import CoreError
+from e_taxis.harness.models.core import CoreHook, CoreServer
+from e_taxis.harness.models.error import CoreError
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -37,7 +37,7 @@ async def test_core_config_is_data_where_a_source_key_means_what_it_says(core_ro
 
 
 async def test_core_head_reads_the_commit_not_the_working_tree(core_repo: Path) -> None:
-    (core_repo / "core/engineer/persona/origin.md").write_text("uncommitted\n")
+    (core_repo / "core/tekton/persona/origin.md").write_text("uncommitted\n")
     core = await GitCore(core_repo).load()
     assert core.persona["origin"] == "\nDamien builds.\n\n"
 
@@ -49,7 +49,7 @@ async def test_core_unknown_ref_is_refused(core_repo: Path) -> None:
 
 async def test_core_slot_in_two_layers_is_refused(core_root: Path, tmp_path: Path) -> None:
     root = shutil.copytree(core_root, tmp_path / "twice")
-    persona = root / "core/engineer/persona.yaml"
+    persona = root / "core/tekton/persona.yaml"
     persona.write_text(persona.read_text() + "  name: Twice\n")
     with pytest.raises(CoreError, match="more than one layer: name"):
         await GitCore(root, None).load()
@@ -57,21 +57,21 @@ async def test_core_slot_in_two_layers_is_refused(core_root: Path, tmp_path: Pat
 
 async def test_core_manifest_off_contract_is_refused(core_root: Path, tmp_path: Path) -> None:
     root = shutil.copytree(core_root, tmp_path / "off")
-    (root / "core/engineer/agents/scout/agent.yaml").write_text("id: scout\n")
+    (root / "core/tekton/agents/scout/agent.yaml").write_text("id: scout\n")
     with pytest.raises(CoreError, match=r"agent\.yaml"):
         await GitCore(root, None).load()
 
 
 async def test_core_server_with_command_and_url_is_refused(core_root: Path, tmp_path: Path) -> None:
     root = shutil.copytree(core_root, tmp_path / "both")
-    (root / "core/engineer/config/mcp.yaml").write_text("servers:\n  x: {command: [a], url: 'https://b'}\n")
+    (root / "core/tekton/config/mcp.yaml").write_text("servers:\n  x: {command: [a], url: 'https://b'}\n")
     with pytest.raises(CoreError, match="exactly one"):
         await GitCore(root, None).load()
 
 
 async def test_core_missing_reference_is_refused(core_root: Path, tmp_path: Path) -> None:
     root = shutil.copytree(core_root, tmp_path / "noref")
-    (root / "core/engineer/skills/demo/references/a.md").unlink()
+    (root / "core/tekton/skills/demo/references/a.md").unlink()
     with pytest.raises(CoreError, match="reference it does not ship"):
         await GitCore(root, None).load()
 

@@ -20,26 +20,26 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-      - name: Read the e-templates pin
+      - name: Read the arkhetypo pin
         id: pin
         shell: bash
-        run: echo "ref=$(cat .e-templates-ref)" >> "$GITHUB_OUTPUT"
+        run: echo "ref=$(cat .arkhetypo-ref)" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
-          repository: damvolkov/e-templates
+          repository: damvolkov/e-arkhetypo
           ref: ${{ steps.pin.outputs.ref }}
-          path: .e-templates
+          path: .arkhetypo
           persist-credentials: false
       - name: Pin Python as the template does (make common)
         shell: bash
-        run: cp .e-templates/systems/core/common/python-version .python-version
+        run: cp .arkhetypo/projects/python/core/common/python-version .python-version
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
       - name: Sync env
         run: uv sync
-      - name: Materialize core/ops/adapters from the pinned e-templates
+      - name: Materialize core/ops/adapters from the pinned arkhetypo
         shell: bash
         env:
-          E_CORE_SRC: .e-templates/systems/core/src/e_core
+          E_CORE_SRC: .arkhetypo/projects/python/core/src/e_core
           PYTHONUTF8: "1"
         run: uv run python scripts/materialize.py
       - name: Static gates
@@ -64,26 +64,26 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-      - name: Read the e-templates pin
+      - name: Read the arkhetypo pin
         id: pin
         shell: bash
-        run: echo "ref=$(cat .e-templates-ref)" >> "$GITHUB_OUTPUT"
+        run: echo "ref=$(cat .arkhetypo-ref)" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
-          repository: damvolkov/e-templates
+          repository: damvolkov/e-arkhetypo
           ref: ${{ steps.pin.outputs.ref }}
-          path: .e-templates
+          path: .arkhetypo
           persist-credentials: false
       - name: Pin Python as the template does (make common)
         shell: bash
-        run: cp .e-templates/systems/core/common/python-version .python-version
+        run: cp .arkhetypo/projects/python/core/common/python-version .python-version
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
       - name: Sync env
         run: uv sync
-      - name: Materialize core/ops/adapters from the pinned e-templates
+      - name: Materialize core/ops/adapters from the pinned arkhetypo
         shell: bash
         env:
-          E_CORE_SRC: .e-templates/systems/core/src/e_core
+          E_CORE_SRC: .arkhetypo/projects/python/core/src/e_core
           PYTHONUTF8: "1"
         run: uv run python scripts/materialize.py
       - name: Unit tests + coverage gate

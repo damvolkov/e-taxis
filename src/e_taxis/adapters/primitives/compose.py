@@ -2,12 +2,12 @@
 
 from typing import TYPE_CHECKING
 
-from e_taxis.models.catalog import Primitive
-from e_taxis.models.primitive import NotSupportedYet
+from e_taxis.harness.models.catalog import Primitive
+from e_taxis.harness.models.primitive import NotSupportedYet
 
 if TYPE_CHECKING:
-    from e_taxis.models.catalog import CatalogEntry, CatalogRecipe
-    from e_taxis.models.primitive import PrimitiveContext
+    from e_taxis.harness.models.catalog import CatalogEntry, CatalogRecipe
+    from e_taxis.harness.models.primitive import PrimitiveContext
 
 ##### DEFAULTS #####
 LATER: NotSupportedYet = NotSupportedYet(primitive=Primitive.COMPOSE, detail="compose lands in P3")

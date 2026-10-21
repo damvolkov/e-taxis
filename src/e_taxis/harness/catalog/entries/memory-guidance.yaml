@@ -1,0 +1,20 @@
+id: memory-guidance
+kind: file
+targets: [claudecode]
+scope: user
+requires: []
+recipes:
+  claudecode:
+    primitive: file
+    with:
+      file: ~/.claude/CLAUDE.md
+      block: memory-guidance
+      text: "When the user states a decision and its reason, a project convention, or work left for later — or when you discover something surprising while working — record it in your auto memory before you finish, so the next session knows it."
+probe: grep -c 'e-taxis:memory-guidance' ~/.claude/CLAUDE.md
+verify: grep -q 'e-taxis:memory-guidance' ~/.claude/CLAUDE.md
+uninstall: {primitive: file, with: {file: ~/.claude/CLAUDE.md, block: memory-guidance, remove: true}}
+footprint: ["~/.claude/CLAUDE.md#e-taxis:memory-guidance"]
+owns: ["CLAUDE.md#memory-guidance"]
+gate: {licence: null, secrets: [], confirm: false}
+flags: {house: "the transpiler owns ~/.claude/CLAUDE.md in the house — the line belongs in core's persona there, not here"}
+status: {profile: {house: out, company: floor, minimal: floor}, checked: 2026-10-15, evidence: "e-nous docs/bench/memory.md — 11/12 recalled"}

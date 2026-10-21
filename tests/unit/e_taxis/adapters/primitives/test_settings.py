@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from e_taxis.adapters.ports import PrimitivePort
-from e_taxis.models.error import JsoncError, OwnsError, RecipeError, SettingsError
-from e_taxis.models.journal import JournalKey
+from e_taxis.harness.models.error import JsoncError, OwnsError, RecipeError, SettingsError
+from e_taxis.harness.models.journal import JournalKey
+from e_taxis.harness.models.ports import PrimitivePort
 
 if TYPE_CHECKING:
     from pathlib import Path

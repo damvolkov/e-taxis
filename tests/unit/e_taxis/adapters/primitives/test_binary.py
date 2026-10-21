@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from e_taxis.adapters.ports import PrimitivePort
-from e_taxis.models.error import DigestError, DownloadError, RecipeError, RunnerError
-from e_taxis.models.journal import JournalFile
-from e_taxis.models.primitive import PrimitiveStep
+from e_taxis.harness.models.error import DigestError, DownloadError, RecipeError, RunnerError
+from e_taxis.harness.models.journal import JournalFile
+from e_taxis.harness.models.ports import PrimitivePort
+from e_taxis.harness.models.primitive import PrimitiveStep
 
 if TYPE_CHECKING:
     from pathlib import Path

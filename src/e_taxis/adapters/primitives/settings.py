@@ -16,14 +16,14 @@ from typing import TYPE_CHECKING, Any, Final
 import msgspec
 
 from e_taxis.adapters.disk import read_file, remove_file, write_file
-from e_taxis.models.error import JsoncError, OwnsError, RecipeError, SettingsError
-from e_taxis.models.journal import JournalKey
-from e_taxis.models.primitive import PrimitiveStep
-from e_taxis.models.recipe import RecipeSettings
+from e_taxis.harness.models.error import JsoncError, OwnsError, RecipeError, SettingsError
+from e_taxis.harness.models.journal import JournalKey
+from e_taxis.harness.models.primitive import PrimitiveStep
+from e_taxis.harness.models.recipe import RecipeSettings
 
 if TYPE_CHECKING:
-    from e_taxis.models.catalog import CatalogEntry, CatalogRecipe
-    from e_taxis.models.primitive import PrimitiveContext
+    from e_taxis.harness.models.catalog import CatalogEntry, CatalogRecipe
+    from e_taxis.harness.models.primitive import PrimitiveContext
 
 ##### DEFAULTS #####
 MISSING: Final = object()

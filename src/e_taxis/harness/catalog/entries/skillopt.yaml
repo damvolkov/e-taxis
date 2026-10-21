@@ -1,0 +1,17 @@
+id: skillopt
+kind: cli
+targets: [system]
+scope: machine
+requires: []
+recipes:
+  any:
+    primitive: uv-tool
+    with: {source: "git+https://github.com/microsoft/SkillOpt@79124b37e9a6371e13b753f8bcd7adb1e493ade1", name: skillopt, bin: skillopt-train, ephemeral: "op drives it through uvx; nothing stays installed"}
+probe: uvx --from "git+https://github.com/microsoft/SkillOpt@79124b37e9a6371e13b753f8bcd7adb1e493ade1" skillopt-train --help >/dev/null 2>&1 && echo 79124b37e9a6371e13b753f8bcd7adb1e493ade1
+verify: uvx --from "git+https://github.com/microsoft/SkillOpt@79124b37e9a6371e13b753f8bcd7adb1e493ade1" skillopt-train --help
+uninstall: {primitive: uv-tool, with: {name: skillopt}}
+footprint: [~/.cache/uv]
+owns: []
+gate: {licence: null, secrets: [], confirm: false}
+flags: {pin: "79124b37e9a6371e13b753f8bcd7adb1e493ade1", role: "a proposer whose output is lessons, never the writer (bench part 3)"}
+status: {profile: {house: floor, company: per-project, minimal: out}, checked: 2026-10-15, evidence: "e-nous docs/bench/self-learning.md"}

@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from e_taxis.adapters.ports import PrimitivePort
-from e_taxis.models.journal import JournalBlock
+from e_taxis.harness.models.journal import JournalBlock
+from e_taxis.harness.models.ports import PrimitivePort
 
 if TYPE_CHECKING:
     from pathlib import Path

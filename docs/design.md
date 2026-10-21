@@ -1,18 +1,18 @@
 # e-taxis — design
 
 τάξις, *arrangement, order of battle*: e-taxis mounts an agent harness in two halves. First the brain: an
-e-engineer core (persona, skills, agents, commands, config, MCP) projected into the harness's tree. Then the world
+e-nous core (persona, skills, agents, commands, config, MCP) projected into the harness's tree. Then the world
 that brain expects — the CLIs, MCP servers, plugins, hooks, environment, managed files and services — in order,
 verified, and undoable.
 
-It runs two ways from one core: as the installer plane of e-engineer (`op` drives it after `op transpiler apply`) and
+It runs two ways from one core: as the installer plane of e-nous (`op` drives it after `op transpiler apply`) and
 standalone, for anyone with Claude Code (`uvx e-taxis …`), from its own catalog and profiles.
 
 ## 1. Boundary
 
-e-engineer owns the **content**: `core/base`, `core/<facet>`. e-taxis owns everything **operational**: the content
+e-nous owns the **content**: `core/base`, `core/<facet>`. e-taxis owns everything **operational**: the content
 contract (`models/core.py` — every entity, its slots, where it lives), each harness's projection of it, the
-catalog, and the install. The e-engineer transpiler migrates here harness by harness; a projection lands only when
+catalog, and the install. The e-nous transpiler migrates here harness by harness; a projection lands only when
 it renders byte for byte what the transpiler wrote (Claude Code: 202 files identical, settings and MCP equal,
 2026-10-15).
 
@@ -27,7 +27,7 @@ it owns; a key the transpiler also claims is a catalog error, caught by `taxis d
 
 ## 2. Two inputs, one join
 
-- **What is wanted** — a *source*: e-engineer's stack registry (`core/common/stack.yaml`, `core/<facet>/stack.yaml`:
+- **What is wanted** — a *source*: e-nous's stack registry (`core/common/stack.yaml`, `core/<facet>/stack.yaml`:
   part id, kind, pin, the backends it serves) or, standalone, a *profile* shipped with e-taxis (`house`, `company`,
   `minimal`).
 - **How it is installed** — the *catalog*, shipped with e-taxis: one entry per part id.
@@ -53,7 +53,7 @@ footprint: [~/.config/compose/otel, ~/.config/compose/data/otel]
 owns: []                         # config keys this entry writes (settings/env primitives)
 gate: {licence: null, secrets: [], confirm: false}
 flags: {}                        # what the bench forced (e.g. Beads: --skip-agents --skip-hooks)
-status: {profile: {house: floor, company: floor}, checked: 2026-10-15, evidence: e-engineer docs/bench/observability.md}
+status: {profile: {house: floor, company: floor}, checked: 2026-10-15, evidence: e-nous docs/bench/observability.md}
 ```
 
 `status.checked` and `evidence` are what the automated stack review reads: a scheduled, deterministic workflow re-probes
@@ -84,12 +84,12 @@ harness is new adapters and catalog rows; the core does not change.
 
 | core entity | where it lives in the core | Claude Code |
 |---|---|---|
-| persona | `core/base/persona.yaml` + `core/engineer/persona.yaml` (a slot lives in one layer) | `CLAUDE.md`, fixed blocks |
-| skill | `core/engineer/skills/<id>/skill.yaml` + body + `references/` | `skills/<id>/SKILL.md` + references |
-| agent | `core/engineer/agents/<id>/agent.yaml` + prompt | `agents/<id>.md`; denied tools → `disallowedTools` |
-| command | `core/engineer/commands/<id>/command.yaml` + template | `commands/<id>.md`; named arguments |
-| main · permissions · hooks | `core/engineer/config/*.yaml` | `settings.json` owned keys; `rules/instructions.md`; `hooks/*` |
-| mcp | `core/engineer/config/mcp.yaml` + `mcp/*` | user-scope registrations; `mcp/*` |
+| persona | `core/base/persona.yaml` + `core/tekton/persona.yaml` (a slot lives in one layer) | `CLAUDE.md`, fixed blocks |
+| skill | `core/tekton/skills/<id>/skill.yaml` + body + `references/` | `skills/<id>/SKILL.md` + references |
+| agent | `core/tekton/agents/<id>/agent.yaml` + prompt | `agents/<id>.md`; denied tools → `disallowedTools` |
+| command | `core/tekton/commands/<id>/command.yaml` + template | `commands/<id>.md`; named arguments |
+| main · permissions · hooks | `core/tekton/config/*.yaml` | `settings.json` owned keys; `rules/instructions.md`; `hooks/*` |
+| mcp | `core/tekton/config/mcp.yaml` + `mcp/*` | user-scope registrations; `mcp/*` |
 
 The plan is three-way — render, live tree, the digests of the last install (`brain:<target>` in the store) — so an
 edit by hand is an `overwrite`, shown before it happens. Nothing is deleted: a governed folder's leftovers are
@@ -100,9 +100,9 @@ registrations, and the directories a run created.
 
 | Phase | Delivers | Writes |
 |---|---|---|
-| P1 | models, catalog loader, sources (e-engineer stack, profiles), resolver, `map` · `plan` · `verify` · `doctor` | nothing |
+| P1 | models, catalog loader, sources (e-nous stack, profiles), resolver, `map` · `plan` · `verify` · `doctor` | nothing |
 | P2 | primitives `uv-tool`, `npm`, `binary`, `settings`, `env`, `claude-mcp`, `claude-plugin`; `apply` · `uninstall` with the journal | user, machine |
-| P3 | `compose` (from e-templates' stack fichas) and the project scope | service, project |
+| P3 | `compose` (from arkhetypo' stack fichas) and the project scope | service, project |
 | P4 | the transpiler's export target → a versioned artifact per harness (Claude plugin, OpenCode config dir) | — |
 | P5 | OpenCode and OpenHuman adapters | — |
 | P6 | the stack review workflow: scheduled, deterministic, reports + PR | — |
