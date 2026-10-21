@@ -43,7 +43,7 @@ async def resolve(url: str, ref: str, *, cache: Path = CACHE) -> None:
         cache: root of the bare clones.
     """
     bare = await _repo_ensure(url, cache)
-    Console().print(await _repo_sha(url, ref, bare))
+    Console(soft_wrap=True).print(await _repo_sha(url, ref, bare))
 
 
 async def tree(url: str, ref: str, path: str = ".", *, cache: Path = CACHE) -> None:
@@ -56,7 +56,7 @@ async def tree(url: str, ref: str, path: str = ".", *, cache: Path = CACHE) -> N
         cache: root of the bare clones.
     """
     bare, sha = await _repo_open(url, ref, cache)
-    _ = [Console().print(name) for name in await _repo_tree(bare, sha, path)]
+    _ = [Console(soft_wrap=True).print(name) for name in await _repo_tree(bare, sha, path)]
 
 
 async def extract(url: str, ref: str, path: str, *, dest: Path, cache: Path = CACHE) -> None:
@@ -71,7 +71,7 @@ async def extract(url: str, ref: str, path: str, *, dest: Path, cache: Path = CA
     """
     bare, sha = await _repo_open(url, ref, cache)
     await _repo_extract(bare, sha, path, dest)
-    Console().print(dest)
+    Console(soft_wrap=True).print(dest)
 
 
 ##### PRIVATE #####
