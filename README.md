@@ -1,8 +1,8 @@
-<p align="center">
-  <img src="assets/logo.svg" alt="e-taxis" width="220" />
-</p>
-
 # e-taxis
+
+<p align="center">
+  <img src="assets/logo.svg" alt="e-taxis" height="110" />
+</p>
 
 τάξις, *order of battle*. e-taxis mounts a harness in two halves: the **brain** — an e-engineer core (persona,
 skills, agents, commands, config, MCP) projected into the harness's tree — then the **world** that brain expects —
