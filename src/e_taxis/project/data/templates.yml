@@ -1,12 +1,12 @@
 ##### TEMPLATES #####
 templates:
   api:
-    source: systems/api
+    source: projects/python/api
     package: e_api
     brand: e-api
     drops: [uv.lock, scripts/materialize.py, .github/workflows, .github/ci.map.yml, .github/ci.vars.example, .github/INSTALL.md, tests/unit/test_ci_contract.py]
     common:
-      root: systems/core
+      root: projects/python/core
       package: e_core
       skip: [ops/tui]
       ##### DETACH — how the system lets go of a common unit it wires; without rules a wired unit stays locked #####
@@ -28,11 +28,11 @@ templates:
             - {file: tests/unit/e_api/api/test_lifespan.py, pattern: '^    assert (isinstance\(edges\.http, HttpPort\)|edges\.http\.name == "http")\n'}
             - {file: pyproject.toml, pattern: '^    ##### http #####\n    "wreq>=[^"]*",\n'}
     materials: &materials
-      - {src: systems/core/common/prek.toml, dst: prek.toml}
-      - {src: systems/core/common/gitattributes, dst: .gitattributes}
-      - {src: systems/core/common/python-version, dst: .python-version}
-      - {src: systems/core/common/dependabot.yml, dst: .github/dependabot.yml}
-      - {src: systems/core/common/CODEOWNERS, dst: .github/CODEOWNERS}
+      - {src: projects/python/core/common/prek.toml, dst: prek.toml}
+      - {src: projects/python/core/common/gitattributes, dst: .gitattributes}
+      - {src: projects/python/core/common/python-version, dst: .python-version}
+      - {src: projects/python/core/common/dependabot.yml, dst: .github/dependabot.yml}
+      - {src: projects/python/core/common/CODEOWNERS, dst: .github/CODEOWNERS}
 
     ##### MANDATORY — tests that survive every selection; no choice may delete them #####
     mandatory:
@@ -111,7 +111,7 @@ templates:
       - {file: .gitignore, pattern: '^src/(core|ops|adapters)/\n'}
       - {file: .gitignore, pattern: '^(prek\.toml|\.(gitattributes|python-version))\n'}
       - {file: .gitignore, pattern: '^\.github/(dependabot\.yml|CODEOWNERS)\n'}
-      - {file: pyproject.toml, pattern: ', shared core materialized from systems/core'}
+      - {file: pyproject.toml, pattern: ', shared core materialized from projects/python/core'}
       - {file: pyproject.toml, pattern: '^    ### structural rewrite.*materialization time.*\n    "libcst>=[^"]*",\n'}
       - {file: Makefile, pattern: ' — core/ops/adapters materialized from \$\(CORE_SRC\)'}
       - {file: README.md, pattern: '^.*\b(GENERATED|make core)\b.*\n'}
@@ -120,11 +120,11 @@ templates:
       - {file: Makefile, pattern: ' \+ materialized core'}
 
   cli:
-    source: systems/cli
+    source: projects/python/cli
     package: e_cli
     brand: e-cli
     drops: [uv.lock, scripts, .github/workflows, .github/ci.map.yml, .github/ci.vars.example, .github/INSTALL.md, tests/unit/test_ci_contract.py]
-    common: {root: systems/core, package: e_core, skip: [ops/tui]}
+    common: {root: projects/python/core, package: e_core, skip: [ops/tui]}
     materials: *materials
 
     ##### MANDATORY — the harness and the tree contract survive every selection #####
@@ -140,11 +140,11 @@ templates:
     finalize_extra:
       - {file: Makefile, pattern: ' scripts', to: ''}
   graph:
-    source: systems/graph
+    source: projects/python/graph
     package: e_graph
     brand: e-graph
     drops: [uv.lock, scripts/materialize.py, .github/workflows, .github/ci.map.yml, .github/ci.vars.example, .github/INSTALL.md, tests/unit/test_ci_contract.py]
-    common: {root: systems/core, package: e_core, skip: [ops/tui]}
+    common: {root: projects/python/core, package: e_core, skip: [ops/tui]}
     materials: *materials
 
     mandatory:
@@ -186,11 +186,11 @@ templates:
     finalize: *finalize
 
   mcp:
-    source: systems/mcp
+    source: projects/python/mcp
     package: e_mcp
     brand: e-mcp
     drops: [uv.lock, scripts/materialize.py, .github/workflows, .github/ci.map.yml, .github/ci.vars.example, .github/INSTALL.md, tests/unit/test_ci_contract.py]
-    common: {root: systems/core, package: e_core, skip: [ops/tui]}
+    common: {root: projects/python/core, package: e_core, skip: [ops/tui]}
     materials: *materials
 
     mandatory:
@@ -218,11 +218,11 @@ templates:
     finalize: *finalize
 
   tui:
-    source: systems/tui
+    source: projects/python/tui
     package: e_tui
     brand: e-tui
     drops: [uv.lock, .github/workflows, .github/ci.map.yml, .github/ci.vars.example, .github/INSTALL.md, tests/unit/test_ci_contract.py]
-    common: {root: systems/core, package: e_core}
+    common: {root: projects/python/core, package: e_core}
     materials: *materials
 
     mandatory:

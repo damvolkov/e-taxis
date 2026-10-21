@@ -102,7 +102,7 @@ registrations, and the directories a run created.
 |---|---|---|
 | P1 | models, catalog loader, sources (e-engineer stack, profiles), resolver, `map` · `plan` · `verify` · `doctor` | nothing |
 | P2 | primitives `uv-tool`, `npm`, `binary`, `settings`, `env`, `claude-mcp`, `claude-plugin`; `apply` · `uninstall` with the journal | user, machine |
-| P3 | `compose` (from e-templates' stack fichas) and the project scope | service, project |
+| P3 | `compose` (from arkhetypo' stack fichas) and the project scope | service, project |
 | P4 | the transpiler's export target → a versioned artifact per harness (Claude plugin, OpenCode config dir) | — |
 | P5 | OpenCode and OpenHuman adapters | — |
 | P6 | the stack review workflow: scheduled, deterministic, reports + PR | — |

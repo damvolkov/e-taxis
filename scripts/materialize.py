@@ -1,4 +1,4 @@
-"""scripts/materialize: the hardened sed — copy `systems/core` sections into the project package with a structural rewrite.
+"""scripts/materialize: the hardened sed — copy arkhetypo's `e_core` sections into the project package with a structural rewrite.
 
 libcst parses each source file as real 3.14 syntax (PEP 695 included, verified against the whole
 `e_core` tree) and rewrites *only* the import nodes: `e_core.<section> → e_taxis.<section>`; every
@@ -33,12 +33,14 @@ if TYPE_CHECKING:
 
 ROOT: Path = Path(__file__).resolve().parents[1]
 PACKAGE: Final[str] = "e_taxis"
-### a standalone repo: the core lives in the e-templates checkout beside it; E_CORE_SRC points elsewhere.
-CORE_SRC: Path = Path(os.environ.get("E_CORE_SRC", ROOT.parent / "e-templates" / "systems" / "core" / "src" / "e_core"))
+### a standalone repo: the core lives in the e-arkhetypo checkout beside it; E_CORE_SRC points elsewhere.
+CORE_SRC: Path = Path(
+    os.environ.get("E_CORE_SRC", ROOT.parent / "e-arkhetypo" / "projects" / "python" / "core" / "src" / "e_core")
+)
 SECTIONS: tuple[str, ...] = ("adapters", "core", "ops", "processors")
 DEST: Final[Mapping[str, str]] = MappingProxyType({section: f"{PACKAGE}/{section}" for section in SECTIONS})
 ### the TUI header belongs to the boilerplate wizard, not to a running service: same topology as the old sed.
-### the compose tool belongs to stack management (management materializes the whole ops area), not to a running service.
+### the compose tool belongs to the stack, not to a running service.
 EXCLUDES: frozenset[str] = frozenset({"ops/tui.py", "ops/snap.py", "ops/compose.py"})
 ### `ops` and `adapters` are shared homes: only the manifest owns there — committed code is the project's.
 ### `core` and `processors` are dedicated: anything tracked inside is a violation the gate must flag.
@@ -229,7 +231,7 @@ def check(dest_root: Path) -> int:
                 print("✓ materialized e_taxis.{core,ops,adapters,processors} in sync")
                 return 0
             case _:
-                print("✗ drift from systems/core (run make core):")
+                print("✗ drift from arkhetypo (run make core):")
                 print("\n".join(f"  {issue}" for issue in issues))
                 return 1
     finally:
@@ -247,7 +249,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return check(ROOT)
         case _:
             materialize(ROOT)
-            print("✓ materialized systems/core into e_taxis.{core,ops,adapters,processors}")
+            print("✓ materialized arkhetypo e-core into e_taxis.{core,ops,adapters,processors}")
             return 0
 
 

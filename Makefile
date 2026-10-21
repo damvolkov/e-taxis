@@ -2,13 +2,13 @@
 PROJECT  ?= e-taxis
 PACKAGE  ?= src/e_taxis
 MODULE   ?= e_taxis
-E_TEMPLATES_URL ?= https://github.com/damvolkov/e-templates.git
-### The pinned ref of e-templates (.e-templates-ref: a tag, a branch or a commit), read off its public remote
+ARKHETYPO_URL ?= https://github.com/damvolkov/e-arkhetypo.git
+### The pinned ref of arkhetypo (.arkhetypo-ref: a tag, a branch or a commit), read off its public remote
 ### by `taxis repo` — deterministic git plumbing, never a working tree: a change lands here only by bumping the
-### pin. An offline box points the url at the checkout beside it: `make core E_TEMPLATES_URL=file://../e-templates`.
-TEMPLATES_REF ?= $(shell cat .e-templates-ref)
-CORE_HEAD ?= $(HOME)/.cache/e-taxis/e-templates-head
-CORE_SRC ?= $(CORE_HEAD)/systems/core/src/e_core
+### pin. An offline box points the url at the checkout beside it: `make core ARKHETYPO_URL=file://../e-arkhetypo`.
+ARKHETYPO_REF ?= $(shell cat .arkhetypo-ref)
+CORE_HEAD ?= $(HOME)/.cache/e-taxis/arkhetypo-head
+CORE_SRC ?= $(CORE_HEAD)/projects/python/core/src/e_core
 export E_CORE_SRC := $(CORE_SRC)
 TESTARGS  =
 LOGO_ARGS =
@@ -31,7 +31,7 @@ export PYTHONPATH := $(CURDIR)/src
 .PHONY: core-src help install sync lock core common core-check common-check lint type arch validate harden hooks test cov check ci run logo release ci-vars clean
 
 help:
-	@printf "$(BOLD)$(CYAN)$(PROJECT)$(RESET) $(GRAY)· uv · cyclopts · ruff · ty · tach · pytest — systems/core materialized into e_taxis from $(CORE_SRC)$(RESET)\n\n"
+	@printf "$(BOLD)$(CYAN)$(PROJECT)$(RESET) $(GRAY)· uv · cyclopts · ruff · ty · tach · pytest — arkhetypo's e-core materialized into e_taxis from $(CORE_SRC)$(RESET)\n\n"
 	@awk 'BEGIN{FS=":.*##"} /^[a-z][a-zA-Z0-9_-]*:.*##/{printf "  $(GREEN)%-12s$(RESET) $(GRAY)%s$(RESET)\n",$$1,$$2}' $(MAKEFILE_LIST)
 
 # — env —
@@ -47,27 +47,27 @@ lock: core ## refresh uv lockfile (against the current materialized core)
 	@uv lock
 
 # — common —
-COMMON_SRC ?= $(CORE_HEAD)/systems/core/common
+COMMON_SRC ?= $(CORE_HEAD)/projects/python/core/common
 
-core-src: ## resolve the pinned ref on e-templates' remote and fetch systems/core into the cache via `taxis repo`
+core-src: ## resolve the pinned ref on arkhetypo's remote and fetch its core into the cache via `taxis repo`
 	@rm -rf $(CORE_HEAD) && mkdir -p $(CORE_HEAD)
-	@uv run taxis repo extract $(E_TEMPLATES_URL) $(TEMPLATES_REF) systems/core --dest $(CORE_HEAD)
+	@uv run taxis repo extract $(ARKHETYPO_URL) $(ARKHETYPO_REF) projects/python/core --dest $(CORE_HEAD)
 
-core: core-src ## materialize systems/core into e_taxis.{core,ops,adapters,processors} via a structural rewrite
+core: core-src ## materialize arkhetypo's e-core into e_taxis.{core,ops,adapters,processors} via a structural rewrite
 	@uv run python scripts/materialize.py
 
-core-check: core-src ## fail if the materialized sections drifted from systems/core
+core-check: core-src ## fail if the materialized sections drifted from arkhetypo
 	@uv run python scripts/materialize.py --check
 
-### prek.toml is not committed in e-templates yet: copied and checked only when its HEAD carries it.
-common: core-src ## materialize shared project files from systems/core/common into the project root
+### prek.toml is not committed in arkhetypo yet: copied and checked only when its HEAD carries it.
+common: core-src ## materialize shared project files from arkhetypo's core common into the project root
 	@[ ! -f $(COMMON_SRC)/prek.toml ] || cp $(COMMON_SRC)/prek.toml prek.toml
 	@cp $(COMMON_SRC)/gitattributes .gitattributes
 	@cp $(COMMON_SRC)/python-version .python-version
 	@cp $(COMMON_SRC)/dependabot.yml .github/dependabot.yml
 	@cp $(COMMON_SRC)/CODEOWNERS .github/CODEOWNERS
 
-common-check: core-src ## fail if the materialized shared files drifted from systems/core/common
+common-check: core-src ## fail if the materialized shared files drifted from arkhetypo's core common
 	@{ [ ! -f $(COMMON_SRC)/prek.toml ] || diff $(COMMON_SRC)/prek.toml prek.toml; } \
 	 && diff $(COMMON_SRC)/gitattributes .gitattributes \
 	 && diff $(COMMON_SRC)/python-version .python-version \
@@ -128,7 +128,7 @@ clean: ## remove caches + build artifacts + materialized core
 	@rm -rf dist build *.egg-info .coverage .coverage.* .ty_cache prek.toml .gitattributes .python-version src/e_taxis/.materialized.json
 	@rm -rf src/e_taxis/core src/e_taxis/processors
 	@rm -f src/e_taxis/ops/file.py src/e_taxis/ops/image.py src/e_taxis/ops/registry.py src/e_taxis/ops/wrappers.py
-	@rm -f src/e_taxis/adapters/anytomd.py src/e_taxis/adapters/base.py src/e_taxis/adapters/docling.py src/e_taxis/adapters/http.py src/e_taxis/adapters/otel.py src/e_taxis/adapters/ports.py src/e_taxis/adapters/redis.py src/e_taxis/adapters/sqlite.py
+	@rm -f src/e_taxis/adapters/anytomd.py src/e_taxis/adapters/awa.py src/e_taxis/adapters/base.py src/e_taxis/adapters/docling.py src/e_taxis/adapters/http.py src/e_taxis/adapters/otel.py src/e_taxis/adapters/ports.py src/e_taxis/adapters/postgres.py src/e_taxis/adapters/redis.py src/e_taxis/adapters/sqlite.py
 	@printf "$(GREEN)✓ clean$(RESET)\n"
 
 %:
