@@ -37,7 +37,7 @@ class SourcePort(Protocol):
 
 @runtime_checkable
 class CorePort(Protocol):
-    """One read of an e-engineer core into the content contract; a CoreError when it cannot be read."""
+    """One read of an e-nous core into the content contract; a CoreError when it cannot be read."""
 
     async def load(self) -> Core: ...
 

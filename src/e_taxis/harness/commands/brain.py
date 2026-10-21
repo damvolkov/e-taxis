@@ -1,4 +1,4 @@
-"""commands.brain: driving adapter for the first half of a mount — an e-engineer core installed into a harness's tree.
+"""commands.brain: driving adapter for the first half of a mount — an e-nous core installed into a harness's tree.
 
 Dry by default: without `--yes` it prints what would move and exits 0, having written nothing. The core is the
 checkout's committed HEAD (`--ref` names another, `--worktree` takes the tree as it stands). With `--yes`, every
@@ -37,7 +37,7 @@ COLOURS: Final[Mapping[BrainAction, str]] = MappingProxyType(
 async def brain(
     *,
     target: Target,
-    engineer: Path,
+    nous: Path,
     ref: str = "HEAD",
     worktree: bool = False,
     yes: bool = False,
@@ -45,17 +45,17 @@ async def brain(
     projector: Inject[BrainService],
     console: Inject[Console],
 ) -> None:
-    """Install an e-engineer core into a harness's tree, undoable. Dry unless --yes.
+    """Install an e-nous core into a harness's tree, undoable. Dry unless --yes.
 
     Args:
         target: the harness to install the core into.
-        engineer: the e-engineer checkout that holds the core.
+        nous: the e-nous checkout that holds the core.
         ref: the git ref the core is read at.
         worktree: read the checkout's working tree instead of a ref, uncommitted changes included.
         yes: write. Without it, brain only prints what would move.
         json: the plan as JSON, for machines.
     """
-    core = GitCore(engineer, None if worktree else ref)
+    core = GitCore(nous, None if worktree else ref)
     plan = await (projector.run(core, target) if yes else projector.plan(core, target))
     table = Table("path", "action", box=None, header_style=HEADER)
     _ = [

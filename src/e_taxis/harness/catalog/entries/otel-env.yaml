@@ -21,4 +21,4 @@ footprint: ["~/.claude/settings.json#env.CLAUDE_CODE_ENABLE_TELEMETRY", "~/.clau
 owns: [env.CLAUDE_CODE_ENABLE_TELEMETRY, env.OTEL_METRICS_EXPORTER, env.OTEL_LOGS_EXPORTER, env.OTEL_EXPORTER_OTLP_PROTOCOL, env.OTEL_EXPORTER_OTLP_ENDPOINT]
 gate: {licence: null, secrets: [], confirm: false}
 flags: {redaction: "never OTEL_LOG_TOOL_DETAILS / OTEL_LOG_USER_PROMPTS here — they store content; audit pipeline only"}
-status: {profile: {house: floor, company: floor, minimal: out}, checked: 2026-10-15, evidence: "e-engineer docs/bench/observability.md"}
+status: {profile: {house: floor, company: floor, minimal: out}, checked: 2026-10-15, evidence: "e-nous docs/bench/observability.md"}

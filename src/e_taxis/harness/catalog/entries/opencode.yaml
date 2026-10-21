@@ -14,4 +14,4 @@ footprint: [~/.config/opencode, ~/.local/share/opencode]
 owns: []
 gate: {licence: null, secrets: [], confirm: false}
 flags: {}
-status: {profile: {house: floor, company: out, minimal: out}, checked: 2026-10-15, evidence: "e-engineer core/engineer/stack.yaml"}
+status: {profile: {house: floor, company: out, minimal: out}, checked: 2026-10-15, evidence: "e-nous core/tekton/stack.yaml"}

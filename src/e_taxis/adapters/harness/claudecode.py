@@ -10,7 +10,7 @@
     config/mcp             → user-scope registrations (`claude mcp add-json`); config/mcp/* → mcp/*
 
 Pure: a core and the tree it lands in, in; a render out. `{out}` in the core binds to that tree. Frontmatter is
-YAML as e-serde writes it, so a render is byte for byte what the e-engineer transpiler wrote before it."""
+YAML as e-serde writes it, so a render is byte for byte what the e-nous transpiler wrote before it."""
 
 import re
 import shlex

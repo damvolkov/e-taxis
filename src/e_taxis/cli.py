@@ -10,13 +10,13 @@ row in `GROUPS`, parents before children. `tests/unit/e_taxis/test_cli.py` resol
 typo fails the gate, never a user.
 
     taxis map      [--target T] [--json]
-    taxis plan     --target T (--profile P | --engineer PATH) [--json]
-    taxis verify   --target T (--profile P | --engineer PATH) [--json]
+    taxis plan     --target T (--profile P | --nous PATH) [--json]
+    taxis verify   --target T (--profile P | --nous PATH) [--json]
     taxis doctor   [--json]
-    taxis brain    --target T --engineer PATH [--ref REF | --worktree] [--yes] [--json]
-    taxis install  --target T --engineer PATH [--profile P] [--ref REF | --worktree] [--yes]
+    taxis brain    --target T --nous PATH [--ref REF | --worktree] [--yes] [--json]
+    taxis install  --target T --nous PATH [--profile P] [--ref REF | --worktree] [--yes]
                    [--accept-licence ID] [--confirm ID] [--json]
-    taxis apply    --target T (--profile P | --engineer PATH) [--only id,...] [--dry-run] [--yes]
+    taxis apply    --target T (--profile P | --nous PATH) [--only id,...] [--dry-run] [--yes]
                    [--accept-licence ID] [--confirm ID] [--json]
     taxis uninstall ID --target T [--cascade] [--yes]
     taxis history  list · undo

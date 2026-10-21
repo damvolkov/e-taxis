@@ -1,6 +1,6 @@
-"""models.core: the content contract — what an e-engineer core holds, entity by entity, and where each one lives.
+"""models.core: the content contract — what an e-nous core holds, entity by entity, and where each one lives.
 
-e-engineer owns the content; e-taxis owns this shape and every projection of it. A field is a slot the core
+e-nous owns the content; e-taxis owns this shape and every projection of it. A field is a slot the core
 may fill; a harness adapter decides where, and whether, each slot lands. Unknown fields are ignored on
 purpose: house-only slots (`mode`, `hidden`, `skills_ondemand`…) ride in the same manifests and no
 projection reads them. A body slot is `{source: file}` beside its manifest; the reader embeds it and lifts the
@@ -13,7 +13,7 @@ from msgspec import Struct
 
 ##### DEFAULTS #####
 BASE: str = "core/base"
-FACET: str = "core/engineer"
+FACET: str = "core/tekton"
 PERSONA: str = "persona.yaml"
 CONFIG: str = "config"
 ### config side files travel to the same relative path in the tree: hooks/<script>, mcp/<file>.

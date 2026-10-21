@@ -21,8 +21,8 @@ async def test_plan_run_profile(planner: PlanService, house) -> None:
     assert "Elastic-2.0" in plan.steps[1].reason
 
 
-async def test_plan_run_engineer_compares_the_pin(planner: PlanService, engineer) -> None:
-    plan = await planner.run(engineer, Target.CLAUDECODE)
+async def test_plan_run_nous_compares_the_pin(planner: PlanService, nous) -> None:
+    plan = await planner.run(nous, Target.CLAUDECODE)
     assert [(step.id, step.action, step.reason) for step in plan.steps[:2]] == [
         ("alpha", PlanAction.SKIP, "present · 1.2.3 matches pin v1.2.3"),
         ("epsilon", PlanAction.UPDATE, "found 1.2.3, pin 9.9"),

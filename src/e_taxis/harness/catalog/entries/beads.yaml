@@ -14,4 +14,4 @@ footprint: [~/.local/bin/bd, "<repo>/.beads", ~/.beads, ~/.dolt, ~/.config/bd]
 owns: []
 gate: {licence: null, secrets: [], confirm: true}
 flags: {init: "--skip-agents --skip-hooks — by default bd init sets core.hooksPath (silences prek) and writes AGENTS.md, CLAUDE.md and Cursor rules", metrics: "on by default — bd metrics off"}
-status: {profile: {house: per-project, company: per-project, minimal: out}, checked: 2026-10-15, evidence: "e-engineer docs/bench/memory.md"}
+status: {profile: {house: per-project, company: per-project, minimal: out}, checked: 2026-10-15, evidence: "e-nous docs/bench/memory.md"}

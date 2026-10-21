@@ -14,4 +14,4 @@ footprint: [~/.config/compose/otel, ~/.config/compose/data/otel]
 owns: []
 gate: {licence: null, secrets: [], confirm: false}
 flags: {pin: "0.162.0"}
-status: {profile: {house: floor, company: floor, minimal: out}, checked: 2026-10-15, evidence: "e-engineer docs/bench/observability.md"}
+status: {profile: {house: floor, company: floor, minimal: out}, checked: 2026-10-15, evidence: "e-nous docs/bench/observability.md"}

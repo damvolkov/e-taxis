@@ -14,4 +14,4 @@ footprint: [~/.local/share/npm/bin/ccusage]
 owns: []
 gate: {licence: null, secrets: [], confirm: false}
 flags: {}
-status: {profile: {house: per-project, company: per-project, minimal: out}, checked: 2026-10-15, evidence: "e-engineer docs/bench/observability.md — exact cost, offline"}
+status: {profile: {house: per-project, company: per-project, minimal: out}, checked: 2026-10-15, evidence: "e-nous docs/bench/observability.md — exact cost, offline"}

@@ -14,4 +14,4 @@ footprint: [~/.local/bin/claude, ~/.local/share/claude, ~/.claude]
 owns: []
 gate: {licence: null, secrets: [], confirm: false}
 flags: {}
-status: {profile: {house: floor, company: floor, minimal: floor}, checked: 2026-10-15, evidence: "e-engineer core/engineer/stack.yaml"}
+status: {profile: {house: floor, company: floor, minimal: floor}, checked: 2026-10-15, evidence: "e-nous core/tekton/stack.yaml"}

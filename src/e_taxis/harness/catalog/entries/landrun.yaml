@@ -14,4 +14,4 @@ footprint: [~/.local/bin/landrun]
 owns: []
 gate: {licence: null, secrets: [], confirm: false}
 flags: {pin: "v0.1.17"}
-status: {profile: {house: floor, company: per-project, minimal: out}, checked: 2026-10-15, evidence: "e-engineer Makefile fence"}
+status: {profile: {house: floor, company: per-project, minimal: out}, checked: 2026-10-15, evidence: "e-nous Makefile fence"}

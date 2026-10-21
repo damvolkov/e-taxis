@@ -17,4 +17,4 @@ footprint: [~/.claude.json#mcpServers.searxng, ~/.config/opencode/opencode.json#
 owns: [mcp.searxng]
 gate: {licence: null, secrets: [], confirm: false}
 flags: {}
-status: {profile: {house: floor, company: out, minimal: out}, checked: 2026-10-15, evidence: "e-engineer core/engineer/config/mcp.yaml"}
+status: {profile: {house: floor, company: out, minimal: out}, checked: 2026-10-15, evidence: "e-nous core/tekton/config/mcp.yaml"}

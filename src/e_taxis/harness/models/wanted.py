@@ -5,7 +5,7 @@ from msgspec import Struct
 
 ##### TYPES #####
 class WantedPart(Struct, frozen=True, kw_only=True):
-    """`source` is a label for the report: `profile:house`, `engineer:core/common/stack.yaml`, `requires:otel`."""
+    """`source` is a label for the report: `profile:house`, `nous:core/common/stack.yaml`, `requires:otel`."""
 
     id: str
     source: str

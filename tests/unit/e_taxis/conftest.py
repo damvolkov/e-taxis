@@ -175,14 +175,14 @@ def doctor_root(resources: Resources) -> Path:
 
 
 @pytest.fixture
-def engineer_root(resources: Resources) -> Path:
-    """A fake e-engineer checkout: `core/common/stack.yaml` plus two facet stacks."""
-    return resources.path / "engineer"
+def nous_root(resources: Resources) -> Path:
+    """A fake e-nous checkout: `core/common/stack.yaml` plus two facet stacks."""
+    return resources.path / "nous"
 
 
 @pytest.fixture
 def broken_root(resources: Resources) -> Path:
-    """An e-engineer checkout whose registry is off-schema."""
+    """An e-nous checkout whose registry is off-schema."""
     return resources.path / "broken"
 
 
@@ -206,14 +206,14 @@ def dangling_root(resources: Resources) -> Path:
 
 @pytest.fixture
 def core_root(resources: Resources) -> Path:
-    """A fake e-engineer checkout with a core: persona layers, one skill, agent and command, the config modules."""
+    """A fake e-nous checkout with a core: persona layers, one skill, agent and command, the config modules."""
     return resources.path / "core"
 
 
 @pytest.fixture
 def core_repo(core_root: Path, tmp_path: Path) -> Path:
     """The fake checkout as a git repository with the core committed at HEAD."""
-    repo = tmp_path / "engineer"
+    repo = tmp_path / "nous"
     shutil.copytree(core_root, repo)
     git = (shutil.which("git") or "git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t")
     ### fixed argv over the test's own temp tree: nothing here is input.

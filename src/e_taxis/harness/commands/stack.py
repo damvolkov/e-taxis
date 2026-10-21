@@ -1,7 +1,7 @@
 """commands.stack: driving adapter for one target's stack — `plan` what apply would do, `verify` what is there.
 
-Both are read-only. The source is a flag: `--profile NAME` (shipped with the catalog) or `--engineer PATH`
-(an e-engineer checkout). A plan with unknown or blocked parts, or a verify with a failure, exits non-zero
+Both are read-only. The source is a flag: `--profile NAME` (shipped with the catalog) or `--nous PATH`
+(an e-nous checkout). A plan with unknown or blocked parts, or a verify with a failure, exits non-zero
 after printing the full report."""
 
 from collections.abc import Mapping
@@ -41,7 +41,7 @@ async def plan(
     *,
     target: Target,
     profile: str | None = None,
-    engineer: Path | None = None,
+    nous: Path | None = None,
     json: bool = False,
     planner: Inject[PlanService],
     settings: Inject[TaxisSettings],
@@ -52,10 +52,10 @@ async def plan(
     Args:
         target: the harness to plan for.
         profile: a profile shipped with the catalog.
-        engineer: an e-engineer checkout whose stack registry says what is wanted.
+        nous: an e-nous checkout whose stack registry says what is wanted.
         json: the plan as JSON, for machines.
     """
-    source = FlagSource(settings.taxis_catalog, profile=profile, engineer=engineer)
+    source = FlagSource(settings.taxis_catalog, profile=profile, nous=nous)
     result = await planner.run(source, target)
     table = Table("id", "action", "reason", box=None, header_style=HEADER)
     _ = [table.add_row(step.id, f"[{STYLES[step.action]}]{step.action}[/]", step.reason) for step in result.steps]
@@ -76,7 +76,7 @@ async def verify(
     *,
     target: Target,
     profile: str | None = None,
-    engineer: Path | None = None,
+    nous: Path | None = None,
     json: bool = False,
     verifier: Inject[VerifyService],
     settings: Inject[TaxisSettings],
@@ -87,10 +87,10 @@ async def verify(
     Args:
         target: the harness to verify.
         profile: a profile shipped with the catalog.
-        engineer: an e-engineer checkout whose stack registry says what is wanted.
+        nous: an e-nous checkout whose stack registry says what is wanted.
         json: the report as JSON, for machines.
     """
-    source = FlagSource(settings.taxis_catalog, profile=profile, engineer=engineer)
+    source = FlagSource(settings.taxis_catalog, profile=profile, nous=nous)
     report = await verifier.run(source, target)
     table = Table("id", "result", "detail", box=None, header_style=HEADER)
     _ = [

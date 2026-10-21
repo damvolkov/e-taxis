@@ -40,7 +40,7 @@ class CatalogCycleError(CatalogError):
 
 
 class SourceError(CliError):
-    """The wanted parts cannot be read: no such profile, no e-engineer checkout, or not exactly one source."""
+    """The wanted parts cannot be read: no such profile, no e-nous checkout, or not exactly one source."""
 
     exit_code: ClassVar[int] = 6
 

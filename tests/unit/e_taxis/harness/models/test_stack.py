@@ -1,4 +1,4 @@
-"""tests/unit/e_taxis/models/stack: e-engineer's registry is foreign — read what e-taxis needs, ignore the rest."""
+"""tests/unit/e_taxis/models/stack: e-nous's registry is foreign — read what e-taxis needs, ignore the rest."""
 
 import msgspec
 

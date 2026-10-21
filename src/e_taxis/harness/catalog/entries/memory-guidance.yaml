@@ -17,4 +17,4 @@ footprint: ["~/.claude/CLAUDE.md#e-taxis:memory-guidance"]
 owns: ["CLAUDE.md#memory-guidance"]
 gate: {licence: null, secrets: [], confirm: false}
 flags: {house: "the transpiler owns ~/.claude/CLAUDE.md in the house — the line belongs in core's persona there, not here"}
-status: {profile: {house: out, company: floor, minimal: floor}, checked: 2026-10-15, evidence: "e-engineer docs/bench/memory.md — 11/12 recalled"}
+status: {profile: {house: out, company: floor, minimal: floor}, checked: 2026-10-15, evidence: "e-nous docs/bench/memory.md — 11/12 recalled"}

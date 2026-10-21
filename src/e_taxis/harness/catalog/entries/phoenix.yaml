@@ -14,4 +14,4 @@ footprint: [~/.config/compose/phoenix, ~/.config/compose/data/phoenix]
 owns: []
 gate: {licence: "Elastic-2.0 — free for internal use, not as a managed service", secrets: [], confirm: false}
 flags: {}
-status: {profile: {house: floor, company: per-project, minimal: out}, checked: 2026-10-15, evidence: "e-engineer docs/bench/observability.md"}
+status: {profile: {house: floor, company: per-project, minimal: out}, checked: 2026-10-15, evidence: "e-nous docs/bench/observability.md"}

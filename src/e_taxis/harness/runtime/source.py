@@ -1,10 +1,10 @@
-"""runtime.source: the source a command's flags name — `--profile NAME` or `--engineer PATH`, exactly one.
+"""runtime.source: the source a command's flags name — `--profile NAME` or `--nous PATH`, exactly one.
 
 Choosing between adapters is wiring, so it lives in the runtime beside `Deps`, not in a command or a service."""
 
 from pathlib import Path
 
-from e_taxis.adapters.source import EngineerSource, ProfileSource
+from e_taxis.adapters.source import NousSource, ProfileSource
 from e_taxis.harness.models.catalog import Target
 from e_taxis.harness.models.error import SourceError
 from e_taxis.harness.models.ports import SourcePort
@@ -17,15 +17,15 @@ class FlagSource:
 
     __slots__ = ("_inner",)
 
-    def __init__(self, catalog: Path, *, profile: str | None, engineer: Path | None) -> None:
+    def __init__(self, catalog: Path, *, profile: str | None, nous: Path | None) -> None:
         self._inner: SourcePort
-        match (profile, engineer):
+        match (profile, nous):
             case (str() as name, None):
                 self._inner = ProfileSource(catalog, name)
             case (None, Path() as root):
-                self._inner = EngineerSource(root)
+                self._inner = NousSource(root)
             case _:
-                msg = "pass exactly one source: --profile NAME or --engineer PATH"
+                msg = "pass exactly one source: --profile NAME or --nous PATH"
                 raise SourceError(msg)
 
     async def wanted(self, target: Target) -> tuple[WantedPart, ...]:

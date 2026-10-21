@@ -15,7 +15,7 @@ from e_taxis.adapters.primitives.plugin import PluginPrimitive
 from e_taxis.adapters.primitives.settings import SettingsPrimitive
 from e_taxis.adapters.primitives.uv import UvPrimitive
 from e_taxis.adapters.probe import ShellProbe
-from e_taxis.adapters.source import EngineerSource, ProfileSource
+from e_taxis.adapters.source import NousSource, ProfileSource
 from e_taxis.harness.models.catalog import Primitive
 from e_taxis.harness.services.apply import ApplyService
 from e_taxis.harness.services.doctor import DoctorService
@@ -70,8 +70,8 @@ def house(catalog_root: Path) -> ProfileSource:
 
 
 @pytest.fixture
-def engineer(engineer_root: Path) -> EngineerSource:
-    return EngineerSource(engineer_root)
+def nous(nous_root: Path) -> NousSource:
+    return NousSource(nous_root)
 
 
 @pytest.fixture

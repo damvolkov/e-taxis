@@ -57,7 +57,7 @@ async def apply(
     *,
     target: Target,
     profile: str | None = None,
-    engineer: Path | None = None,
+    nous: Path | None = None,
     only: str = "",
     dry_run: bool = False,
     yes: bool = False,
@@ -73,7 +73,7 @@ async def apply(
     Args:
         target: the harness to apply for.
         profile: a profile shipped with the catalog.
-        engineer: an e-engineer checkout whose stack registry says what is wanted.
+        nous: an e-nous checkout whose stack registry says what is wanted.
         only: comma-separated ids: apply just these steps of the plan.
         dry_run: print the plan and write nothing, even with --yes.
         yes: write. Without it, apply only prints the plan.
@@ -81,7 +81,7 @@ async def apply(
         confirm: open the confirmation gate of this entry id (repeatable).
         json: the plan (dry) or the report as JSON, for machines.
     """
-    source = FlagSource(settings.taxis_catalog, profile=profile, engineer=engineer)
+    source = FlagSource(settings.taxis_catalog, profile=profile, nous=nous)
     picked = frozenset(part for part in only.split(",") if part)
     match yes and not dry_run:
         case False:
@@ -156,7 +156,7 @@ async def uninstall(
 async def install(
     *,
     target: Target,
-    engineer: Path,
+    nous: Path,
     profile: str | None = None,
     ref: str = "HEAD",
     worktree: bool = False,
@@ -173,7 +173,7 @@ async def install(
 
     Args:
         target: the harness to mount.
-        engineer: the e-engineer checkout: its core is the brain, its stack registry the systems.
+        nous: the e-nous checkout: its core is the brain, its stack registry the systems.
         profile: take the systems from this profile instead of the checkout's stack registry.
         ref: the git ref the core is read at.
         worktree: read the core from the working tree instead of a ref.
@@ -184,7 +184,7 @@ async def install(
     """
     await brain(
         target=target,
-        engineer=engineer,
+        nous=nous,
         ref=ref,
         worktree=worktree,
         yes=yes,
@@ -195,7 +195,7 @@ async def install(
     await apply(
         target=target,
         profile=profile,
-        engineer=None if profile else engineer,
+        nous=None if profile else nous,
         yes=yes,
         accept_licence=accept_licence,
         confirm=confirm,

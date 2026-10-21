@@ -34,7 +34,7 @@ def live(claude_dir: Path) -> dict[str, bytes | None]:
 
 
 def _brain(core_repo: Path, *extra: str) -> tuple[str, ...]:
-    return ("brain", "--target", "claudecode", "--engineer", str(core_repo), *extra)
+    return ("brain", "--target", "claudecode", "--nous", str(core_repo), *extra)
 
 
 def test_brain_without_yes_prints_the_plan_and_writes_nothing(taxis, core_repo: Path, live, claude_dir: Path) -> None:
@@ -68,7 +68,7 @@ def test_brain_yes_then_history_undo_puts_the_tree_back(taxis, core_repo: Path, 
 def test_brain_worktree_reads_uncommitted_and_a_faithful_tree_holds_the_core(
     taxis, core_repo: Path, claude_dir: Path, home: Path
 ) -> None:
-    (core_repo / "core/engineer/persona/origin.md").write_text("uncommitted\n")
+    (core_repo / "core/tekton/persona/origin.md").write_text("uncommitted\n")
     assert taxis(*_brain(core_repo, "--worktree", "--yes"))[0] == 0
     assert "uncommitted" in (claude_dir / "CLAUDE.md").read_text()
     servers = {
@@ -93,12 +93,12 @@ def test_brain_unreadable_core_exits_13(taxis, tmp_path: Path) -> None:
 
 
 def test_brain_target_without_projection_exits_14(taxis, core_repo: Path) -> None:
-    code, _, err = taxis("brain", "--target", "opencode", "--engineer", str(core_repo))
+    code, _, err = taxis("brain", "--target", "opencode", "--nous", str(core_repo))
     assert (code, "no brain projection" in err) == (14, True)
 
 
 def test_install_without_yes_prints_both_plans(taxis, on_world, core_repo: Path, claude_dir: Path) -> None:
-    code, out, _ = taxis("install", "--target", "claudecode", "--engineer", str(core_repo), "--profile", "house")
+    code, out, _ = taxis("install", "--target", "claudecode", "--nous", str(core_repo), "--profile", "house")
     assert code == 0
     assert all(word in out for word in ("CLAUDE.md", "tool", "gated", "blocked"))
     assert not claude_dir.exists()
@@ -108,7 +108,7 @@ def test_install_lands_brain_then_systems_in_one_undoable_run(
     taxis, on_world, core_repo: Path, runner, claude_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("GATED_TOKEN", "set")
-    install = ("install", "--target", "claudecode", "--engineer", str(core_repo), "--profile", "house", *OPEN)
+    install = ("install", "--target", "claudecode", "--nous", str(core_repo), "--profile", "house", *OPEN)
     code, out, _ = taxis(*install, "--yes")
     assert (code, "applied" in out) == (0, True)
     assert json.loads((claude_dir / "settings.json").read_text())["env"] == {"TOOL_ON": "1"}
@@ -119,7 +119,7 @@ def test_install_lands_brain_then_systems_in_one_undoable_run(
 
 
 def test_install_systems_failure_still_undoes_the_brain(taxis, on_world, core_repo: Path, claude_dir: Path) -> None:
-    install = ("install", "--target", "claudecode", "--engineer", str(core_repo), "--profile", "flaky", "--yes")
+    install = ("install", "--target", "claudecode", "--nous", str(core_repo), "--profile", "flaky", "--yes")
     code, _, err = taxis(*install)
     assert (code, "flaky" in err) == (10, True)
     assert (claude_dir / "CLAUDE.md").is_file()
@@ -128,5 +128,5 @@ def test_install_systems_failure_still_undoes_the_brain(taxis, on_world, core_re
 
 
 def test_install_systems_from_the_checkout_stack(taxis, on_world, core_repo: Path) -> None:
-    code, out, _ = taxis("install", "--target", "claudecode", "--engineer", str(core_repo))
+    code, out, _ = taxis("install", "--target", "claudecode", "--nous", str(core_repo))
     assert (code, "nothing wanted for this target" in out) == (0, True)

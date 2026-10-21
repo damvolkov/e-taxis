@@ -1,4 +1,4 @@
-"""tests/unit/e_taxis/commands/stack: `plan` and `verify` from a profile or an e-engineer checkout."""
+"""tests/unit/e_taxis/commands/stack: `plan` and `verify` from a profile or an e-nous checkout."""
 
 from typing import TYPE_CHECKING
 
@@ -15,8 +15,8 @@ def test_stack_plan_profile_fails_on_unknown_and_blocked(taxis, on_catalog) -> N
     assert "2 part(s) cannot be planned: delta, ghost" in err
 
 
-def test_stack_plan_engineer_json(taxis, on_catalog, engineer_root: Path) -> None:
-    code, out, _ = taxis("plan", "--target", "opencode", "--engineer", str(engineer_root), "--json")
+def test_stack_plan_nous_json(taxis, on_catalog, nous_root: Path) -> None:
+    code, out, _ = taxis("plan", "--target", "opencode", "--nous", str(nous_root), "--json")
     assert code == 0
     plan = msgspec.json.decode(out)
     assert (plan["target"], [(step["id"], step["action"]) for step in plan["steps"]]) == (
@@ -38,7 +38,7 @@ def test_stack_verify_profile_fails_on_a_failed_part(taxis, on_catalog) -> None:
     assert "2 part(s) failed verify: beta, ghost" in err
 
 
-def test_stack_verify_engineer_json_passes(taxis, on_catalog, engineer_root: Path) -> None:
-    code, out, _ = taxis("verify", "--target", "opencode", "--engineer", str(engineer_root), "--json")
+def test_stack_verify_nous_json_passes(taxis, on_catalog, nous_root: Path) -> None:
+    code, out, _ = taxis("verify", "--target", "opencode", "--nous", str(nous_root), "--json")
     assert code == 0
     assert [result["passed"] for result in msgspec.json.decode(out)["results"]] == [True, True]
