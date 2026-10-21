@@ -10,9 +10,9 @@ if TYPE_CHECKING:
 
 
 def test_logo_lands_one_svg_per_name(taxis: Callable[..., tuple[int, str, str]], tmp_path: Path) -> None:
-    code, _, _ = taxis("logo", "taxis", "templates", "--out", str(tmp_path))
+    code, _, _ = taxis("logo", "taxis", "arkhetypo", "--out", str(tmp_path))
     assert code == 0
-    assert sorted(path.name for path in tmp_path.glob("*.svg")) == ["e-taxis.svg", "e-templates.svg"]
+    assert sorted(path.name for path in tmp_path.glob("*.svg")) == ["e-arkhetypo.svg", "e-taxis.svg"]
     svg = tmp_path.joinpath("e-taxis.svg").read_text()
     assert svg.startswith('<svg width="2263" height="692" viewBox="0 0 2263 692"')
     assert 'aria-label="e-taxis"' in svg

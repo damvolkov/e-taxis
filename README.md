@@ -13,8 +13,8 @@ e-taxis owns its contract (`models/core.py`) and every projection of it. The con
 Three houses, one system: **arkhetypo** (e-arkhetypo) is the matter — project blueprints, the stack, the shared core this repo
 materializes; **e-nous** is the mind — its two hemispheres, tekton (the engineer) and nomos (the polymath); **e-taxis** is the
 joint — it projects one into the other, and grows past transpilation into the deterministic mounting and
-maintenance of whole systems. The mark: the house `e` beside a checker column — τάξις as rank, one square per
-verified part.
+maintenance of whole systems. The mark is the word itself in the house square font, on a banner that hugs
+it — same glyphs and colors across the family, one deterministic svg per name (`taxis logo`).
 
 ##### RUN #####
 
