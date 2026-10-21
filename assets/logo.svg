@@ -1,0 +1,33 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="e-taxis">
+  <rect width="1024" height="1024" fill="#060c15"/>
+  <g fill="#166b7e">
+    <rect x="37" y="408" width="23"  height="206"/>
+    <rect x="37" y="408" width="120" height="21"/>
+    <rect x="37" y="489" width="103" height="21"/>
+    <rect x="37" y="593" width="120" height="21"/>
+    <rect x="175" y="489" width="103" height="21"/>
+    <rect x="313" y="408" width="120" height="21"/>
+    <rect x="362" y="408" width="21"  height="206"/>
+    <rect x="451" y="408" width="21"  height="206"/>
+    <rect x="550" y="408" width="21"  height="206"/>
+    <rect x="451" y="408" width="120" height="21"/>
+    <rect x="451" y="499" width="120" height="21"/>
+    <rect x="589" y="408" width="27"  height="45"/>
+    <rect x="610" y="451" width="27"  height="45"/>
+    <rect x="635" y="496" width="27"  height="45"/>
+    <rect x="660" y="541" width="27"  height="45"/>
+    <rect x="684" y="585" width="25"  height="29"/>
+    <rect x="682" y="408" width="27"  height="45"/>
+    <rect x="660" y="451" width="27"  height="45"/>
+    <rect x="609" y="541" width="29"  height="45"/>
+    <rect x="589" y="585" width="25"  height="29"/>
+    <rect x="728" y="408" width="120" height="21"/>
+    <rect x="728" y="593" width="120" height="21"/>
+    <rect x="777" y="408" width="21"  height="206"/>
+    <rect x="866" y="408" width="120" height="21"/>
+    <rect x="866" y="499" width="120" height="21"/>
+    <rect x="866" y="593" width="120" height="21"/>
+    <rect x="866" y="408" width="21"  height="113"/>
+    <rect x="965" y="499" width="21"  height="114"/>
+  </g>
+</svg>
