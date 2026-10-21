@@ -8,8 +8,8 @@ import anyio
 import pytest
 
 from e_taxis.adapters.core import GitCore
-from e_taxis.models.core import CoreHook, CoreServer
-from e_taxis.models.error import CoreError
+from e_taxis.harness.models.core import CoreHook, CoreServer
+from e_taxis.harness.models.error import CoreError
 
 if TYPE_CHECKING:
     from pathlib import Path

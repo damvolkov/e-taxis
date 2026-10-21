@@ -17,7 +17,7 @@ import anyio
 import eserde
 import msgspec
 
-from e_taxis.models.core import (
+from e_taxis.harness.models.core import (
     BASE,
     CARRIED,
     CONFIG,
@@ -34,7 +34,7 @@ from e_taxis.models.core import (
     CorePersona,
     CoreSkill,
 )
-from e_taxis.models.error import CoreError
+from e_taxis.harness.models.error import CoreError
 
 
 ##### TYPES #####

@@ -13,15 +13,15 @@ from typing import TYPE_CHECKING
 import anyio
 
 from e_taxis.adapters.disk import read_file, remove_file, write_file
-from e_taxis.models.error import DigestError, RecipeError, RunnerError
-from e_taxis.models.journal import JournalFile
-from e_taxis.models.primitive import PrimitiveStep
-from e_taxis.models.recipe import RecipeBinary, RecipeBinaryPath
+from e_taxis.harness.models.error import DigestError, RecipeError, RunnerError
+from e_taxis.harness.models.journal import JournalFile
+from e_taxis.harness.models.primitive import PrimitiveStep
+from e_taxis.harness.models.recipe import RecipeBinary, RecipeBinaryPath
 
 if TYPE_CHECKING:
-    from e_taxis.adapters.ports import DownloaderPort, RunnerPort
-    from e_taxis.models.catalog import CatalogEntry, CatalogRecipe
-    from e_taxis.models.primitive import PrimitiveContext
+    from e_taxis.harness.models.catalog import CatalogEntry, CatalogRecipe
+    from e_taxis.harness.models.ports import DownloaderPort, RunnerPort
+    from e_taxis.harness.models.primitive import PrimitiveContext
 
 ##### DEFAULTS #####
 EXECUTABLE: int = 0o755

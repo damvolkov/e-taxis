@@ -9,13 +9,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from e_taxis.adapters.disk import read_file, remove_file, write_file
-from e_taxis.models.journal import JournalBlock
-from e_taxis.models.primitive import PrimitiveStep
-from e_taxis.models.recipe import RecipeBlock, RecipeFile
+from e_taxis.harness.models.journal import JournalBlock
+from e_taxis.harness.models.primitive import PrimitiveStep
+from e_taxis.harness.models.recipe import RecipeBlock, RecipeFile
 
 if TYPE_CHECKING:
-    from e_taxis.models.catalog import CatalogEntry, CatalogRecipe
-    from e_taxis.models.primitive import PrimitiveContext
+    from e_taxis.harness.models.catalog import CatalogEntry, CatalogRecipe
+    from e_taxis.harness.models.primitive import PrimitiveContext
 
 
 ##### TYPES #####

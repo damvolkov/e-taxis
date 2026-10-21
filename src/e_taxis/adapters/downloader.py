@@ -11,7 +11,7 @@ import wreq
 from wreq import exceptions
 from wreq.redirect import Policy
 
-from e_taxis.models.error import DownloadError
+from e_taxis.harness.models.error import DownloadError
 
 if TYPE_CHECKING:
     from pathlib import Path

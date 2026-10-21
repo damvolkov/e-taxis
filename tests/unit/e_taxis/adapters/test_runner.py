@@ -4,9 +4,9 @@ import asyncio
 
 import pytest
 
-from e_taxis.adapters.ports import RunnerPort
 from e_taxis.adapters.runner import ProcessRunner
-from e_taxis.models.error import RunnerError
+from e_taxis.harness.models.error import RunnerError
+from e_taxis.harness.models.ports import RunnerPort
 
 
 async def test_runner_satisfies_the_port() -> None:

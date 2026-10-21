@@ -28,7 +28,7 @@ def test_cli_build_imports_no_command_module() -> None:
     """Help and every group listing come from the cards: building the tree loads no command."""
     probe = (
         "import sys; from e_taxis.cli import build; build(); "
-        "sys.exit(len([m for m in sys.modules if m.startswith('e_taxis.commands')]))"
+        "sys.exit(len([m for m in sys.modules if m.startswith('e_taxis.harness.commands')]))"
     )
     assert subprocess.run([sys.executable, "-c", probe], check=False).returncode == 0  # noqa: S603 — fixed argv, own interpreter
 

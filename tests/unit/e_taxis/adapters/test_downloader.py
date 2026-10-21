@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 import pytest
 
 from e_taxis.adapters.downloader import WreqDownloader
-from e_taxis.adapters.ports import DownloaderPort
-from e_taxis.models.error import DownloadError
+from e_taxis.harness.models.error import DownloadError
+from e_taxis.harness.models.ports import DownloaderPort
 
 if TYPE_CHECKING:
     from pathlib import Path

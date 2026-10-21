@@ -10,11 +10,11 @@ import anyio
 import msgspec
 import yaml
 
-from e_taxis.models.catalog import Rollout, Target
-from e_taxis.models.error import CatalogError, SourceError
-from e_taxis.models.profile import Profile
-from e_taxis.models.stack import Stack
-from e_taxis.models.wanted import WantedPart
+from e_taxis.harness.models.catalog import Rollout, Target
+from e_taxis.harness.models.error import CatalogError, SourceError
+from e_taxis.harness.models.profile import Profile
+from e_taxis.harness.models.stack import Stack
+from e_taxis.harness.models.wanted import WantedPart
 
 if TYPE_CHECKING:
     from pathlib import Path

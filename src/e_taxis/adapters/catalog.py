@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 import anyio
 import msgspec
 
-from e_taxis.models.catalog import Catalog, CatalogEntry
+from e_taxis.harness.models.catalog import Catalog, CatalogEntry
 
 if TYPE_CHECKING:
     from pathlib import Path

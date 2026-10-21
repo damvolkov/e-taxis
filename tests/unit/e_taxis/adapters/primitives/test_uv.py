@@ -2,9 +2,9 @@
 
 import pytest
 
-from e_taxis.adapters.ports import PrimitivePort
-from e_taxis.models.error import RecipeError, RunnerError
-from e_taxis.models.journal import JournalCommand
+from e_taxis.harness.models.error import RecipeError, RunnerError
+from e_taxis.harness.models.journal import JournalCommand
+from e_taxis.harness.models.ports import PrimitivePort
 
 INSTALL = ("uv", "tool", "install", "git+https://x/tool@v1")
 UNINSTALL = ("uv", "tool", "uninstall", "tool")

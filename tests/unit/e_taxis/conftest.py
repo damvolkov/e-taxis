@@ -11,10 +11,10 @@ from typing import TYPE_CHECKING, ClassVar
 import anyio
 import pytest
 
-from e_taxis.adapters.ports import DownloaderPort, RunnerPort
 from e_taxis.cli import build
-from e_taxis.models.error import DownloadError, RunnerError
-from e_taxis.runtime.deps import Deps
+from e_taxis.harness.models.error import DownloadError, RunnerError
+from e_taxis.harness.models.ports import DownloaderPort, RunnerPort
+from e_taxis.harness.runtime.deps import Deps
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
     from pytest_resources import Resources
 
-    from e_taxis.models.journal import JournalEffect
+    from e_taxis.harness.models.journal import JournalEffect
 
 
 class MemoryStore:

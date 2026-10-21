@@ -9,7 +9,7 @@ import shlex
 from asyncio.subprocess import DEVNULL, PIPE, STDOUT
 from contextlib import suppress
 
-from e_taxis.models.error import RunnerError
+from e_taxis.harness.models.error import RunnerError
 
 ##### DEFAULTS #####
 TAIL: int = 3

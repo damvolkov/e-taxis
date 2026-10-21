@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING
 
 from e_taxis.adapters.catalog import FileCatalog
-from e_taxis.adapters.ports import CatalogPort
+from e_taxis.harness.models.ports import CatalogPort
 
 if TYPE_CHECKING:
     from pathlib import Path

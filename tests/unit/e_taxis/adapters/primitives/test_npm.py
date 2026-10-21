@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from e_taxis.adapters.ports import PrimitivePort
 from e_taxis.adapters.primitives.npm import NpmPrimitive
-from e_taxis.models.journal import JournalCommand
+from e_taxis.harness.models.journal import JournalCommand
+from e_taxis.harness.models.ports import PrimitivePort
 
 if TYPE_CHECKING:
     from pathlib import Path

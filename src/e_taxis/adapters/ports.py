@@ -1,94 +1,158 @@
-"""adapters.ports: what the e-taxis services may ask of the world — the catalog, a source of wanted parts, a core
-and its projection per harness, a probe; and on the writing side a command runner, a downloader, one primitive
-per installer, the journal's two ends.
+"""adapters/ports: what consumers (routers, deps, lifespan) may ask of an external service.
 
-Structural contracts only: an adapter satisfies its port by shape. A new source (another harness's
-registry), another probe (a container exec), another primitive or another harness's projection is a new
-adapter, never an edited service."""
+Structural contracts only — a Protocol, never an ABC: an adapter satisfies its port by shape,
+and swapping redis for sqlite edits one wiring line, zero domain code."""
 
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from enum import StrEnum, auto
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol, runtime_checkable
+
+import msgspec
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Mapping
+    from contextlib import AbstractContextManager
     from pathlib import Path
 
-    from e_taxis.models.brain import BrainRender
-    from e_taxis.models.catalog import Catalog, CatalogEntry, CatalogRecipe, Target
-    from e_taxis.models.core import Core
-    from e_taxis.models.journal import JournalEffect
-    from e_taxis.models.plan import Probe
-    from e_taxis.models.primitive import PrimitiveContext, PrimitiveResult
-    from e_taxis.models.wanted import WantedPart
+type AttributeValue = str | bool | int | float
 
 
 ##### TYPES #####
 @runtime_checkable
-class CatalogPort(Protocol):
-    """Every catalog entry, loaded at once: a broken file is reported in the result, never raised."""
+class StorePort(Protocol):
+    """Byte-keyed store: point reads, writes, deletes and a lazy key scan — the whole CRUD a consumer sees."""
 
-    async def load(self) -> Catalog: ...
+    name: ClassVar[str]
 
+    async def get(self, key: str) -> bytes | None:
+        """Missing key reads as None, never an exception."""
+        ...
 
-@runtime_checkable
-class SourcePort(Protocol):
-    """The parts one target wants, in the order the source lists them."""
+    async def set(self, key: str, value: bytes) -> None: ...
 
-    async def wanted(self, target: Target) -> tuple[WantedPart, ...]: ...
+    async def delete(self, key: str) -> None:
+        """Missing key is a no-op."""
+        ...
 
-
-@runtime_checkable
-class CorePort(Protocol):
-    """One read of an e-engineer core into the content contract; a CoreError when it cannot be read."""
-
-    async def load(self) -> Core: ...
-
-
-@runtime_checkable
-class HarnessPort(Protocol):
-    """A core projected for one harness, landing in `tree`. Pure: nothing is read or written."""
-
-    def render(self, core: Core, tree: Path) -> BrainRender: ...
+    def keys(self, prefix: str = "") -> AsyncIterator[str]:
+        """Keys starting with `prefix`, streamed lazily: an async generator, never a materialized list."""
+        ...
 
 
 @runtime_checkable
-class ProbePort(Protocol):
-    """Run one read-only shell command and report what it found: exit code, first line of output."""
+class HttpPort(Protocol):
+    """Outbound HTTP: GET and POST against the configured base, non-2xx raising the client's own error."""
 
-    async def run(self, command: str) -> Probe: ...
+    name: ClassVar[str]
 
+    async def get(self, path: str) -> object: ...
 
-@runtime_checkable
-class RunnerPort(Protocol):
-    """Run one argv, no shell: its output on exit 0, a RunnerError otherwise."""
-
-    async def run(self, argv: tuple[str, ...]) -> str: ...
+    async def post(self, path: str, payload: object) -> object: ...
 
 
-@runtime_checkable
-class DownloaderPort(Protocol):
-    """Fetch a URL into `dest`, following redirects; a DownloadError on any failure. Checking it is the caller's."""
+##### TELEMETRY #####
+class SpanKind(StrEnum):
+    """The span's role in a call: work inside a process, or one side of a remote exchange."""
 
-    async def fetch(self, url: str, dest: Path) -> None: ...
-
-
-@runtime_checkable
-class PrimitivePort(Protocol):
-    """One installer. Each call answers what it changed, so the journal can undo it; a PrimitiveError carries
-    whatever it had changed before failing."""
-
-    async def install(self, entry: CatalogEntry, recipe: CatalogRecipe, ctx: PrimitiveContext) -> PrimitiveResult: ...
-
-    async def uninstall(self, entry: CatalogEntry, recipe: CatalogRecipe, ctx: PrimitiveContext) -> PrimitiveResult: ...
+    INTERNAL = auto()
+    SERVER = auto()
+    CLIENT = auto()
+    PRODUCER = auto()
+    CONSUMER = auto()
 
 
-@runtime_checkable
-class RecorderPort(Protocol):
-    """The journal's writing end: effects recorded here are filed with the run."""
+class SpanStatus(StrEnum):
+    """A span's verdict: left unset, explicitly fine, or failed."""
 
-    def record(self, *effects: JournalEffect) -> None: ...
+    UNSET = auto()
+    OK = auto()
+    ERROR = auto()
 
 
 @runtime_checkable
-class UndoPort(Protocol):
-    """The journal's reverting end: put one recorded effect back."""
+class SpanPort(Protocol):
+    """An open span: its W3C hex ids, and what may still be written on it before it ends."""
 
-    async def run(self, effect: JournalEffect) -> None: ...
+    @property
+    def trace_id(self) -> str: ...
+
+    @property
+    def span_id(self) -> str: ...
+
+    def record(self, attributes: Mapping[str, AttributeValue]) -> None:
+        """Set attributes known only once the work ran — its output, its outcome."""
+        ...
+
+    def event(self, name: str, attributes: Mapping[str, AttributeValue]) -> None:
+        """A timestamped point inside the span."""
+        ...
+
+    def status(self, status: SpanStatus, description: str = "") -> None:
+        """Settle the verdict explicitly; a clean exit settles OK, a raise settles ERROR on its own."""
+        ...
+
+
+@runtime_checkable
+class TelemetryPort(Protocol):
+    """Tracing: open a span around a block; a raise inside is recorded on the span, then propagates."""
+
+    name: ClassVar[str]
+
+    def span(
+        self, name: str, attributes: Mapping[str, AttributeValue], kind: SpanKind = SpanKind.INTERNAL
+    ) -> AbstractContextManager[SpanPort]: ...
+
+
+##### DOCUMENTS #####
+class DocumentConversion(msgspec.Struct, frozen=True, kw_only=True):
+    """One document converted: the forms asked for (absent ones empty), the outcome, and what it cost.
+
+    `document` is the lossless DoclingDocument as JSON — every text, table, picture and its provenance;
+    `markdown`, `html`, `text` and `doctags` are its renderings. `status` is the converter's own
+    (`success`, `partial_success`); `errors` carries what a partial conversion lost."""
+
+    filename: str
+    status: str
+    markdown: str = ""
+    document: dict[str, Any] = msgspec.field(default_factory=dict)
+    html: str = ""
+    text: str = ""
+    doctags: str = ""
+    errors: tuple[dict[str, Any], ...] = ()
+    seconds: float = 0.0
+
+
+@runtime_checkable
+class DocumentPort(Protocol):
+    """Document conversion: a URL, raw bytes or a local file in, its structured forms out.
+
+    `options` overrides the configured conversion per call, in the converter's own option names."""
+
+    name: ClassVar[str]
+
+    async def convert(
+        self, source: str | bytes | Path, *, filename: str = "", options: Mapping[str, object] | None = None
+    ) -> DocumentConversion: ...
+
+
+##### MARKDOWN #####
+class MdConversion(msgspec.Struct, frozen=True, kw_only=True):
+    """One file rendered to Markdown: the body, and what the converter lost along the way.
+
+    `markdown` is the text; `warnings` are the engine's own notes about a conversion it did not fail on
+    (an image it skipped, a block it could not read) — empty when the run was clean."""
+
+    markdown: str
+    warnings: tuple[str, ...] = ()
+
+
+@runtime_checkable
+class MdConvertPort(Protocol):
+    """Render the bytes of one file, whose `extension` the caller names, to Markdown.
+
+    The engine is the anytomd binding — it reads office documents, markup, tables, notebooks, code and text,
+    and folds in PDF and image descriptions itself — so `extension` only says what the bytes are, not who will
+    read them. Swapping or wrapping the engine is one wiring line and zero caller change."""
+
+    name: ClassVar[str]
+
+    async def convert(self, data: bytes, *, extension: str) -> MdConversion: ...
