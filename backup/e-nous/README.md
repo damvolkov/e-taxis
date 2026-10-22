@@ -12,5 +12,6 @@ beside it are the ones it needs, copied for reading). Never imported, linted or 
 | `ops/models/`, `ops/core/` | the spec, history, entity, mcp and graph models; settings and dotted helpers it imports |
 | `specs/` | the per-entity spec files of v1 (tekton, nomos), with `ghost.yaml` and `sources.yml` |
 | `tests/unit/ops/transpiler/`, `tests/integration-transpiler/` | its suites |
+| `golden/` | its pure render of all four backends into empty trees (428 files + Claude's MCP registrations), absolute `{out}` = `/tmp/e-nous-golden-v1/<backend>`: compare modulo that prefix |
 
 Delete once the new transpiler covers every behaviour listed in e-nous `specsv2/base.yaml`.

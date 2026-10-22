@@ -1,0 +1,82 @@
+{
+  "context7": {
+    "type": "stdio",
+    "command": "npx",
+    "args": [
+      "-y",
+      "@upstash/context7-mcp"
+    ]
+  },
+  "serena": {
+    "type": "stdio",
+    "command": "uvx",
+    "args": [
+      "--from",
+      "git+https://github.com/oraios/serena",
+      "serena",
+      "start-mcp-server",
+      "--context",
+      "ide-assistant"
+    ]
+  },
+  "exa": {
+    "type": "http",
+    "url": "https://mcp.exa.ai/mcp"
+  },
+  "searxng": {
+    "type": "stdio",
+    "command": "npx",
+    "args": [
+      "-y",
+      "mcp-searxng"
+    ],
+    "env": {
+      "SEARXNG_URL": "http://localhost:45600"
+    }
+  },
+  "playwright": {
+    "type": "stdio",
+    "command": "npx",
+    "args": [
+      "-y",
+      "@playwright/mcp@0.0.56"
+    ],
+    "env": {
+      "PLAYWRIGHT_MCP_CONFIG": "/tmp/e-nous-golden-v1/claudecode/mcp/playwright.json"
+    }
+  },
+  "docling": {
+    "type": "stdio",
+    "command": "uvx",
+    "args": [
+      "--from",
+      "docling-mcp",
+      "docling-mcp-server",
+      "--transport",
+      "stdio"
+    ],
+    "env": {
+      "DOCLING_MCP_CONVERSION_MODE": "remote",
+      "DOCLING_MCP_SERVICE_URL": "http://localhost:45800"
+    }
+  },
+  "codebase-memory-mcp": {
+    "type": "stdio",
+    "command": "/home/damien/.local/bin/codebase-memory-mcp",
+    "args": []
+  },
+  "tree-sitter": {
+    "type": "stdio",
+    "command": "uvx",
+    "args": [
+      "--from",
+      "mcp-server-tree-sitter",
+      "--with",
+      "mcp<2",
+      "mcp-server-tree-sitter"
+    ],
+    "env": {
+      "MCP_TS_LOG_LEVEL": "WARNING"
+    }
+  }
+}

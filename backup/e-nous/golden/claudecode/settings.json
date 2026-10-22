@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "model": "opus[1m]",
+  "effortLevel": "xhigh",
+  "tui": "fullscreen",
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "MultiEdit(*)",
+      "Glob(*)",
+      "WebFetch(*)",
+      "TodoWrite(*)",
+      "Read(//home/damien/workspaces/damien/e-voice/src/e_voice/**)",
+      "Read(//home/damien/workspaces/damien/e-core/libs/ecore/src/ecore/**)",
+      "mcp__codebase-memory-mcp",
+      "WebSearch"
+    ],
+    "defaultMode": "auto",
+    "additionalDirectories": [
+      "/home/damien/workspaces/damien/et-mlapi/.vscode",
+      "/home/damien/workspaces/damien/e-voice/.vscode",
+      "/home/damien/.claude/plugins/marketplaces/claude-plugins-official/plugins/frontend-design/skills/frontend-design"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /tmp/e-nous-golden-v1/claudecode/hooks/cbm-session-reminder"
+          }
+        ]
+      },
+      {
+        "matcher": "resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /tmp/e-nous-golden-v1/claudecode/hooks/cbm-session-reminder"
+          }
+        ]
+      },
+      {
+        "matcher": "clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /tmp/e-nous-golden-v1/claudecode/hooks/cbm-session-reminder"
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /tmp/e-nous-golden-v1/claudecode/hooks/cbm-session-reminder"
+          }
+        ]
+      },
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /tmp/e-nous-golden-v1/claudecode/hooks/autolearn.mjs start"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /tmp/e-nous-golden-v1/claudecode/hooks/autolearn.mjs stop"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /tmp/e-nous-golden-v1/claudecode/hooks/autolearn.mjs end"
+          }
+        ]
+      }
+    ]
+  }
+}

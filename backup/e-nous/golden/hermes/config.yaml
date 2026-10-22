@@ -1,0 +1,72 @@
+model:
+  provider: nomos-alibaba
+  default: deepseek-v4.1-flash
+providers:
+  nomos-alibaba:
+    base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"
+    api_mode: anthropic_messages
+    key_env: ALIBABA_API_KEY
+  nomos-vllm:
+    base_url: "http://127.0.0.1:45100/v1"
+    api_mode: chat_completions
+    key_env: LLM_API_KEY
+fallback_providers:
+- provider: nomos-alibaba
+  model: qwen3.8-max
+auxiliary:
+  compression:
+    provider: nomos-vllm
+    model: demian-model
+  memory_query_rewrite:
+    provider: nomos-vllm
+    model: demian-model
+  title_generation:
+    provider: nomos-alibaba
+    model: qwen3.8-flash
+  approval:
+    provider: nomos-alibaba
+    model: qwen3.8-flash
+  triage_specifier:
+    provider: nomos-alibaba
+    model: qwen3.8-flash
+  goal_judge:
+    provider: nomos-alibaba
+    model: deepseek-v4-pro
+  review:
+    provider: nomos-alibaba
+    model: deepseek-v4-pro
+  curator:
+    provider: nomos-vllm
+    model: demian-model
+  background_review:
+    provider: nomos-vllm
+    model: demian-model
+delegation:
+  provider: nomos-alibaba
+  model: deepseek-v4.1-flash
+agent:
+  max_turns: none
+terminal:
+  cwd: /tmp/e-nous-golden-v1/hermes/workspace
+  timeout: 600
+tool_output:
+  max_bytes: 100000
+web:
+  search_backend: exa
+approvals:
+  mode: "off"
+timezone: Europe/Madrid
+context_file_max_chars: 60000
+discord:
+  require_mention: false
+  allowed_channels: ""
+mcp_servers:
+  e-metaxy:
+    url: "http://127.0.0.1:45190/mcp"
+    headers: {}
+  exa:
+    url: "https://mcp.exa.ai/mcp"
+    headers: {}
+  context7:
+    url: "https://mcp.context7.com/mcp"
+    headers: {}

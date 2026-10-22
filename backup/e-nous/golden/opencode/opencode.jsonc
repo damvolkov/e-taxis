@@ -1,0 +1,235 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "username": "damien",
+  "model": "bailian-token-plan-personal/qwen3.8-max",
+  "small_model": "bailian-token-plan-personal/qwen3.6-flash",
+  "agent": {
+    "plan": {
+      "model": "bailian-token-plan-personal/qwen3.6-flash"
+    },
+    "autolearn-reviewer": {
+      "description": "Reviews past conversations for self-improvement opportunities",
+      "model": "bailian-token-plan-personal/qwen3.6-flash",
+      "hidden": true,
+      "steps": 20,
+      "prompt": "Load the autolearn-reviewer skill and follow its instructions to review the attached conversation for learning opportunities. Take immediate action: record observations, update memory, create or patch skills.",
+      "permission": {
+        "bash": "allow",
+        "read": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "write": "allow",
+        "edit": "deny",
+        "webfetch": "deny",
+        "task": "deny",
+        "skill": "allow",
+        "external_directory": "allow"
+      }
+    }
+  },
+  "plugin": [
+    "token-optimizer-opencode",
+    "opencode-skill-creator"
+  ],
+  "instructions": [
+    "~/.autolearn/personas/default/memory.context.md",
+    "/tmp/e-nous-golden-v1/opencode/skills/tax-py-naming/SKILL.md",
+    "/tmp/e-nous-golden-v1/opencode/skills/conc-py-async/SKILL.md",
+    "/tmp/e-nous-golden-v1/opencode/skills/para-py-dispatch/SKILL.md"
+  ],
+  "mcp": {
+    "context7": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "enabled": true
+    },
+    "serena": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "ide-assistant"
+      ],
+      "enabled": true
+    },
+    "exa": {
+      "type": "remote",
+      "url": "https://mcp.exa.ai/mcp",
+      "enabled": true
+    },
+    "searxng": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "mcp-searxng"
+      ],
+      "environment": {
+        "SEARXNG_URL": "http://localhost:45600"
+      },
+      "enabled": true
+    },
+    "playwright": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@playwright/mcp@0.0.56"
+      ],
+      "environment": {
+        "PLAYWRIGHT_MCP_CONFIG": "/tmp/e-nous-golden-v1/opencode/mcp/playwright.json"
+      },
+      "enabled": true
+    },
+    "docling": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--from",
+        "docling-mcp",
+        "docling-mcp-server",
+        "--transport",
+        "stdio"
+      ],
+      "environment": {
+        "DOCLING_MCP_CONVERSION_MODE": "remote",
+        "DOCLING_MCP_SERVICE_URL": "http://localhost:45800"
+      },
+      "enabled": true
+    },
+    "codebase-memory-mcp": {
+      "type": "local",
+      "command": [
+        "/home/damien/.local/bin/codebase-memory-mcp"
+      ],
+      "enabled": true
+    },
+    "tree-sitter": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--from",
+        "mcp-server-tree-sitter",
+        "--with",
+        "mcp<2",
+        "mcp-server-tree-sitter"
+      ],
+      "environment": {
+        "MCP_TS_LOG_LEVEL": "WARNING"
+      },
+      "enabled": true
+    }
+  },
+  "permission": {
+    "read": "allow",
+    "external_directory": "allow",
+    "webfetch": "allow",
+    "edit": {
+      "*": "allow",
+      ".env*": "ask",
+      ".ssh/**": "ask",
+      ".aws/**": "ask",
+      ".gnupg/**": "ask",
+      "*.pem": "ask",
+      "*.key": "ask",
+      "id_rsa*": "ask",
+      "*/.git/config": "ask"
+    },
+    "bash": {
+      "*": "allow",
+      "rm -rf *": "ask",
+      "sudo *": "ask",
+      "dd *": "ask",
+      "chmod -R *": "ask",
+      "curl * | *": "ask",
+      "mkfs*": "ask"
+    },
+    "skill": {
+      "tax-py-naming": "allow",
+      "conc-py-async": "allow",
+      "para-py-dispatch": "allow"
+    }
+  },
+  "enabled_providers": [
+    "bailian-token-plan-personal"
+  ],
+  "provider": {
+    "bailian-token-plan-personal": {
+      "npm": "@ai-sdk/anthropic",
+      "name": "Alibaba Cloud Model Studio",
+      "options": {
+        "baseURL": "https://token-plan.ap-southeast-1.maas.aliyuncs.com/apps/anthropic/v1",
+        "apiKey": "{env:ALIBABA_TOKEN_PLAN_KEY}"
+      },
+      "models": {
+        "qwen3.8-max": {
+          "name": "builder",
+          "reasoning": true,
+          "limit": {
+            "context": 983616,
+            "output": 131072
+          },
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "options": {
+            "thinking": {
+              "type": "enabled",
+              "budgetTokens": 16384
+            }
+          }
+        },
+        "qwen3.7-max": {
+          "name": "planner",
+          "options": {
+            "thinking": {
+              "type": "enabled",
+              "budgetTokens": 8192
+            }
+          }
+        },
+        "glm-5.3": {
+          "name": "tester",
+          "options": {
+            "thinking": {
+              "type": "enabled",
+              "budgetTokens": 8192
+            }
+          }
+        },
+        "qwen3.6-flash": {
+          "name": "scout",
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "options": {
+            "thinking": {
+              "type": "enabled",
+              "budgetTokens": 8192
+            }
+          }
+        }
+      }
+    }
+  }
+}
