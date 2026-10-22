@@ -16,6 +16,18 @@ joint — it projects one into the other, and grows past transpilation into the 
 maintenance of whole systems. The mark is the word itself in the house square font, on a banner that hugs
 it — same glyphs and colors across the family, one deterministic svg per name (`taxis logo`).
 
+One triumvirate, all Greek — the mind decides, the archetypes hold the forms, the order executes:
+
+<p align="center">
+  <img src="assets/triumvirate.svg" alt="e-nous · e-arkhetypo · e-taxis" height="230" />
+</p>
+
+| Pillar | Is | Changes here |
+|---|---|---|
+| [e-nous](https://github.com/damvolkov/e-nous) | the mind — persona, skills, agents, commands, workflows, evals, and the transpiler | doctrine |
+| [e-arkhetypo](https://github.com/damvolkov/e-arkhetypo) | the archetypes — project blueprints, stacks, CI sources; data only | templates |
+| **e-taxis** | the order — the deterministic engine that turns archetypes into running things and installs the mind into each harness | tools |
+
 ##### RUN #####
 
 ```bash
