@@ -1,0 +1,92 @@
+# specs/ — catálogo de fuentes para el agente mantenedor (cron).
+# Cada categoría es un tipo de cambio posible en el harness de Claude Code; `sources`
+# dice dónde se detecta. El mantenedor hace diff periódico de estas fuentes y
+# actualiza `release`/`verified`/`status` en las specs del backend.
+# Las categorías son idénticas a las de specs/tekton/opencode/sources.yml.
+
+backend: claudecode
+product: Claude Code
+verified: "2026-09-29"                 # todas las URLs comprobadas (HTTP 200) en esta fecha
+repo: https://github.com/anthropics/claude-code   # binario cerrado: el repo solo trae CHANGELOG + issues
+docs_root: "https://code.claude.com/docs/en/"
+docs_format: "añadir `.md` a cualquier página → markdown plano (ideal para diff)"
+
+entities_index:
+  - { name: llms-index, kind: markdown, url: "https://code.claude.com/docs/llms.txt", purpose: "índice completo de docs: una página nueva = entidad o superficie nueva" }
+  - { name: settings-schema, kind: json, url: "https://json.schemastore.org/claude-code-settings.json", purpose: "secciones raíz del schema = categorías de config/entidad" }
+
+categories:
+
+  core:
+    watch: "nueva versión del harness → bump `release` en todas las specs del backend"
+    sources:
+      - { name: github-releases-atom, kind: atom, url: "https://github.com/anthropics/claude-code/releases.atom" }
+      - { name: github-releases-api, kind: api, url: "https://api.github.com/repos/anthropics/claude-code/releases/latest" }
+      - { name: npm-latest, kind: npm, url: "https://registry.npmjs.org/@anthropic-ai/claude-code/latest" }
+      - { name: npm-dist-tags, kind: api, url: "https://registry.npmjs.org/-/package/@anthropic-ai%2Fclaude-code/dist-tags", note: "stable vs latest vs next: `stable` va detrás; la spec sigue `latest`" }
+
+  changelog:
+    watch: "notas por versión: features, fixes, breaking changes → reclasificar en las categorías de abajo"
+    sources:
+      - { name: changelog-md, kind: markdown, url: "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md", note: "fuente primaria, por versión; diff directo del raw" }
+      - { name: docs-changelog, kind: markdown, url: "https://code.claude.com/docs/en/changelog.md" }
+      - { name: whats-new, kind: markdown, url: "https://code.claude.com/docs/en/whats-new.md", note: "narrativa de features nuevas: útil para clasificar señales" }
+
+  config:
+    watch: "clave nueva, retirada o renombrada en settings.json (user/project/local/managed)"
+    sources:
+      - { name: settings-schema, kind: json, url: "https://json.schemastore.org/claude-code-settings.json", note: "schema de settings: diff de propiedades = filas nuevas en config.yaml" }
+      - { name: settings-reference, kind: markdown, url: "https://code.claude.com/docs/en/settings-reference.md", note: "todas las claves con tipo y default: la lista canónica" }
+      - { name: settings-docs, kind: markdown, url: "https://code.claude.com/docs/en/settings.md", note: "ficheros y precedencia" }
+      - { name: managed-settings, kind: markdown, url: "https://code.claude.com/docs/en/managed-settings.md" }
+
+  entities:
+    watch: "propiedad nueva en el frontmatter/plantilla de una entidad, entidad nueva, formato retirado (p. ej. commands absorbidos por skills)"
+    specs:
+      agent:     { spec: agent.yaml, docs: "https://code.claude.com/docs/en/sub-agents.md" }
+      command:   { spec: command.yaml, docs: ["https://code.claude.com/docs/en/slash-commands.md", "https://code.claude.com/docs/en/commands.md"], note: "vigilar migración command→skill: deprecaciones aquí" }
+      skill:     { spec: skill.yaml, docs: "https://code.claude.com/docs/en/skills.md", note: "incluye bundled skills y frontmatter extendido (context fork, allowed-tools…)" }
+      workflow:  { spec: workflow.yaml, docs: "https://code.claude.com/docs/en/workflows.md", note: "dynamic workflows" }
+      persona:   { spec: persona.yaml, docs: ["https://code.claude.com/docs/en/memory.md", "https://code.claude.com/docs/en/claude-directory.md"], note: "~/.claude/CLAUDE.md; AGENTS.md solo a nivel de proyecto" }
+    sources:
+      - { name: llms-index, kind: markdown, url: "https://code.claude.com/docs/llms.txt", note: "diff del índice: entidad nueva = página nueva" }
+      - { name: extend-overview, kind: markdown, url: "https://code.claude.com/docs/en/features-overview.md", note: "mapa oficial de entidades: cuándo nace o muere una categoría" }
+
+  tools:
+    watch: "herramienta built-in nueva/renombrada/retirada; requisitos de permiso por herramienta"
+    sources:
+      - { name: tools-reference, kind: markdown, url: "https://code.claude.com/docs/en/tools-reference.md", note: "inventario canónico con permisos" }
+      - { name: permissions-docs, kind: markdown, url: "https://code.claude.com/docs/en/permissions.md" }
+
+  extensions:
+    watch: "plugins, hooks y MCP: campos nuevos de manifest, eventos nuevos, marketplaces"
+    sources:
+      - { name: plugin-manifest, kind: markdown, url: "https://code.claude.com/docs/en/plugins/manifest-reference.md", note: "plugin.json: cada campo con tipo y default" }
+      - { name: plugin-components, kind: markdown, url: "https://code.claude.com/docs/en/plugins/components.md", note: "qué componente tipo entidad puede empaquetar un plugin" }
+      - { name: marketplace-reference, kind: markdown, url: "https://code.claude.com/docs/en/plugins/marketplace-reference.md" }
+      - { name: anthropic-marketplaces, kind: markdown, url: "https://code.claude.com/docs/en/plugins/anthropic-marketplaces.md", note: "repos de marketplace oficiales: fuente de plantillas reales" }
+      - { name: hooks-reference, kind: markdown, url: "https://code.claude.com/docs/en/hooks.md", note: "eventos y schema JSON de hooks" }
+      - { name: mcp-docs, kind: markdown, url: "https://code.claude.com/docs/en/mcp.md" }
+
+  cli:
+    watch: "subcomandos/flags nuevos; slash commands built-in nuevas"
+    sources:
+      - { name: cli-reference, kind: markdown, url: "https://code.claude.com/docs/en/cli-reference.md" }
+      - { name: commands-list, kind: markdown, url: "https://code.claude.com/docs/en/commands.md", note: "built-ins + bundled skills" }
+      - { name: platforms, kind: markdown, url: "https://code.claude.com/docs/en/platforms.md", note: "superficies (CLI/IDE/web/desktop): dónde existen variantes del harness" }
+
+  deprecations:
+    watch: "retiradas y breaking changes → `status: deprecated` en la spec afectada"
+    sources:
+      - { name: changelog-grep, kind: markdown, url: "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md", note: "grep: deprecat|remove|no longer|replac" }
+      - { name: whats-new-grep, kind: markdown, url: "https://code.claude.com/docs/en/whats-new.md" }
+      - { name: issues-search, kind: api, url: "https://api.github.com/search/issues?q=repo:anthropics/claude-code+deprecated+OR+removal+in:title", note: "sin auth: respetar rate limit" }
+
+  community:
+    watch: "señal temprana antes de release: decisiones de diseño, deprecaciones anunciadas"
+    sources:
+      - { name: issues, kind: api, url: "https://api.github.com/repos/anthropics/claude-code/issues?state=all&sort=updated" }
+
+# Modelo de mantenimiento: el agente diff-ea estas fuentes, y por cada señal abre
+# o actualiza la spec de la categoría afectada. Nada entra en el transpiler con
+# `status: pending`.

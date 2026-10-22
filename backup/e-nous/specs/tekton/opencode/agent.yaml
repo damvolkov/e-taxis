@@ -1,0 +1,28 @@
+# Machine spec — how a structured agent transpiles to a flat OpenCode agent.
+# Consumed by ops/internal/transpiler.py via eserde+msgspec. Data, not code.
+# To react to a release: copy to a new date and edit; transpiler takes the highest.
+# Source: ops/templates/flat/AGENTS.md · opencode docs verified 2026-09-23.
+entity: agent
+release: "2026.09.23"
+verified: "2026-09-25"
+sources: ["https://opencode.ai/docs/agents/"]
+status: ready
+
+structured_manifest: agent.yaml
+
+flat:
+  path: "agents/{id}.md"
+  body_slot: prompt              # system prompt body (no title for agents)
+  body_preload:                  # structured list slot -> a "Load first:" line before the body
+    slot: skills_preload
+    line: "Load first: {join: ', '}."
+  frontmatter:                   # ORDER matters
+    - { slot: description, key: description, required: true }
+    - { slot: mode,        key: mode }
+    - { slot: model,       key: model, resolve: tier }   # tier name -> provider/model via opencode.jsonc
+    - { slot: max_steps,   key: steps }
+    - { slot: hidden,      key: hidden }
+    - { slot: permission,  key: permission }
+  house_only: [persona, skills_preload, skills_ondemand, mcp_servers]  # never emitted as flat keys; MCP scope rides in permission as `<server>_<tool>`
+
+references: {}                   # agents carry no auxiliary corpus

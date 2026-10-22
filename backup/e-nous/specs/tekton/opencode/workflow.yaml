@@ -1,0 +1,30 @@
+# specs/ — modelo mantenido del backend (cronificado: release/verified).
+# OpenCode no tiene tipo workflow nativo: la forma plana es convención de casa —
+# una especificación interpretada por un agente lead (el command /workflow), que
+# recorre el grafo y delega cada nodo con task/@agent. El transpiler solo renderiza.
+entity: workflow
+release: "2026.09.23"                  # release opencode contra el que se cotejó el modelo de agents/commands
+verified: "2026-09-29"
+sources: ["ops/templates/structured/workflow.yaml", "https://opencode.ai/docs/agents/"]
+status: ready
+
+structured_manifest: workflow.yaml
+
+flat:
+  path: "workflows/{id}.md"
+  body_slot: nodes                     # presente pero derivado: cuando hay `graph`, el cuerpo lo posee el grafo
+  frontmatter:                         # ORDER matters
+    - { slot: id,          key: id,          required: true }
+    - { slot: description, key: description, required: true }
+    - { slot: parameters,  key: parameters }
+  house_only: [nodes, output, loop]          # consumidos por el render del grafo, nunca claves de frontmatter
+
+graph:
+  nodes_slot: nodes
+  output_slot: output
+  start: start
+  done: done
+
+references: {}
+
+notes: "ejecutor: el lead (command /workflow), nunca el transpiler. Paralelismo = hermanos con el mismo depends y sin arista entre ellos; join = nodo con varios padres; actor null = acción directa del lead. {{clave}} referencia parameters en cada instrucción. En claude-code la proyección nativa es claude-script (otro spec, aún pending)."

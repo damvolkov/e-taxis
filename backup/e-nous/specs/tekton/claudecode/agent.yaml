@@ -1,0 +1,41 @@
+# Machine spec — how a structured agent transpiles to a flat Claude Code subagent.
+# Consumed by ops/transpiler/render.py via eserde+msgspec. Data, not code.
+# Source: https://code.claude.com/docs/en/sub-agents.md + tools-reference.md, read 2026-10-02.
+entity: agent
+release: "2026.10.02"
+verified: "2026-10-02"
+sources: ["https://code.claude.com/docs/en/sub-agents.md", "https://code.claude.com/docs/en/tools-reference.md"]
+status: ready
+
+structured_manifest: agent.yaml
+
+flat:
+  path: "agents/{id}.md"
+  body_slot: prompt                    # system prompt body (no title)
+  frontmatter:                         # ORDER matters
+    - { slot: id,             key: name,        required: true }   # sin `name` Claude trata el fichero como documentación
+    - { slot: description,    key: description, required: true }
+    - { slot: skills_preload, key: skills }                         # precarga nativa: el contenido entero, no una línea
+    - { slot: max_steps,      key: maxTurns }
+    - { slot: mcp_servers,    key: mcpServers }                     # referencias a servidores ya configurados (config/mcp.yaml)
+    - slot: permission
+      key: disallowedTools
+      resolve: denied                  # solo `deny` plano (o "*": deny sin allows) → herramienta vetada
+      table:
+        read: [Read]
+        glob: [Glob]
+        grep: [Grep]
+        bash: [Bash]
+        edit: [Edit, Write, NotebookEdit]
+        task: [Agent]
+        todowrite: [TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate]
+        webfetch: [WebFetch]
+        websearch: [WebSearch]
+        lsp: [LSP]
+        question: [AskUserQuestion]
+        skill: [Skill]
+  house_only: [persona, mode, hidden, model, skills_ondemand, skills_full_scope]
+
+references: {}
+
+notes: "model se omite (= inherit): los tiers de casa nombran ids de bailian que Claude no sirve sin redirigir el proveedor; un tier→alias claude sería una columna nueva en core/tekton/config/models.yaml. Sin equivalente nativo: mode (todo agente Claude es subagente), hidden, list, external_directory, y los permisos acotados por patrón (bash 'git push*': deny, edit docs/**: allow, skill allowlist) — quedan al sistema de permisos del coder."

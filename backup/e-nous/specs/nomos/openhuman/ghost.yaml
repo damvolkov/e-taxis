@@ -1,0 +1,75 @@
+# Machine spec — how a phantom OpenHuman is raised in a sandbox and what it must see. Data, not code.
+# Consumed by ops/trial (tests/integration). Placeholders: ${home} ${tree} ${llm} ${path} ${profile} ${port} ${turn} ${document} ${name}.
+# Verified 2026-10-06 against OpenHuman v0.64.10: a real headless turn (core run --headless-api + channel_web_chat)
+# sends SOUL, IDENTITY, ROLE, AGENTS.md, STYLE, PROFILE and MEMORY to the fake LLM — no account, no network.
+backend: openhuman
+release: "2026.09.30"
+verified: "2026-10-06"
+status: ready
+sources:
+  - https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/agent/prompts/README.md
+  - https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/inference/provider/factory/access_gates.rs
+  - https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-cli/src/bin/fleet.rs
+tree: .config                          # one root, the vault: memory/persona/ (real files) and memory/openhuman/users/<profile>/ (config, workspace)
+llm: openai                            # the overlay routes every role to a keyless provider at ${llm}/v1
+network: local
+env:
+  PATH: ${path}
+  HOME: ${home}
+  TMPDIR: ${home}/tmp
+  OPENHUMAN_WORKSPACE: ${home}/.config/memory/openhuman/users/${profile}   # the user dir: config.toml beside workspace/
+  OPENHUMAN_CORE_TOKEN: ghost-token
+  OPENHUMAN_APPROVAL_GATE: "0"
+links:                                 # the production topology: workspace/<file> → memory/persona/<file>; AGENTS.md is a real file
+  - { path: "${home}/.config/memory/openhuman/users/${profile}/workspace/${name}", to: "${tree}/${document}", only: "memory/persona/*" }
+state:                                 # an established install: from schema 0 OpenHuman migrates, and phase_out_profile_md deletes workspace/PROFILE.md
+  - path: ${home}/.config/memory/openhuman/users/${profile}/config.toml
+    text: "schema_version = 13\nonboarding_completed = true\n"
+setup:                                 # custom providers need a backend credential; an API-key profile satisfies the gate offline
+  - [openhuman, core, auth, set_credential, --token, ghost-api-key, --kind, api-key]
+overlays:                              # every role to the fake endpoint while the phantom loads; the next apply restores the render
+  - path: ${home}/.config/memory/openhuman/users/${profile}/config.toml
+    format: toml
+    swap:                              # the rendered embedder (core/nomos/config/memory.yaml) answered by the fake: every place the render put it
+      "http://localhost:45110/v1": "${llm}/v1"
+    set:
+      primary_cloud: p_ghost
+      default_model: "ghost:x"
+      chat_provider: "ghost:x"
+      reasoning_provider: "ghost:x"
+      agentic_provider: "ghost:x"
+      coding_provider: "ghost:x"
+      memory_provider: "ghost:x"
+      learning_provider: "ghost:x"
+    extend:                            # appended: the rendered providers stay — the memory host finds the embedder among them by slug
+      cloud_providers: [{ id: p_ghost, slug: ghost, label: Ghost, endpoint: "${llm}/v1", auth_style: none }]
+probes:
+  - name: orchestrator
+    kind: command
+    argv: [openhuman, core, agent, dump-prompt, --agent, orchestrator, --workspace, "${home}/.config/memory/openhuman/users/${profile}/workspace", --json]
+  - name: session                      # a real turn: what the orchestrator sends its model, AGENTS.md included
+    kind: capture
+    serve: [openhuman, core, run, --headless-api, --port, "${port}"]
+    ready: [curl, -sf, -X, POST, "http://127.0.0.1:${port}/rpc", -H, "authorization: Bearer ghost-token", -H, "content-type: application/json", -d, '{"jsonrpc":"2.0","id":0,"method":"openhuman.health_snapshot","params":{}}']
+    argv: [curl, -sf, -X, POST, "http://127.0.0.1:${port}/rpc", -H, "authorization: Bearer ghost-token", -H, "content-type: application/json", -d, '{"jsonrpc":"2.0","id":1,"method":"openhuman.channel_web_chat","params":{"client_id":"ghost","thread_id":"ghost-${turn}","message":"ghost"}}']
+    timeout: 60
+    wait: 30
+sees:
+  persona: [session]                   # every document, as the orchestrator's first request carries it
+memory:                                # the memory pipeline over the applied tree: a note in a rendered source, embedded, sealed into a tree
+  seed:                                # the module the core would download, from the real cache: the fence keeps the network local
+    - { path: "~/.cache/openhuman/modules/tinymemory", to: "${home}/.cache/openhuman/modules/tinymemory" }
+  serve: [openhuman, core, run, --headless-api, --port, "${port}"]
+  rpc: "http://127.0.0.1:${port}/rpc"
+  token: ghost-token
+  source: src_vault_notes
+  store: ${home}/.config/memory/openhuman/users/${profile}/workspace/memory_tree/chunks.db
+  counts:
+    chunks: "select count(*) from mem_tree_chunks"
+    embedded: "select count(*) from mem_tree_chunk_embeddings"
+    summaries: "select count(*) from mem_tree_summaries"
+    links: "select count(*) from mem_tree_summaries, json_each(child_ids_json)"
+    failed: "select count(*) from mem_tree_jobs where status = 'failed'"
+  errors: "select last_error from mem_tree_jobs where last_error is not null"
+  timeout: 240
+notes: "memory: el seal sin LLM (rol summarization al endpoint falso, sin opt-in cloud) cae a la cascada que concatena; basta para que haya resumen y enlace padre-hijo. El cargador de módulos rechaza cualquier ancestro escribible por grupo: la sesión corre con umask 022. Un hilo nuevo por carga (ghost-${turn}): OpenHuman congela el system prompt de un hilo en su primer turno. dump-prompt no carga AGENTS.md (solo session_host/subagent_host); la sesión real sí: es la sonda que cuenta. El turno falla a propósito con 400 del endpoint falso. La credencial de API key es local (el core no la valida) y queda en el sandbox. OpenHuman migra el config.toml al arrancar; las claves que no poseemos son suyas."

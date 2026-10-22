@@ -1,0 +1,25 @@
+# Machine spec — how a structured command transpiles to a flat Claude Code command.
+# Consumed by ops/transpiler/render.py via eserde+msgspec. Data, not code.
+# Source: https://code.claude.com/docs/en/skills.md (§ commands, § arguments), read 2026-10-02.
+entity: command
+release: "2026.10.02"
+verified: "2026-10-02"
+sources: ["https://code.claude.com/docs/en/skills.md"]
+status: ready
+
+structured_manifest: command.yaml
+
+flat:
+  path: "commands/{id}.md"
+  body_slot: template
+  positional: inputs                   # ${name} → $name: argumentos con nombre, sin aritmética de índices
+  placeholder: "${name}"
+  frontmatter:                         # ORDER matters
+    - { slot: description, key: description,   required: true }
+    - { slot: inputs,      key: arguments,     resolve: names }
+    - { slot: inputs,      key: argument-hint, resolve: hint }
+  house_only: [id, inputs, agent, subtask, model, skills]
+
+references: {}
+
+notes: "commands/<name>.md sigue soportado y acepta el frontmatter de skill salvo name/paths. Los índices de Claude son 0-based ($0 = primero): el $1 de opencode llegaría corrido, por eso se emiten argumentos con nombre. agent+subtask (subagente aislado en opencode) equivaldría a context: fork + agent — no se proyecta: el comando corre en la sesión principal. model se omite por la misma razón que en agent.yaml."

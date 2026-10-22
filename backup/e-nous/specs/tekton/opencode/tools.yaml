@@ -1,0 +1,8 @@
+# specs/ — modelo mantenido del backend. El agente cronificado actualiza
+# release/verified/frente a las docs; el transpiler solo lee status: ready.
+entity: tool
+release: ""                          # release upstream representado (vacío = sin cotejar aún)
+verified: ""
+sources: ["https://opencode.ai/docs/tools/", "specs/tekton/opencode/TOOLS.md"]
+status: pending
+notes: "material humano en TOOLS.md (built-ins + custom + MCP); entidades tool aún sin spec"

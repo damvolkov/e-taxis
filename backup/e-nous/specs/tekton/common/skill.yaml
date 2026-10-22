@@ -1,0 +1,34 @@
+# Machine spec — how a structured skill transpiles to a flat SKILL.md.
+# Consumed by ops/internal/transpiler.py via eserde+msgspec. Data, not code.
+# To react to a runtime release: copy this file to a new date and edit the
+# mappings; the transpiler picks the highest release. Nothing in the code
+# hardcodes a slot.
+# Source of the mapping: ops/templates/flat/SKILLS.md (verified 2026-09-23).
+entity: skill
+runtimes: [opencode, claudecode]     # esquema idéntico para ambos: vive en common/
+release: "2026.09.23"                 # release upstream que representa
+verified: "2026-09-25"                # último cotejo contra docs vivas
+sources: ["https://opencode.ai/docs/skills/", "https://code.claude.com/docs/en/skills.md"]
+status: ready
+
+structured_manifest: skill.yaml
+
+flat:
+  path: "skills/{id}/SKILL.md"
+  body_slot: instructions        # structured slot whose markdown becomes the body
+  body_title: id                 # emit "# {id}" before the body
+  frontmatter:                   # ORDER matters: emitted top-to-bottom
+    - { slot: name,          key: name,          required: true }
+    - { slot: description,   key: description,   required: true }
+    - { slot: license,       key: license }
+    - { slot: compatibility, key: compatibility }
+    - { slot: metadata,      key: metadata }
+  house_only: [references]       # structured slots never projected to the flat form
+
+# Ambos coders leen el mismo SKILL.md sin cambios. OpenCode además descubre ~/.claude/skills y ~/.agents/skills:
+# a igual nombre colapsa en una (verificado 2026-10-02, `opencode debug skill`: 0 duplicados).
+
+# Auxiliary files carried verbatim between the two forms, when present.
+references:
+  slot: references               # structured: list of "references/<x>.md" paths
+  dir: references                # copied both ways, byte-exact

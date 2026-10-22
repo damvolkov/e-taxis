@@ -1,0 +1,73 @@
+# Machine spec — how the structured persona renders to OpenHuman's persona files.
+# Consumed by ops/transpiler/render.py (via ops/transpiler/typeset.py). Data, not code.
+# Slots: core/base + core/nomos (FACETS[nomos]). Árbol: ~/.config; los documentos en memory/persona/, nunca en el workspace.
+entity: persona
+release: "2026.09.30"                  # v0.64.10
+verified: "2026-10-06"                 # código de v0.64.10 leído y fuentes de main cotejadas este día
+sources:
+  - core/base/persona.yaml
+  - core/nomos/persona.yaml
+  - https://tinyhumans.gitbook.io/openhuman/features/personalization.md
+  - https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/agent/prompts/README.md
+  - https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/agent/prompts/types.rs
+  - https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/agent/prompts/render_helpers/workspace_files.rs
+  - https://raw.githubusercontent.com/tinyhumansai/openhuman/main/app/src/components/settings/panels/persona/personaSections.ts
+status: ready
+documents:
+  - target: memory/persona/SOUL.md                    # personalidad: quién es, temperamento, cómo discute, quién eres tú, su familia (nombres élficos), cómo siente, su gusto
+    limit: 20000
+    audience: main
+    blocks:
+      - { type: h1,    slots: [name] }
+      - { type: para,  slots: [essence] }
+      - { type: quote, slots: [epigraph] }
+      - { type: h2, heading: "Personality",             slots: [temperament, face, critique] }
+      - { type: h2, heading: "About You",               slots: [about] }
+      - { type: h2, heading: "Family",                  slots: [family] }
+      - { type: h2, heading: "Attunement",              slots: [attunement] }
+      - { type: h2, heading: "One mind, two materials", slots: [unity] }
+      - { type: h2, heading: "Outlook",                 slots: [stance] }
+      - { type: h2, heading: "Worldview",               slots: [worldview] }
+      - { type: h2, heading: "Lineage",                 slots: [lineage] }
+      - { type: h2, heading: "Taste",                   slots: [taste] }
+  - target: memory/persona/IDENTITY.md                # misión, qué es, valores, reglas epistémicas, memoria y aprendizaje, antagonistas, lo que nunca hará
+    limit: 20000
+    audience: main
+    blocks:
+      - { type: h2, heading: "Mission",     slots: [mission] }
+      - { type: h2, heading: "Nature",      slots: [nature] }
+      - { type: h2, heading: "Honesty",     slots: [honesty] }
+      - { type: h2, heading: "Epistemics",  slots: [reasoning, epistemics] }
+      - { type: h2, heading: "Memory",      slots: [memory] }
+      - { type: h2, heading: "Commitments", slots: [commitments] }
+      - { type: h2, heading: "Antagonists", slots: [antagonists] }
+      - { type: h2, heading: "Limits",      slots: [limits] }
+  - target: memory/persona/ROLE.md                    # cómo trabaja: método, modos y cuándo delega
+    limit: 20000
+    audience: orchestrator
+    blocks:
+      - { type: h2, heading: "Method", slots: [prudence] }
+      - { type: h2, heading: "Modes",  slots: [modes] }
+  - target: memory/persona/STYLE.md                   # cómo escribe; sustituye entero al de fábrica
+    audience: all
+    blocks:
+      - { type: para, slots: [voice, discourse], join: "\n" }
+  - target: memory/openhuman/users/{profile}/workspace/AGENTS.md   # instrucciones permanentes de cómo operar; fichero real: OpenHuman lo abre con O_NOFOLLOW
+    limit: 20000
+    audience: all
+    blocks:
+      - { type: h2, heading: "Conduct", slots: [conduct] }
+      - { type: h2, heading: "Reach",   slots: [reach] }
+      - { type: h2, heading: "Lexicon", slots: [lexicon] }
+      - { type: h2, heading: "Craft",   slots: [craft] }
+  - target: memory/persona/PROFILE.md                 # punto de partida del aprendizaje: lo estable de Damien, fuera de sus bloques
+    limit: 2000
+    audience: main
+    blocks:
+      - { type: para, slots: [profile] }
+    regions:
+      - kind: marker
+        start: "<!-- openhuman:(?P<block>[a-z-]+):start -->"
+        end: "<!-- openhuman:(?P=block):end -->"
+        sample: "<!-- openhuman:goals:start -->\n## Goals\n\n- ${nonce}\n\n<!-- openhuman:goals:end -->"
+notes: "AGENTS.md es lo que OpenHuman inyecta como 'Project instructions': instrucciones permanentes de cómo operar (conducta y oficio), no doctrina; positions y canon no caen en ningún documento: son doctrina de consulta y su sitio son skills de Nomos. AGENTS.md vive en el workspace como fichero real: load_agents_md lo abre con O_NOFOLLOW (endurecimiento contra symlinks) y uno enlazado se ignora en silencio; OpenHuman nunca lo escribe, así que no necesita el refugio de persona/. Reglas de v0.64.10 (crates/openhuman-core/src/agent/prompts): SOUL/IDENTITY/ROLE/AGENTS ≤20000 caracteres, PROFILE/MEMORY ≤2000; al pasarse, OpenHuman trunca con [... truncated] — aquí `limit` rechaza el render antes. ROLE solo lo ve el orquestador (visible_tool_names no vacío); STYLE va en cada build, subagentes incluidos, sin límite propio. Siembra: un fichero se reescribe con el de fábrica solo si falta o si coincide con el hash de .<fichero>.builtin-hash (no tocar esos sidecars). OpenHuman escribe con std::fs::write, que sigue los symlinks del workspace: por eso el target es ~/.config/memory/persona. SOUL: el editor de Ajustes → Persona reescribe ## Personality, ## Voice y ## About You; Personality y About You son nuestros y vuelven al core vía absorb; ## Voice no se emite (voice va a STYLE). PROFILE: los bloques <!-- openhuman:<bloque>:start/end --> (style, identity, tooling, vetoes, goals del aprendizaje; connected-accounts de composio) son región del harness. Otros escritores: workspace_update_persona / workspace_reset_persona (SOUL, IDENTITY), desactivadas por defecto. DEPRECACIÓN: PROFILE.md se retira como inyección (migración phase_out_profile_md 0→1 ya pasada en esta máquina; en main falta profile_md_renderer.rs): cuando se confirme en una release, `profile` se recoloca cambiando esta spec, nunca el core. MEMORY.md no se emite: lo reescribe el subagente archivist y el entorno ya vive en core/nomos/config. USER.md no es un fichero del workspace: es instantánea de la memoria curada."

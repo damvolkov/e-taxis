@@ -1,0 +1,19 @@
+# Machine spec — how core/tekton/config becomes Claude Code's user settings.
+# Consumed by ops/transpiler/render.py via eserde+msgspec. Data, not code.
+# Source: https://code.claude.com/docs/en/settings.md + settings-reference.md, read 2026-10-02.
+entity: config
+release: "2026.10.02"
+verified: "2026-10-02"
+sources: ["https://code.claude.com/docs/en/settings.md", "https://json.schemastore.org/claude-code-settings.json"]
+status: ready
+config:
+  exactness: keys                # settings.json es compartido: el render posee solo las `keys` de abajo; las que Claude escribe (statusLine, outputStyle, enabledPlugins…) se conservan y nunca son deriva
+  modules: [main, permissions, hooks]
+  files:
+    - { out: settings.json, keys: ["$schema", model, effortLevel, tui, permissions, hooks] }
+    - { out: rules/instructions.md, format: text, slot: instructions }   # ~/.claude/rules/ es memoria de usuario: sus @imports cargan siempre
+  assets:
+    - { out: hooks/cbm-session-reminder, slot: hooks }
+    - { out: hooks/autolearn.mjs, slot: hooks }
+    - { out: mcp/playwright.json, slot: mcp }
+notes: "Hooks: solo tipo command (Claude admite también http y prompt; exit 2 bloquea). Output styles, statusline y plugins (paquetes de hooks/agents/skills/commands/MCP) son de Claude y sin equivalente en OpenCode: no se modelan; sus claves en settings.json (outputStyle, statusLine, enabledPlugins) son del coder y la exactitud `keys` las conserva. model ← main.model.alias.claudecode (Claude no ve tiers); hooks ← hooks.yaml con {out} ligado al árbol; rules/instructions.md ← main.instructions como @imports (lo que opencode lee en `instructions`). MCP: core/tekton/config/mcp.yaml → ámbito usuario, que vive en ~/.claude.json (estado del binario): se registra con `claude mcp add-json --scope user`, nunca escribiendo el fichero; settings.json no admite mcpServers."

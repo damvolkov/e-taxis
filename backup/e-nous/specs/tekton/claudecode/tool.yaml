@@ -1,0 +1,7 @@
+# specs/ — modelo mantenido del backend.
+entity: tool
+release: "2026.10.02"
+verified: "2026-10-02"
+sources: ["https://code.claude.com/docs/en/tools-reference.md", "https://code.claude.com/docs/en/mcp.md"]
+status: obsolete
+notes: "Claude Code no tiene entidad tool propia: una herramienta a medida llega como servidor MCP (core/tekton/config/mcp.yaml). La carpeta nativa de tools (.opencode/tools/) solo existe en OpenCode: specs/tekton/opencode/tools.yaml."
