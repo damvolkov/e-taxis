@@ -11,6 +11,7 @@ per run, and every resource it opens enters the run's exit stack, so edges close
 A command that never asks for the store never opens sqlite. Adding an injectable is one builder and one row in the table."""
 
 import os
+import sys
 from collections.abc import Awaitable, Callable, Mapping
 from contextlib import AsyncExitStack
 from pathlib import Path
@@ -62,6 +63,12 @@ from e_taxis.transpile.services.land import LandService
 from e_taxis.transpile.services.reverse import ReverseService
 from e_taxis.transpile.services.run import RunService
 from e_taxis.transpile.services.trial import TrialService
+from e_taxis.workflow.adapters.agent import OpencodeAgent
+from e_taxis.workflow.adapters.command import ShellCommand
+from e_taxis.workflow.adapters.ledger import JsonlLedger
+from e_taxis.workflow.adapters.lock import FlockLock
+from e_taxis.workflow.models.ports import AgentPort, CommandPort
+from e_taxis.workflow.services.run import WorkflowRun
 
 T = TypeVar("T")
 ### cyclopts reads `Annotated` metadata but does not unwrap PEP 695 `type` aliases: the classic generic alias is what it sees.
@@ -195,6 +202,39 @@ class Deps:
             claude=claude,
         )
 
+    async def _resolve_command(self) -> ShellCommand:
+        return ShellCommand(os.environ)
+
+    async def _resolve_agent(self) -> OpencodeAgent:
+        """Agents driven from the live OpenCode tree; a read-only one fenced by the trial's own landrun."""
+        settings = await self.resolve(TaxisSettings)
+        landrun = settings.taxis_landrun.expanduser()
+        return OpencodeAgent(
+            await self.resolve(CommandPort),
+            LandrunFence(landrun),
+            config=settings.taxis_workflow_opencode.expanduser(),
+            landrun=landrun,
+            writable=tuple(path.expanduser() for path in settings.taxis_workflow_writable),
+            environ=os.environ,
+            model=settings.taxis_workflow_model,
+        )
+
+    async def _resolve_workflow(self) -> WorkflowRun:
+        """A run waits for the checkout's lock, saying once on stderr whom it waits for."""
+        settings = await self.resolve(TaxisSettings)
+        lock = FlockLock(
+            settings.taxis_workflow_lock_wait, settings.taxis_lock, say=lambda line: sys.stderr.write(f"{line}\n")
+        )
+        return WorkflowRun(
+            await self.resolve(CommandPort),
+            await self.resolve(AgentPort),
+            lock,
+            JsonlLedger.open,
+            concurrency=settings.taxis_workflow_concurrency,
+            limit=settings.taxis_workflow_timeout,
+            reports=settings.taxis_workflow_reports,
+        )
+
     ############################################################
 
     ##### PUBLIC #####
@@ -223,6 +263,9 @@ class Deps:
             UndoPort: _resolve_undo,
             ApplyService: _resolve_apply,
             UninstallService: _resolve_uninstall,
+            CommandPort: _resolve_command,
+            AgentPort: _resolve_agent,
+            WorkflowRun: _resolve_workflow,
         }
     )
 

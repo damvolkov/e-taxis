@@ -1,0 +1,4 @@
+#!/bin/sh
+# an `opencode` stand-in: it writes into its working directory the way a shell tool would, then answers.
+touch "$PWD/written-by-agent" 2>/dev/null || true
+printf '%s\n' '{"part": {"type": "text", "text": "done"}}'

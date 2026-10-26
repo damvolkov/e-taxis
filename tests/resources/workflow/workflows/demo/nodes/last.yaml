@@ -1,0 +1,4 @@
+id: last
+depends: [echo, think]
+when: {apply: "true"}
+run: printf 'applied\n'

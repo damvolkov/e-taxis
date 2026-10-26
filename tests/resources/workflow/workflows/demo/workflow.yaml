@@ -1,0 +1,14 @@
+id: demo
+description: >-
+  Every kind of step: a command that writes an artifact, one that reads it, a read-only agent beside it, and a
+  last step only when apply is true.
+parameters:
+  value: {doc: "a value the first step writes as it is"}
+  apply: {doc: "true to run the last step", type: bool}
+triggers:
+  - {cli: "taxis workflow run demo"}
+nodes:
+  - {source: nodes/first.yaml}
+  - {source: nodes/echo.yaml}
+  - {source: nodes/think.yaml}
+  - {source: nodes/last.yaml}

@@ -1,0 +1,10 @@
+id: looped
+description: A bounded loop whose check closes on its second pass.
+parameters: {}
+nodes:
+  - {id: start, run: "true"}
+  - {id: work, depends: [start], run: "printf 'pass %s\n' {{iteration}} >> {{rundir}}/passes.txt"}
+  - {id: check, depends: [work], run: "test $(wc -l < {{rundir}}/passes.txt) -ge 2 || { echo open; exit 1; }"}
+  - {id: after, depends: [check], run: "printf 'after\n'"}
+  - {id: report, depends: [after], instruction: "say how many passes ran"}
+loop: {nodes: [work, check, after], max: 3, until: check}
