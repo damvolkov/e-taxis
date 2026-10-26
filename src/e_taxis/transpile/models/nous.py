@@ -17,7 +17,8 @@ class NousTree:
     """`commit` is the sha the ref resolved to, or `worktree` when the checkout was read as it stands.
 
     `specs` is keyed `<harness>/<backend>`; `persona` by layer; `entities` entity → id → manifest; `config`
-    facet → module → content; `assets` facet → every file under the facet's config asset folders."""
+    facet → module → content; `assets` facet → every file under the facet's config asset folders; `blobs` the bytes
+    of every file a render may copy as it is (entity folders, config assets), keyed by path from the checkout root."""
 
     root: str
     commit: str
@@ -28,3 +29,4 @@ class NousTree:
     entities: Mapping[str, Mapping[str, Mapping[str, Any]]]
     config: Mapping[str, Mapping[str, Any]]
     assets: Mapping[str, tuple[str, ...]]
+    blobs: Mapping[str, bytes]

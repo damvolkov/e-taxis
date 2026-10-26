@@ -31,3 +31,39 @@ def test_transpile_check_json_is_the_report(taxis, nous_git: Path) -> None:
     assert code == 0
     assert report["stamp"]["model"] == "2.0"
     assert len(report["stamp"]["commit"]) == 40
+
+
+def test_transpile_run_exports_into_out(taxis, nous_root: Path, tmp_path: Path) -> None:
+    out = tmp_path / "export"
+    code, stdout, _ = taxis(
+        "transpile", "run", "--target", "opencode", "--nous", str(nous_root), "--worktree", "--out", str(out)
+    )
+    assert code == 0
+    assert "opencode →" in stdout
+    assert (out / "AGENTS.md").is_file()
+
+
+def test_transpile_run_json_lists_files_and_registry(taxis, nous_root: Path, tmp_path: Path) -> None:
+    args = (
+        "transpile",
+        "run",
+        "--target",
+        "claudecode",
+        "--nous",
+        str(nous_root),
+        "--worktree",
+        "--out",
+        str(tmp_path / "x"),
+        "--json",
+    )
+    code, stdout, _ = taxis(*args)
+    summary = msgspec.json.decode(stdout)
+    assert code == 0
+    assert "CLAUDE.md" in summary["files"]
+    assert "e-gnosis" in summary["registry"]["mcp-user"]
+
+
+def test_transpile_run_without_out_is_refused(taxis, nous_root: Path) -> None:
+    code, _, err = taxis("transpile", "run", "--target", "claudecode", "--nous", str(nous_root), "--worktree")
+    assert code == 17
+    assert "--out" in err

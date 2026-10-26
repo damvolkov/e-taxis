@@ -123,6 +123,28 @@ class GitNous:
             for facet in schema["facets"]
         }
 
+    @staticmethod
+    def _load_blobs(root: Path, schema: Mapping[str, Any]) -> dict[str, bytes]:
+        """Every file under an entity instance folder or a config asset folder, by path from the root."""
+        folders = [
+            *(
+                folder
+                for spec in schema.get("entities", {}).values()
+                for folder in sorted(root.glob(str(Path(spec["path"]).parent).replace("{id}", "*")))
+            ),
+            *(
+                root / CORE / facet / "config" / name
+                for facet in schema["facets"]
+                for name in schema["config"].get(facet, {}).get("assets", ())
+            ),
+        ]
+        return {
+            str(path.relative_to(root)): path.read_bytes()
+            for folder in folders
+            for path in sorted(folder.rglob("*"))
+            if path.is_file()
+        }
+
     @classmethod
     def _load_tree(cls, root: Path, commit: str, origin: str) -> NousTree:
         schema = cls._load_yaml(root / SCHEMA)
@@ -143,6 +165,7 @@ class GitNous:
             entities=cls._load_entities(root, schema),
             config=cls._load_config(root, schema),
             assets=cls._load_assets(root, schema),
+            blobs=cls._load_blobs(root, schema),
         )
 
     async def _load_archive(self, dest: Path) -> str:

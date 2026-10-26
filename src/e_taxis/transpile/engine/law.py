@@ -109,6 +109,11 @@ class SpecLaw:
             else ()
         )
         yield from (
+            (self._common_finding(ReportKind.INVALID, where, row["to"], "a row needs `from` or `value`"),)
+            if source is None and "value" not in row
+            else ()
+        )
+        yield from (
             (self._common_finding(ReportKind.ORPHAN, where, source, "`from` resolves to nothing in core"),)
             if source is not None and not self._common_resolves(source, universe)
             else ()

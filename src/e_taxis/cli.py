@@ -21,6 +21,7 @@ typo fails the gate, never a user.
     taxis uninstall ID --target T [--cascade] [--yes]
     taxis history  list · undo
     taxis transpile check --nous PATH [--ref REF | --worktree] [--json]   # schema + spec law; writes nothing
+    taxis transpile run   --target T --nous PATH --out DIR [--ref REF | --worktree] [--json]   # pure export
     taxis logo NAMES [--out DIR] [--prefix P] [--background HEX] [--foreground HEX] [--force]
     taxis repo resolve URL REF                     # the commit a branch, tag or sha names
     taxis repo tree    URL REF [PATH]              # every file the remote holds at REF
@@ -81,6 +82,11 @@ CARDS: tuple[CommandCard, ...] = (
         path="transpile check",
         target="e_taxis.transpile.commands.transpile:check",
         summary="Hold a checkout to its schema and every spec's law.",
+    ),
+    CommandCard(
+        path="transpile run",
+        target="e_taxis.transpile.commands.transpile:run",
+        summary="Project a core for one backend; --out for a pure export.",
     ),
     CommandCard(path="logo", target="e_taxis.ops.logo:logo", summary="Deterministic family wordmarks into assets/."),
     CommandCard(path="repo resolve", target="e_taxis.ops.repo:resolve", summary="The commit a ref names on a remote."),

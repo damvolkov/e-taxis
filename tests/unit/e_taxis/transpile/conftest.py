@@ -5,6 +5,7 @@ instance of each entity, copied from e-nous: the law must find nothing blocking 
 file of the copy in place, so a test states only the mutation it makes."""
 
 import shutil
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import anyio
@@ -13,11 +14,11 @@ import pytest
 import yaml
 
 from e_taxis.transpile.adapters.nous import GitNous
+from e_taxis.transpile.engine.context import RowContext
 from e_taxis.transpile.engine.model import CoreModel, SpecModel
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from pathlib import Path
 
     from pytest_resources import Resources
 
@@ -51,6 +52,20 @@ def edit(nous_root: Path) -> Callable[[str, Callable[[Any], None]], None]:
         path.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True))
 
     return apply
+
+
+@pytest.fixture
+def golden_root() -> Path:
+    """The v1 transpiler's render of every backend into empty trees (`backup/e-nous/golden`): the acceptance bar."""
+    return Path(__file__).resolve().parents[4] / "backup" / "e-nous" / "golden"
+
+
+@pytest.fixture
+def ctx(nous_tree: NousTree) -> RowContext:
+    """The tekton facet's config, claudecode's natives, `{out}` bound to /out."""
+    return RowContext(
+        config=nous_tree.config["tekton"], native={"names": {"alibaba": "nomos-alibaba"}}, bindings={"out": "/out"}
+    )
 
 
 @pytest.fixture
