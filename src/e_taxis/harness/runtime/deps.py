@@ -61,6 +61,7 @@ from e_taxis.transpile.adapters.capture import HttpCapture
 from e_taxis.transpile.adapters.fence import LandrunFence
 from e_taxis.transpile.models.ports import CapturePort
 from e_taxis.transpile.services.check import CheckService
+from e_taxis.transpile.services.land import LandService
 from e_taxis.transpile.services.run import RunService
 from e_taxis.transpile.services.trial import TrialService
 
@@ -194,6 +195,11 @@ class Deps:
         landrun = (await self.resolve(TaxisSettings)).taxis_landrun.expanduser()
         return TrialService(await self.resolve(RunService), LandrunFence(landrun), path=os.environ.get("PATH", ""))
 
+    async def _resolve_land(self) -> LandService:
+        """The run's store is both the record and the recorder: a landing is one undoable journal entry."""
+        journal = await self.resolve(StoreJournal)
+        return LandService(await self.resolve(RunService), await self.resolve(RunnerPort), journal, journal)
+
     async def _resolve_capture(self) -> HttpCapture:
         return HttpCapture()
 
@@ -227,6 +233,7 @@ class Deps:
             CheckService: _resolve_check,
             RunService: _resolve_run,
             TrialService: _resolve_trial,
+            LandService: _resolve_land,
             CapturePort: _resolve_capture,
             DoctorService: _resolve_doctor,
             RunnerPort: _resolve_runner,

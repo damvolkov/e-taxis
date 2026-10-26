@@ -24,6 +24,10 @@ class ReportKind(StrEnum):
     INVERTIBLE = "invertible"
     PRESENCE = "presence"
     SIGNAL = "signal"
+    MISSING = "missing"
+    DRIFT = "drift"
+    STALE = "stale"
+    SYMLINK = "symlink"
 
     @property
     def blocking(self) -> bool:
@@ -37,6 +41,7 @@ class ReportFinding(Struct, frozen=True, kw_only=True):
     where: str
     path: str
     detail: str = ""
+    sources: tuple[str, ...] = ()
 
 
 class ReportStamp(Struct, frozen=True, kw_only=True):

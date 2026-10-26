@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 def test_transpile_check_clean_checkout_exits_zero(taxis, nous_root: Path) -> None:
     code, out, _ = taxis("transpile", "check", "--nous", str(nous_root), "--worktree")
     assert code == 0
-    assert "0 blocking · 3 signal" in out
+    assert out.rstrip().endswith("3 signal")
 
 
 def test_transpile_check_blocking_finding_exits_twenty(
@@ -74,10 +74,33 @@ def test_transpile_run_json_lists_files_and_registry(taxis, nous_root: Path, tmp
     assert "e-gnosis" in summary["registry"]["mcp-user"]
 
 
-def test_transpile_run_without_out_is_refused(taxis, nous_root: Path) -> None:
-    code, _, err = taxis("transpile", "run", "--target", "claudecode", "--nous", str(nous_root), "--worktree")
-    assert code == 17
-    assert "--out" in err
+def test_transpile_run_without_out_plans_then_lands_with_yes(taxis, nous_root: Path, tmp_path: Path) -> None:
+    home = tmp_path / "live"
+    code, out, _ = taxis(
+        "transpile", "run", "--target", "opencode", "--nous", str(nous_root), "--worktree", "--home", str(home)
+    )
+    assert code == 0
+    assert "plan only" in out
+    assert not home.exists()
+    code, out, _ = taxis(
+        "transpile", "run", "--target", "opencode", "--nous", str(nous_root), "--worktree", "--home", str(home), "--yes"
+    )
+    assert code == 0
+    assert "landed opencode" in out
+    assert (home / ".config/opencode/AGENTS.md").is_file()
+    code, out, _ = taxis(
+        "transpile",
+        "run",
+        "--target",
+        "opencode",
+        "--nous",
+        str(nous_root),
+        "--worktree",
+        "--home",
+        str(home),
+        "--json",
+    )
+    assert msgspec.json.decode(out)["findings"] == []
 
 
 def test_transpile_trial_reports_and_fails_when_not_held(

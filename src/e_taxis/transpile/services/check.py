@@ -105,6 +105,16 @@ class CheckService:
 
     ##### PUBLIC #####
 
+    @staticmethod
+    def stamp(tree: NousTree, model: str) -> ReportStamp:
+        """What a report versions: the checkout, the commit read, the model, every spec's model version."""
+        return ReportStamp(
+            root=tree.root,
+            commit=tree.commit,
+            model=model,
+            specs={key.rpartition("/")[2]: str(spec.get("spec", UNKNOWN)) for key, spec in tree.specs.items()},
+        )
+
     async def run(self, nous: NousPort) -> Report:
         tree = await nous.load()
         try:
@@ -116,11 +126,6 @@ class CheckService:
             return Report(
                 stamp=ReportStamp(root=tree.root, commit=tree.commit, model=UNKNOWN, specs={}), findings=(finding,)
             )
-        stamp = ReportStamp(
-            root=tree.root,
-            commit=tree.commit,
-            model=model.version,
-            specs={key.rpartition("/")[2]: str(spec.get("spec", UNKNOWN)) for key, spec in tree.specs.items()},
-        )
+        stamp = self.stamp(tree, model.version)
         specs = chain.from_iterable(self._run_spec(tree, core, model, key, spec) for key, spec in tree.specs.items())
         return Report(stamp=stamp, findings=(*self._run_core(tree, core), *specs))

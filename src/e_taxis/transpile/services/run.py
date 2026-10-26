@@ -88,8 +88,8 @@ class RunService:
 
     ##### PUBLIC #####
 
-    async def run(self, nous: NousPort, backend: str, out: Path) -> Projection:
-        """The projection of `backend` into `out`, written there: a pure export, never a live tree."""
+    async def project(self, nous: NousPort, backend: str, out: Path) -> tuple[NousTree, Projection]:
+        """The checked checkout and its projection for `backend`, `{out}` bound to `out`. Writes nothing."""
         report = await self._checker.run(nous)
         blocking = [finding for finding in report.blocking if finding.backend in (CORE, backend)]
         match blocking:
@@ -99,6 +99,10 @@ class RunService:
                 msg = f"{len(blocking)} blocking finding(s) for {backend}: run `taxis transpile check` first"
                 raise CheckError(msg)
         tree = await nous.load()
-        projection = self._run_project(tree, self.spec(tree, backend), str(out))
+        return (tree, self._run_project(tree, self.spec(tree, backend), str(out)))
+
+    async def run(self, nous: NousPort, backend: str, out: Path) -> Projection:
+        """The projection of `backend` into `out`, written there: a pure export, never a live tree."""
+        _, projection = await self.project(nous, backend, out)
         await self._run_write(projection, out)
         return projection

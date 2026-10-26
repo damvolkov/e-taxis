@@ -104,6 +104,21 @@ class FakeFence:
         return self.holds
 
 
+class ListRecorder:
+    """RecorderPort over a list: every effect a landing recorded, in order."""
+
+    def __init__(self) -> None:
+        self.effects: list[Any] = []
+
+    def record(self, *effects: Any) -> None:
+        self.effects.extend(effects)
+
+
+@pytest.fixture
+def recorder() -> ListRecorder:
+    return ListRecorder()
+
+
 @pytest.fixture
 def capture() -> FakeCapture:
     return FakeCapture()

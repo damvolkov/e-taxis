@@ -4,6 +4,7 @@
 `core/schema.yaml` and every spec against `specs/base.yaml`, then runs each spec's law. It prints one line per
 finding, grouped by backend, and the stamp; a blocking finding makes the run fail. Nothing is written."""
 
+from collections import Counter
 from itertools import groupby
 from pathlib import Path
 
@@ -16,32 +17,40 @@ from rich.table import Table
 from e_taxis.harness.commands.stack import HEADER
 from e_taxis.harness.runtime.deps import Inject
 from e_taxis.transpile.adapters.nous import GitNous
-from e_taxis.transpile.models.error import CheckError, TranspileError, TrialError
+from e_taxis.transpile.models.error import CheckError, TrialError
 from e_taxis.transpile.models.ports import CapturePort
 from e_taxis.transpile.models.report import Report
 from e_taxis.transpile.services.check import CheckService
+from e_taxis.transpile.services.land import LandService
 from e_taxis.transpile.services.run import RunService
 from e_taxis.transpile.services.trial import TrialService
 
 
 ##### UTILITIES #####
 def render_report(report: Report, console: Console) -> None:
-    """Findings by backend, then the stamp and the count; clean when nothing blocks."""
-    ordered = sorted(report.findings, key=lambda finding: (finding.backend, finding.where))
+    """Findings grouped by backend, each with the spec row and the core paths behind it; then the stamp and the counts."""
+    ordered = sorted(report.findings, key=lambda finding: (finding.backend, finding.path, finding.where))
     tables = [
-        (backend, Table("kind", "where", "path", "detail", box=None, header_style=HEADER))
+        (backend, Table("kind", "path", "row", "core", "detail", box=None, header_style=HEADER))
         for backend, _ in groupby(ordered, key=lambda finding: finding.backend)
     ]
     _ = [
-        table.add_row(finding.kind, finding.where, escape(finding.path), escape(finding.detail))
+        table.add_row(
+            finding.kind,
+            escape(finding.path),
+            finding.where,
+            escape(", ".join(finding.sources)),
+            escape(finding.detail),
+        )
         for backend, table in tables
         for finding in ordered
         if finding.backend == backend
     ]
     _ = [console.print(f"[bold]{backend}[/]", table) for backend, table in tables]
     specs = " · ".join(f"{name} {version}" for name, version in sorted(report.stamp.specs.items()))
+    counts = Counter(finding.kind.value for finding in report.findings)
     console.print(f"{report.stamp.root} @ {report.stamp.commit} · model {report.stamp.model} · {specs}")
-    console.print(f"{len(report.blocking)} blocking · {len(report.findings) - len(report.blocking)} signal")
+    console.print(" · ".join(f"{count} {kind}" for kind, count in sorted(counts.items())) or "nothing to report")
 
 
 ##### COMMANDS #####
@@ -81,44 +90,59 @@ async def run(
     target: str,
     nous: Path,
     out: Path | None = None,
+    home: Path | None = None,
     ref: str = "HEAD",
     worktree: bool = False,
+    yes: bool = False,
     json: bool = False,
     runner: Inject[RunService],
+    lander: Inject[LandService],
     console: Inject[Console],
 ) -> None:
-    """Project an e-nous core for one backend. With --out, a pure export into that directory.
+    """Project an e-nous core for one backend: plan it against the live tree, land it with --yes, or export it.
 
     Args:
         target: the backend, by its spec's name (claudecode, opencode, hermes, openhuman).
         nous: the e-nous checkout.
-        out: an empty or scratch directory the render is written into; never a live tree.
+        out: export into this directory instead — a pure render, never a live tree.
+        home: the HOME whose tree is planned or landed (default: yours).
         ref: the git ref core and specs are read at, together.
         worktree: read the checkout as it stands, uncommitted changes included.
-        json: the projection's files and registry entries as JSON.
+        yes: land the plan, through the undo journal. Without it, nothing is written.
+        json: the projection summary or the plan's report as JSON.
     """
-    match out:
-        case None:
-            msg = "transpile run lands in a live tree in a later phase: pass --out DIR for a pure export"
-            raise TranspileError(msg)
-        case _:
-            projection = await runner.run(
-                GitNous(nous, None if worktree else ref), target, Path(await anyio.Path(out).resolve())
-            )
-    summary = {
-        "backend": projection.backend,
-        "out": projection.out,
-        "files": sorted(projection.files),
-        "registry": {name: sorted(entries) for name, entries in projection.registry.items()},
-    }
-    match json:
-        case True:
-            console.out(msgspec.json.encode(summary).decode(), highlight=False)
-        case _:
+    source = GitNous(nous, None if worktree else ref)
+    match (out, yes):
+        case (Path() as directory, _):
+            projection = await runner.run(source, target, Path(await anyio.Path(directory).resolve()))
+            summary = {
+                "backend": projection.backend,
+                "out": projection.out,
+                "files": sorted(projection.files),
+                "registry": {name: sorted(entries) for name, entries in projection.registry.items()},
+            }
             entries = sum(len(entries) for entries in projection.registry.values())
-            console.print(
-                f"{projection.backend} → {projection.out} · {len(projection.files)} files · {entries} registry entries"
+            lines = (
+                f"{projection.backend} → {projection.out} · {len(projection.files)} files · {entries} registry entries",
             )
+            match json:
+                case True:
+                    console.out(msgspec.json.encode(summary).decode(), highlight=False)
+                case _:
+                    _ = [console.print(line) for line in lines]
+        case _:
+            where = Path(await anyio.Path(home or Path.home()).resolve())
+            report = await (lander.apply(source, target, where) if yes else lander.plan(source, target, where))
+            match json:
+                case True:
+                    console.out(msgspec.json.encode(report).decode(), highlight=False)
+                case _:
+                    render_report(report, console)
+                    console.print(
+                        "[dim]plan only — nothing written; pass --yes to land it[/]"
+                        if not yes
+                        else f"landed {target} under {where} · `taxis history undo` reverts it"
+                    )
 
 
 async def trial(
