@@ -1,0 +1,8 @@
+# converge · node commit
+id: commit
+depends: [promote]
+run: >-
+  git add core && (git diff --cached --quiet && echo "nothing to commit" ||
+  (git commit -q -m "converge({{entity}}): pass {{iteration}}" && git log -1 --format="%h %s" && git show --stat --format= HEAD))
+instruction: >-
+  The next pass's sandbox clones HEAD: a promotion left uncommitted would be invisible to it.

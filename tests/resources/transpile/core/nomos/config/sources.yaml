@@ -1,0 +1,19 @@
+# sources — qué alimenta la memoria. Rutas relativas a la raíz del KB (memory/ en el árbol: carpeta real, vault y Syncthing).
+# Nunca la raíz misma: cada fuente es una carpeta real; las fuentes saltan los symlinks. id es estable: cambiarlo reindexa la fuente.
+# Mapa del vault: wiki (tuyo, a mano) · persona (del core) · brain (espejo de CortexDB: jamás fuente, sería un bucle)
+#                 · inbox (caída: lo convertido vive en inbox/docs) · workflow (salidas de los flows, research incluido).
+inbox:
+  id: src_vault_notes
+  label: Knowledge base · inbox (documents dropped and converted)
+  path: inbox/docs
+  glob: "**/*.md"
+wiki:
+  id: kb_wiki
+  label: Knowledge base · wiki (manual knowledge, written by Damien)
+  path: wiki
+  glob: "**/*.md"
+workflow:
+  id: kb_workflow
+  label: "Knowledge base · workflow (flow results: reports, ledgers, sources, research)"
+  path: workflow
+  glob: "**/*.md"

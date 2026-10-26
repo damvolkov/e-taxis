@@ -1,0 +1,6 @@
+# search — en qué orden se busca y por qué vía. via: self (servicio propio) · platform (lo paga la plataforma del harness) · key (clave propia).
+order: [exa, searxng]
+engines:
+  exa: {via: platform}
+  gemini: {via: platform, off: true}   # sin sesión de pago no responde: esperaba 30 s y fallaba
+  searxng: {via: self, url: "http://localhost:45600"}

@@ -57,6 +57,7 @@ from e_taxis.harness.services.plan import PlanService
 from e_taxis.harness.services.resolver import ResolverService
 from e_taxis.harness.services.uninstall import UninstallService
 from e_taxis.harness.services.verify import VerifyService
+from e_taxis.transpile.services.check import CheckService
 
 T = TypeVar("T")
 ### cyclopts reads `Annotated` metadata but does not unwrap PEP 695 `type` aliases: the classic generic alias is what it sees.
@@ -177,6 +178,9 @@ class Deps:
             registry=registry,
         )
 
+    async def _resolve_check(self) -> CheckService:
+        return CheckService()
+
     async def _resolve_uninstall(self) -> UninstallService:
         home, claude = await self._common_homes()
         return UninstallService(
@@ -204,6 +208,7 @@ class Deps:
             ResolverService: _resolve_resolver,
             PlanService: _resolve_plan,
             VerifyService: _resolve_verify,
+            CheckService: _resolve_check,
             DoctorService: _resolve_doctor,
             RunnerPort: _resolve_runner,
             DownloaderPort: _resolve_downloader,

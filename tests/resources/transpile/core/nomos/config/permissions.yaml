@@ -1,0 +1,8 @@
+# permissions — cuánto actúa solo y hasta dónde llega. Agnóstico: cada harness lo traduce a su política (autonomía, aprobaciones, reglas).
+guard: false                # sin política propia del harness (autorizado por Damien 2026-10-16): su contenedor, el vault y las toolchains, es el límite; los almacenes de credenciales siguen vetados
+mode: full                  # read · ask · auto · full — mirar · pedir para actuar · actuar y pedir en lo arriesgado · actuar; lo catastrófico lo veta el harness
+scope: workspace            # workspace · home · any — dónde actúa, además de las raíces de confianza
+vault:                      # el KB (memory/ en el árbol): qué ve y dónde escribe. Rutas relativas a su raíz, carpeta a carpeta
+  read: [persona, wiki, brain]   # nunca ".": la raíz guarda también el estado del harness (config, llavero, tokens); su workspace lo alcanza por sí
+  write: [workflow, inbox]  # persona/, wiki/ y brain/ se leen y jamás se escriben: el contenedor además los monta :ro
+toolchains: ["~/.local/bin", "~/.local/share/uv"]   # intérpretes fuera de lo que el jail concede de serie (uv: python3 de los flows): solo lectura y ejecución

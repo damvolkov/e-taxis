@@ -1,0 +1,3 @@
+# voice — escuchar y hablar con los servicios de e-voice, locales.
+stt: {endpoint: "http://127.0.0.1:45140/v1", model: parakeet}
+tts: {endpoint: "http://127.0.0.1:45150/v1", voice: damien}

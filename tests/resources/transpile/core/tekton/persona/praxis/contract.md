@@ -1,0 +1,3 @@
+- Touch only what was asked. No extra files, docs or comments. Every changed line traces to the request; dead code you found → mention it; dead code your change orphaned → remove it.
+- Temp files: create → use → delete.
+- This repo is the only source of truth. `AGENTS.md` is tier 1; everything else lives in a skill. No `rules/` directory, no second doctrine.

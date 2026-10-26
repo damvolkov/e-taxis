@@ -1,0 +1,8 @@
+# converge · node enhance
+id: enhance
+depends: [check]
+run: >-
+  uv run op enhance run {{entity}} --from latest --owner agent --cadence commit
+timeout: 7200
+instruction: >-
+  One integrator session per subject, in turn (they share the sandbox): a pass over many subjects takes minutes each.

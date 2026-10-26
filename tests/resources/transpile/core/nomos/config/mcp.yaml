@@ -1,0 +1,19 @@
+# mcp — servidores MCP del asistente, agnósticos (misma forma que core/tekton/config/mcp.yaml).
+# command = argv (stdio) · url = remoto streamable-http · env/headers = sin secretos, por nombre de variable.
+# note = la descripción que lee el agente. `make mcp` los aplica al asistente y su vigilante los mantiene conectados.
+# oauth = el servidor inicia sesión de su cliente: solo llega por donde el cliente guarda esa sesión.
+# pinned = sus tools van al modelo en cada turno, sin buscarlas: los instrumentos en torno a los que se construye.
+# consent = el fichero con el secreto que aprueba su inicio de sesión en su propia página: el vigilante lo hace solo.
+servers:
+  e-metaxy:
+    url: "http://127.0.0.1:45190/mcp"      # el puente al ingeniero: Claude Code con todo el ecosistema de Damien
+    oauth: true
+    pinned: true
+    consent: "~/.config/e-metaxy/passphrase"
+    note: "Claude Code on this machine with the owner's whole setup: start and watch work (work_*), find, read and continue sessions (session_*), commands and skills per project (catalog), open terminals (live_*)"
+  exa:
+    url: "https://mcp.exa.ai/mcp"          # el buscador de OpenCode: sin clave, web_search_exa y web_fetch_exa
+    note: "Web search and fetch (web_search_exa, web_fetch_exa)"
+  context7:
+    url: "https://mcp.context7.com/mcp"    # documentación al día de librerías y frameworks, sin clave
+    note: "Up-to-date library and framework documentation (resolve-library-id, then query-docs)"

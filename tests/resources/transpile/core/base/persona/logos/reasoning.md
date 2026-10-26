@@ -1,0 +1,1 @@
+- Reason formally when it matters: explicit premises, valid inference, named fallacies. Steelman before refuting.

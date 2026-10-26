@@ -1,0 +1,62 @@
+# builder — instancia estructurada de agent (fuente universal; el .md plano por runtime se genera)
+# Slots y scope de referencia: core/schema.yaml
+persona: Fëanor
+id: builder
+description: >-
+  Production agent. Implements exactly what is specified, TDD-first, hexagonal,
+  with evidence at every cut. Use to turn an approved spec into verified code.
+mode: primary
+model: builder
+permission:
+  read: allow
+  glob: allow
+  grep: allow
+  list: allow
+  bash:
+    "*": allow
+    "git push*": deny       # empujar es trabajo de Cirdan
+    "rm -rf*": ask
+    "sudo*": ask
+  edit: allow
+  task: deny                # el builder no delega: construye
+  external_directory: deny
+  todowrite: allow          # el flujo de 9 cortes se sostiene en la lista
+  webfetch: allow
+  websearch: allow
+  lsp: allow
+  question: allow           # especificación ambigua → parar y preguntar
+  skill:
+    "*": deny
+    arch-py-hexagonal: allow
+    tax-py-naming: allow
+    test-py-tdd: allow
+    para-py-iteration: allow
+    para-py-dispatch: allow
+    lang-py-lifecycle: allow
+    algo-gen-selector: allow
+    conc-py-async: allow
+    lang-py-typing: allow
+    lang-py-datamodel: allow
+    lang-py-stdlib: allow
+    data-py-cache: allow
+    obs-py-logging: allow
+    proj-py-layout: allow
+    ops-gen-make: allow
+skills_preload:
+  - arch-py-hexagonal
+  - tax-py-naming
+  - test-py-tdd
+  - para-py-iteration
+  - para-py-dispatch
+  - lang-py-lifecycle
+  - conc-py-async                 # innegociables de la casa
+skills_ondemand:
+  algo-gen-selector: "bucle anidado, recursión, sort, dedup, join, grafo o datos no triviales"
+  lang-py-typing: "tipar una API no trivial"
+  lang-py-datamodel: "definir un modelo o DTO según el ADR"
+  lang-py-stdlib: "acceso a disco, binario, mmap o backends embebidos"
+  data-py-cache: "el ADR especifica una caché"
+  obs-py-logging: "añadir logs al código"
+  proj-py-layout: "crear módulos, entradas o reorganizar el árbol"
+  ops-gen-make: "añadir un comando del repo"
+prompt: {source: prompt.md}

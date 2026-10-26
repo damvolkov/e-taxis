@@ -1,0 +1,30 @@
+# models — proveedores y tiers de casa (el tesoro del enrutado de modelo).
+# Un tier = nombre agnóstico; cada backend schema lo coloca con su sintaxis.
+providers:
+  bailian:
+    id: bailian-token-plan-personal
+    sdk: "@ai-sdk/anthropic"                    # opencode: provider.npm
+    display: "Alibaba Cloud Model Studio"       # opencode: provider.name
+    base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/apps/anthropic/v1"
+    openai_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"   # gemelo OpenAI-compatible: lo usan las herramientas sin cliente Anthropic (SkillSpector)
+    api_key: "{env:ALIBABA_TOKEN_PLAN_KEY}"
+tiers:
+  builder:                                      # driver principal
+    model: bailian/qwen3.8-max
+    reasoning: true
+    limits: { context: 983616, output: 131072 }
+    modalities: { input: [text, image], output: [text] }
+    options: { thinking: { type: enabled, budgetTokens: 16384 } }
+    note: "$2.00/$6.00 · 1M ctx"
+  planner:                                      # más razonamiento
+    model: bailian/qwen3.7-max
+    options: { thinking: { type: enabled, budgetTokens: 8192 } }
+    note: "$1.25/$3.75"
+  tester:                                       # segunda familia, revisión/tests
+    model: bailian/glm-5.3
+    options: { thinking: { type: enabled, budgetTokens: 8192 } }
+  scout:                                        # el más barato/rápido
+    model: bailian/qwen3.6-flash
+    modalities: { input: [text, image], output: [text] }
+    options: { thinking: { type: enabled, budgetTokens: 8192 } }
+    note: "~$0.10/$0.40"

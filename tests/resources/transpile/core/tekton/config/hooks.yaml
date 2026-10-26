@@ -1,0 +1,11 @@
+# hooks — ciclo de vida de Claude Code, y solo de él: en OpenCode un hook es un plugin JS/TS que devuelve
+# funciones (tool.execute.before/after, session.*…), otra cosa; no hay proyección determinista y no se emite.
+# Aquí solo `command` (Claude admite también http y prompt); un exit 2 bloquea. El script vive en core/tekton/config/hooks/ y viaja como asset a <árbol>/hooks/;
+# run = argv, {out} = el árbol donde aterriza. Un evento sin matchers no los admite (Stop, SessionEnd).
+SessionStart:
+  - matchers: [startup]
+    run: [node, "{out}/hooks/autolearn.mjs", start]          # autolearn: recompone la memoria
+Stop:
+  - run: [node, "{out}/hooks/autolearn.mjs", stop]           # autolearn: revisión al umbral de mensajes
+SessionEnd:
+  - run: [node, "{out}/hooks/autolearn.mjs", end]            # autolearn: revisión de salida

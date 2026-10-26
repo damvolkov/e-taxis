@@ -1,0 +1,337 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# specs/nomos/openhuman.yaml — OpenHuman: the single file the transpiler
+# reads. Template O (specs/base.yaml). Data, not code.
+# ═══════════════════════════════════════════════════════════════════════════
+
+spec: "2.0"
+backend: openhuman
+harness: nomos
+product: OpenHuman
+status: ready
+tree: .config                         # one root, the vault: memory/persona/ (real files) and memory/openhuman/users/{profile}/
+govern: [memory/persona]              # the persona documents only; the rest of the vault is the KB and the app's state
+bindings:
+  profile: {read: "memory/openhuman/active_user.toml#user_id"}   # the user the app keeps its config under
+
+upstream:
+  version: v0.64.15                                             # GitHub latest — read 2026-10-22 (our .deb: 0.64.15-demian.N, make image)
+  channel: https://api.github.com/repos/tinyhumansai/openhuman/releases/latest
+  read: "2026-10-22"
+  verified: {version: v0.64.15, date: "2026-10-13"}             # config checked against the live migrated schema of v0.64.15
+
+sources:
+  - {url: "https://api.github.com/repos/tinyhumansai/openhuman/releases/latest", kind: api, covers: [upstream], note: "no CHANGELOG.md: the release body is the changelog"}
+  - {url: "https://github.com/tinyhumansai/openhuman/commits/main.atom", kind: atom, covers: [persona, config], note: "early signal before a release"}
+  - {url: "https://tinyhumans.gitbook.io/openhuman/llms.txt", kind: markdown, covers: [persona, config], note: "docs index: a new page = a new surface"}
+  - {url: "https://tinyhumans.gitbook.io/openhuman/features/personalization.md", kind: markdown, covers: [persona]}
+  - {url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/agent/prompts/README.md", kind: code, covers: [persona], note: "persona files, who sees them, seeding, fallback"}
+  - {url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/agent/prompts/types.rs", kind: code, covers: [persona], note: "BOOTSTRAP_MAX_CHARS 20000, USER_FILE_MAX_CHARS 2000: the limits"}
+  - {url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/agent/prompts/render_helpers/workspace_files.rs", kind: code, covers: [persona], note: "factory hash: an edited file is never overwritten"}
+  - {url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/agent/prompts/agents_md.rs", kind: code, covers: [persona], note: "AGENTS.md opened with O_NOFOLLOW"}
+  - {url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/app/src/components/settings/panels/persona/personaSections.ts", kind: code, covers: [persona], note: "the sections the Settings editor rewrites"}
+  - {url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/config/schema/voice_providers.rs", kind: code, covers: [config]}
+  - {url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/inference/provider/factory/access_gates.rs", kind: code, covers: [config]}
+
+targets:
+  memory/persona/SOUL.md:     {format: md, limit: 20000, audience: main, absorb: true}           # the Settings editor rewrites Personality and About You
+  memory/persona/IDENTITY.md: {format: md, limit: 20000, audience: main, absorb: true}
+  memory/persona/ROLE.md:     {format: md, limit: 20000, audience: orchestrator, absorb: true}   # only the orchestrator sees it
+  memory/persona/STYLE.md:    {format: md, audience: all, absorb: true}                          # every build, subagents included; no limit of its own
+  memory/persona/PROFILE.md:
+    format: md
+    limit: 2000
+    audience: main
+    absorb: true
+    foreign:
+      - kind: marker
+        start: "<!-- openhuman:(?P<block>[a-z-]+):start -->"
+        end: "<!-- openhuman:(?P=block):end -->"
+        sample: "<!-- openhuman:goals:start -->\n## Goals\n\n- ${nonce}\n\n<!-- openhuman:goals:end -->"
+        why: "the learning's blocks (style, identity, tooling, vetoes, goals; composio's connected-accounts)"
+  memory/openhuman/users/{profile}/workspace/AGENTS.md: {format: md, limit: 20000, audience: all, absorb: true}   # a real file: opened with O_NOFOLLOW
+  memory/openhuman/users/{profile}/workspace/SOUL.md:     {format: link, to: memory/persona/SOUL.md}       # the app reads its workspace; the documents live in the vault
+  memory/openhuman/users/{profile}/workspace/IDENTITY.md: {format: link, to: memory/persona/IDENTITY.md}
+  memory/openhuman/users/{profile}/workspace/ROLE.md:     {format: link, to: memory/persona/ROLE.md}
+  memory/openhuman/users/{profile}/workspace/STYLE.md:    {format: link, to: memory/persona/STYLE.md}
+  memory/openhuman/users/{profile}/workspace/PROFILE.md:  {format: link, to: memory/persona/PROFILE.md}
+  memory/openhuman/users/{profile}/config.toml:
+    format: toml
+    foreign:
+      - {kind: key, at: "*", why: "the app's own state and defaults (schema_version, onboarding, dashboard, scheduler, its keys…): it migrates the file on start and fills every key it misses"}
+      - {kind: table, at: channels_config, why: "created by the app with its first channel"}
+      - {kind: table, at: channels_config.discord, why: "DiscordConfig demands bot_token: a table without it invalidates the whole file"}
+      - {kind: items, at: mcp_client.servers, by: name, why: "servers the app installs through its MCP registry (make mcp)"}
+      - {kind: items, at: memory.sources, by: id, ours: {kind: folder}, why: "sources the app adds of other kinds"}
+      - {kind: items, at: autonomy.trusted_roots, by: path, why: "roots the app grants on its own"}
+      - {kind: items, at: model_registry, by: id, why: "the app's model catalog; the core only marks its vision model"}
+
+native:
+  ids: {alibaba: p_alibaba_tp01k, local: p_vllm_local}       # cloud_providers ids the app already knows
+  providers:                          # its own backend, which the core never names
+    openhuman: {id: p_openhuman_pf4fk, label: OpenHuman, endpoint: "https://api.openhuman.ai/v1", auth: openhumanjwt}
+  auth: {anthropic: anthropic, openai: bearer}               # core protocol → auth_style
+  levels: {read: readonly, ask: supervised, auto: supervised, full: full}
+  routes: {platform: managed, self: direct, key: direct}     # search via → route
+  unbounded: 100                      # tools.steps = 0 (no cap): OpenHuman demands a number
+
+map:
+
+  persona:
+    kind: persona
+    verified: {version: v0.64.10, date: "2026-10-06"}       # v0.64.10 code read and main checked that day
+    rows:
+      # ── SOUL.md — personality
+      - {from: name,        to: "memory/persona/SOUL.md#h1"}
+      - {from: essence,     to: "memory/persona/SOUL.md#para"}
+      - {from: epigraph,    to: "memory/persona/SOUL.md#quote"}
+      - {from: temperament, to: "memory/persona/SOUL.md#Personality"}
+      - {from: face,        to: "memory/persona/SOUL.md#Personality"}
+      - {from: critique,    to: "memory/persona/SOUL.md#Personality"}
+      - {from: about,       to: "memory/persona/SOUL.md#About You"}
+      - {from: family,      to: "memory/persona/SOUL.md#Family"}
+      - {from: attunement,  to: "memory/persona/SOUL.md#Attunement"}
+      - {from: unity,       to: "memory/persona/SOUL.md#One mind, two materials"}
+      - {from: stance,      to: "memory/persona/SOUL.md#Outlook"}
+      - {from: worldview,   to: "memory/persona/SOUL.md#Worldview"}
+      - {from: lineage,     to: "memory/persona/SOUL.md#Lineage"}
+      - {from: taste,       to: "memory/persona/SOUL.md#Taste"}
+      # ── IDENTITY.md — mission, nature, values, epistemics, memory, adversaries, limits
+      - {from: mission,     to: "memory/persona/IDENTITY.md#Mission"}
+      - {from: nature,      to: "memory/persona/IDENTITY.md#Nature"}
+      - {from: honesty,     to: "memory/persona/IDENTITY.md#Honesty"}
+      - {from: reasoning,   to: "memory/persona/IDENTITY.md#Epistemics"}
+      - {from: epistemics,  to: "memory/persona/IDENTITY.md#Epistemics"}
+      - {from: memory,      to: "memory/persona/IDENTITY.md#Memory"}
+      - {from: commitments, to: "memory/persona/IDENTITY.md#Commitments"}
+      - {from: antagonists, to: "memory/persona/IDENTITY.md#Antagonists"}
+      - {from: limits,      to: "memory/persona/IDENTITY.md#Limits"}
+      # ── ROLE.md — method and modes
+      - {from: prudence,    to: "memory/persona/ROLE.md#Method"}
+      - {from: modes,       to: "memory/persona/ROLE.md#Modes"}
+      # ── STYLE.md — how it writes; replaces the factory one whole
+      - {from: voice,       to: "memory/persona/STYLE.md#para", glue: "\n"}
+      - {from: discourse,   to: "memory/persona/STYLE.md#para", glue: "\n"}
+      # ── workspace/AGENTS.md — permanent instructions on how to operate
+      - {from: conduct,     to: "memory/openhuman/users/{profile}/workspace/AGENTS.md#Conduct"}
+      - {from: reach,       to: "memory/openhuman/users/{profile}/workspace/AGENTS.md#Reach"}
+      - {from: lexicon,     to: "memory/openhuman/users/{profile}/workspace/AGENTS.md#Lexicon"}
+      - {from: craft,       to: "memory/openhuman/users/{profile}/workspace/AGENTS.md#Craft"}
+      # ── PROFILE.md — the learning's starting point, outside its blocks
+      - {from: profile,     to: "memory/persona/PROFILE.md#para"}
+    notes: >-
+      Rules of v0.64.10 (crates/openhuman-core/src/agent/prompts):
+      SOUL/IDENTITY/ROLE/AGENTS ≤20000 characters, PROFILE/MEMORY ≤2000;
+      above it OpenHuman truncates with [... truncated] — `limit` refuses the
+      render first. Seeding: a workspace file is rewritten with the factory one
+      only when missing or matching .<file>.builtin-hash (never touch those
+      sidecars: the workspace is not governed). OpenHuman writes with
+      std::fs::write, which follows the workspace links: hence the documents
+      live in memory/persona and the workspace links to them. AGENTS.md is the
+      exception: load_agents_md opens it with O_NOFOLLOW (a link is silently
+      ignored), so it is a real file. The Settings → Persona editor rewrites
+      ## Personality, ## Voice and ## About You: Personality and About You
+      fold back through absorb; ## Voice is not emitted (voice goes to STYLE),
+      so an editor-written Voice is drift. Other writers:
+      workspace_update_persona / workspace_reset_persona (SOUL, IDENTITY), off
+      by default. DEPRECATION: PROFILE.md is being retired as an injection
+      (phase_out_profile_md already ran here; main lost
+      profile_md_renderer.rs): when a release confirms it, `profile` moves by
+      changing this spec, never the core. MEMORY.md is not emitted: the
+      archivist rewrites it.
+
+  config:
+    kind: config
+    target: "memory/openhuman/users/{profile}/config.toml"
+    rows:
+      # ── models and roles
+      - {from: models.roles.main,   to: "#default_model", via: {replace: {old: "/", new: ":", count: 1}}}
+      - {from: models.primary,      to: "#primary_cloud", via: {table: ids}}       # a provider id, never a slug
+      - {from: models.roles.main,   to: "#chat_provider", via: {replace: {old: "/", new: ":", count: 1}}}
+      - {from: models.roles.reason, to: "#reasoning_provider", via: {replace: {old: "/", new: ":", count: 1}}}
+      - {from: models.roles.act,    to: "#agentic_provider", via: {replace: {old: "/", new: ":", count: 1}}}
+      - {from: models.roles.code,   to: "#coding_provider", via: {replace: {old: "/", new: ":", count: 1}}}
+      - {from: models.roles.memory, to: "#memory_provider", via: {replace: {old: "/", new: ":", count: 1}}}
+      - {from: models.roles.vision, to: "#vision_provider", via: {replace: {old: "/", new: ":", count: 1}}}           # reads attachments when the main one cannot see
+      - {from: models.roles.vision, to: "#model_registry", via: vision_registry}
+      # ── voice (local e-voice; the app stores the route twice: owning both detects its rewrite to cloud)
+      - {from: voice.stt.model, to: "#stt_provider", via: {template: "evoice-stt:{value}"}}
+      - {from: voice.tts.voice, to: "#tts_provider", via: {template: "evoice-tts:{value}"}}
+      - {from: voice.stt.model, to: "#local_ai.stt_provider", via: {template: "evoice-stt:{value}"}}
+      - {from: voice.tts.voice, to: "#local_ai.tts_provider", via: {template: "evoice-tts:{value}"}}
+      # ── providers
+      - {from: models.providers, to: "#cloud_providers", via: cloud_providers}
+      - {from: voice,            to: "#voice_providers", via: voice_providers}
+      # ── memory
+      - {from: memory.embedder.endpoint,   to: "#memory.embedding_provider", via: {template: "custom:{value}"}}
+      - {from: memory.embedder.model,      to: "#memory.embedding_model"}
+      - {from: memory.embedder.dimensions, to: "#memory.embedding_dimensions"}      # fixed 1024: the tree admits no other number
+      - {from: memory.embedder,            to: "#custom_embeddings", via: {pick: [endpoint, model, dimensions]}}
+      - {from: memory.engine.kind,         to: "#memory.engine"}                     # without an engine memory is off (v0.64.15)
+      - {from: memory.engine.endpoint,     to: "#memory.engines.{memory.engine.kind}.endpoint"}
+      - {from: sources,                    to: "#memory.sources", via: memory_sources}
+      # ── search
+      - {from: search.engines.searxng.url, to: "#searxng.base_url"}
+      - {from: search.order,               to: "#search.roles", via: {wrap: search}}
+      - {from: search.engines,             to: "#search.providers", via: search_providers}
+      # ── instructions and autonomy
+      - {from: main.instructions,       to: "#agent.agents_md_enabled"}
+      - {from: permissions.guard,       to: "#autonomy.enabled"}
+      - {from: permissions.mode,        to: "#autonomy.level", via: {table: levels}}
+      - {from: permissions.scope,       to: "#autonomy.workspace_only", via: {equals: workspace}}
+      - {from: permissions.vault,       to: "#autonomy.trusted_roots", via: trusted_roots}
+      - {from: permissions,             to: "#runtime.local_jail.extra_read_only", via: jail_ro}   # without it, `ls` of the vault is Permission denied
+      - {from: permissions.vault.write, to: "#runtime.local_jail.extra_read_write", via: jail_rw}
+      - {from: main.updates,            to: "#update.enabled"}                        # its image is rebuilt with our patches (make image)
+      # ── tool performance (measuring stick: Claude Code and OpenCode)
+      - {from: tools.search.results,   to: "#search.max_results"}
+      - {from: tools.search.timeout,   to: "#search.timeout_secs"}
+      - {from: tools.search.results,   to: "#web_search.max_results"}
+      - {from: tools.search.timeout,   to: "#web_search.timeout_secs"}
+      - {from: tools.steps,            to: "#agent.max_tool_iterations", via: {falsy: native.unbounded}}   # the orchestrator's own cap (15) still wins
+      - {from: tools.timeout,          to: "#agent.agent_timeout_secs"}
+      - {from: tools.parallel,         to: "#agent.parallel_tools"}
+      - {from: tools.calls,            to: "#agent.tool_dispatcher"}                 # never python: DeepSeek writes its own format and poisons the thread
+      - {from: tools.fanout,           to: "#agent.max_parallel_tools"}
+      - {from: tools.output,           to: "#agent.tool_result_budget_bytes"}
+      - {from: tools.output,           to: "#context.tool_result_budget_bytes"}      # inherited alias: both written so neither falls short
+      - {from: tools.fetch.size,       to: "#http_request.max_response_size"}
+      - {from: tools.fetch.timeout,    to: "#http_request.timeout_secs"}
+      - {from: tools.download.size,    to: "#curl.max_download_bytes"}
+      - {from: tools.download.timeout, to: "#curl.timeout_secs"}
+      - {from: tools.remote,           to: "#multimodal.allow_remote_fetch"}
+      - {from: tools.remote,           to: "#multimodal_files.allow_remote_fetch"}
+      # ── MCP
+      - {from: mcp.servers, to: "#mcp_client.servers", via: mcp_openhuman}
+      - {from: mcp.servers, to: "#mcp_client.direct_servers", via: direct_servers}   # our patch (0013): tools in every turn
+      # ── channels (under the app's tables: dormant until it creates them)
+      - {from: channels.reply,           to: "#channels_config.message_timeout_secs"}           # never below agent.agent_timeout_secs
+      - {from: channels.discord.channel, to: "#channels_config.discord.channel_id"}             # null → omitted → deleted: the bot then hears the whole server and DMs
+      - {from: channels.discord.users,   to: "#channels_config.discord.allowed_users"}
+      - {from: channels.discord.files,   to: "#multimodal_files.trusted_channel_senders", via: {prefix_each: "discord:"}}   # our patch (0006)
+    unmapped:
+      main.user:                {reason: absent, detail: "the app knows the user by its onboarding profile: no config key (v0.64.15 schema read live, 2026-10-13)"}
+      main.language:            {reason: house, detail: "the language of treatment belongs to the persona (SOUL/STYLE)"}
+      main.timezone:            {reason: absent, detail: "the app uses the system timezone: no key in the v0.64.15 schema"}
+      models.roles.fast:        {reason: pending, detail: "no fast-role key found in v0.64.15; recheck"}
+      models.roles.learn:       {reason: pending, detail: "learning_provider exists (the trial sets it) but is not projected yet"}
+      models.providers.*.key:   {reason: house, detail: "the secret lives in the app's encrypted keychain (auth:provider:<slug>:default), never in the TOML"}
+      models.fallback:          {reason: absent, detail: "no fallback provider chain in the v0.64.15 schema"}
+      memory.engine.key:        {reason: house, detail: "the engine key goes to the app's credential store, never to the TOML"}
+      memory.recall:            {reason: absent, detail: "relevance/window have no exposed key in v0.64.15 (memory schema, 2026-10-13)"}
+      sources.*.glob:           {reason: pending, detail: "whether a folder source takes a glob is not checked"}
+      channels.discord.mention: {reason: absent, detail: "the Discord channel answers without mention: only channel_id/allowed_users (v0.64.15)"}
+      mcp.servers.*.headers:    {reason: pending, detail: "remote servers carry only an endpoint in mcp_client; headers not checked"}
+      mcp.servers.*.note:       {reason: pending, detail: "whether an mcp_client server takes a description is not checked"}
+      mcp.servers.*.consent:    {reason: house, detail: "the secret file belongs to the watcher (make mcp), never to the render"}
+      mcp.servers.*.smoke:      {reason: internal, detail: "evaluation data (op eval run config)"}
+    notes: >-
+      Drift the check must see: voice routes evoice-stt:<model> /
+      evoice-tts:<voice> (the UI rewrites them to cloud); primary_cloud is an
+      id; memory.sources are real folders under memory/, never its root nor
+      memory_tree; embedder dimensions 1024; search.providers.gemini off
+      (without a paid session web_answer waits 30 s and fails). cloud_providers
+      also carries the custom slug of the embedder endpoint: the v0.64.10
+      memory host resolves the tinymemory module's endpoint only by slug among
+      cloud_providers and ignores memory.embedding_provider and
+      [custom_embeddings] (openhuman#6984; without it, zero vectors and no
+      seal) — remove when upstream fixes it. search.gemini.api_key is the
+      app's: foreign by the wildcard.
+
+transforms:
+  vision_registry:
+    consumes: [models.roles.vision]
+    returns: "model_registry — [{id: model, provider: alias, vision: true}]: the app reads a BYOK model as image-capable only from its registry flag"
+  cloud_providers:
+    consumes: [models.providers.*.label, models.providers.*.endpoint, models.providers.*.api, memory.embedder.endpoint, native.ids, native.providers, native.auth]
+    returns: "cloud_providers — per core provider {id: native.ids[alias], slug: alias, label, endpoint, auth_style: native.auth[api]}, then native.providers, then {slug: custom, endpoint: the embedder's} (openhuman#6984)"
+  voice_providers:
+    consumes: [voice.stt.endpoint, voice.stt.model, voice.tts.endpoint, voice.tts.voice]
+    returns: "voice_providers — vp_evoice_stt and vp_evoice_tts: {endpoint, auth_style: bearer, kind: openaiaudio, default model/voice}"
+  memory_sources:
+    consumes: [sources.*.id, sources.*.label, sources.*.path, sources.*.off, memory.sync]
+    binds: [out]
+    returns: "memory.sources — {id, kind: folder, target: <out>/memory/<path>, label, schedule_mins: memory.sync} per source not off, in order; never the vault root"
+  search_providers:
+    consumes: [search.engines.*.via, search.engines.*.off, native.routes]
+    returns: "search.providers — {name: {enabled: not off, route: native.routes[via]}}"
+  trusted_roots:
+    consumes: [permissions.vault.read, permissions.vault.write]
+    binds: [out]
+    returns: "autonomy.trusted_roots — {path: <out>/memory/<folder>, access: read} per read folder, then {…, access: readwrite} per write folder"
+  jail_ro:
+    consumes: [permissions.vault.read, permissions.toolchains]
+    binds: [out]
+    returns: "runtime.local_jail.extra_read_only — <out>/memory/<folder> per read folder, then each toolchain with ~ expanded"
+  jail_rw:
+    consumes: [permissions.vault.write]
+    binds: [out]
+    returns: "runtime.local_jail.extra_read_write — <out>/memory/<folder> per write folder"
+  mcp_openhuman:
+    consumes: [mcp.servers.*.command, mcp.servers.*.url, mcp.servers.*.env, mcp.servers.*.oauth]
+    returns: "mcp_client.servers — stdio {name, enabled, endpoint: '', command: argv[0], args: argv[1:], env} or remote {name, enabled, endpoint: url}; enabled = not oauth (an oauth server reaches the app through its registry)"
+  direct_servers:
+    consumes: [mcp.servers.*.pinned]
+    returns: "mcp_client.direct_servers — names of the pinned servers, in order"
+
+trial:
+  llm: openai                           # the overlay routes every role to a keyless provider at ${llm}/v1
+  network: local
+  env:
+    PATH: ${path}
+    HOME: ${home}
+    TMPDIR: ${home}/tmp
+    OPENHUMAN_WORKSPACE: ${home}/.config/memory/openhuman/users/${profile}
+    OPENHUMAN_CORE_TOKEN: ghost-token
+    OPENHUMAN_APPROVAL_GATE: "0"
+  state:                                # an established install: from schema 0 the app migrates, and phase_out_profile_md deletes workspace/PROFILE.md
+    - path: ${home}/.config/memory/openhuman/users/${profile}/config.toml
+      text: "schema_version = 13\nonboarding_completed = true\n"
+    - path: ${home}/.config/memory/openhuman/active_user.toml
+      text: "user_id = \"${profile}\"\n"
+  setup:                                # custom providers need a backend credential; an API-key profile satisfies the gate offline
+    - [openhuman, core, auth, set_credential, --token, ghost-api-key, --kind, api-key]
+  overlays:
+    - path: ${home}/.config/memory/openhuman/users/${profile}/config.toml
+      format: toml
+      swap: {"@memory.embedder.endpoint": "${llm}/v1"}
+      set:
+        primary_cloud: p_ghost
+        default_model: "ghost:x"
+        chat_provider: "ghost:x"
+        reasoning_provider: "ghost:x"
+        agentic_provider: "ghost:x"
+        coding_provider: "ghost:x"
+        memory_provider: "ghost:x"
+        learning_provider: "ghost:x"
+      extend:                           # appended: the memory host finds the embedder among the rendered providers by slug
+        cloud_providers: [{id: p_ghost, slug: ghost, label: Ghost, endpoint: "${llm}/v1", auth_style: none}]
+  probes:
+    - name: orchestrator
+      kind: command
+      argv: [openhuman, core, agent, dump-prompt, --agent, orchestrator, --workspace, "${home}/.config/memory/openhuman/users/${profile}/workspace", --json]
+    - name: session                     # a real turn: what the orchestrator sends its model, AGENTS.md included
+      kind: capture
+      serve: [openhuman, core, run, --headless-api, --port, "${port}"]
+      ready: [curl, -sf, -X, POST, "http://127.0.0.1:${port}/rpc", -H, "authorization: Bearer ghost-token", -H, "content-type: application/json", -d, '{"jsonrpc":"2.0","id":0,"method":"openhuman.health_snapshot","params":{}}']
+      argv: [curl, -sf, -X, POST, "http://127.0.0.1:${port}/rpc", -H, "authorization: Bearer ghost-token", -H, "content-type: application/json", -d, '{"jsonrpc":"2.0","id":1,"method":"openhuman.channel_web_chat","params":{"client_id":"ghost","thread_id":"ghost-${turn}","message":"ghost"}}']
+      timeout: 60
+      wait: 30
+  sees:
+    persona: [session]
+  pipeline:                             # memory over the applied tree: a note in a rendered source, embedded, sealed into a tree
+    seed:
+      - {path: "~/.cache/openhuman/modules/tinymemory", to: "${home}/.cache/openhuman/modules/tinymemory"}
+    serve: [openhuman, core, run, --headless-api, --port, "${port}"]
+    rpc: "http://127.0.0.1:${port}/rpc"
+    token: ghost-token
+    source: src_vault_notes
+    store: ${home}/.config/memory/openhuman/users/${profile}/workspace/memory_tree/chunks.db
+    counts:
+      chunks: "select count(*) from mem_tree_chunks"
+      embedded: "select count(*) from mem_tree_chunk_embeddings"
+      summaries: "select count(*) from mem_tree_summaries"
+      links: "select count(*) from mem_tree_summaries, json_each(child_ids_json)"
+      failed: "select count(*) from mem_tree_jobs where status = 'failed'"
+    errors: "select last_error from mem_tree_jobs where last_error is not null"
+    timeout: 240
+  notes: "The seal without an LLM falls back to the concatenating cascade: enough for a summary and a parent-child link. The module loader rejects any group-writable ancestor: the session runs with umask 022. A new thread per load (ghost-${turn}): the app freezes a thread's system prompt on its first turn. dump-prompt does not load AGENTS.md; the real session does, and it is the probe that counts. The turn fails with 400 on purpose."

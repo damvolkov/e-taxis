@@ -1,0 +1,247 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# specs/tekton/claudecode.yaml — Claude Code: the single file the transpiler
+# reads. Template O (specs/base.yaml). Data, not code.
+# ═══════════════════════════════════════════════════════════════════════════
+
+spec: "2.0"
+backend: claudecode
+harness: tekton
+product: Claude Code
+status: ready
+tree: .claude
+govern: [skills, agents, commands, hooks, mcp, rules]
+foreign:
+  - {path: skills/synced, why: "autolearn's synced skills: installed by e-taxis, curated by autolearn"}
+
+upstream:
+  version: 2.1.308                                              # npm @latest — read 2026-10-22
+  channel: https://registry.npmjs.org/@anthropic-ai/claude-code/latest
+  read: "2026-10-22"
+  verified: {version: 2.1.291, date: "2026-10-02"}              # rows checked against the docs that day; the trial captured 2.1.291 on 2026-10-06
+
+sources:
+  - {url: "https://registry.npmjs.org/@anthropic-ai/claude-code/latest", kind: npm, covers: [upstream]}
+  - {url: "https://github.com/anthropics/claude-code/releases.atom", kind: atom, covers: [upstream], note: "release notes: reclassify into sections"}
+  - {url: "https://code.claude.com/docs/llms.txt", kind: markdown, covers: [skill, agent, command, workflow, config], note: "docs index: a new page = a new surface"}
+  - {url: "https://code.claude.com/docs/en/memory.md", kind: markdown, covers: [persona, config]}
+  - {url: "https://code.claude.com/docs/en/skills.md", kind: markdown, covers: [skill, command]}
+  - {url: "https://code.claude.com/docs/en/sub-agents.md", kind: markdown, covers: [agent]}
+  - {url: "https://code.claude.com/docs/en/tools-reference.md", kind: markdown, covers: [agent]}
+  - {url: "https://code.claude.com/docs/en/workflows.md", kind: markdown, covers: [workflow]}
+  - {url: "https://code.claude.com/docs/en/settings.md", kind: markdown, covers: [config]}
+  - {url: "https://code.claude.com/docs/en/hooks.md", kind: markdown, covers: [config]}
+  - {url: "https://code.claude.com/docs/en/mcp.md", kind: markdown, covers: [config]}
+  - {url: "https://code.claude.com/docs/en/monitoring-usage.md", kind: markdown, covers: [config], note: "OTel environment variables"}
+  - {url: "https://json.schemastore.org/claude-code-settings.json", kind: json, covers: [config]}
+
+targets:
+  CLAUDE.md:            {format: md, audience: all, absorb: true}       # user memory; `#` and the agent may write it
+  skills/{id}/SKILL.md: {format: md+fm, absorb: true}                   # the optimizer edits the flat form: it folds back
+  agents/{id}.md:       {format: md+fm}
+  commands/{id}.md:     {format: md+fm}
+  settings.json:        {format: json}                                  # whole: every key Claude would write is modeled here
+  rules/instructions.md: {format: text}                                 # ~/.claude/rules/ is user memory: its @imports always load
+  hooks/autolearn.mjs:  {format: file}
+  mcp/playwright.json:  {format: file}
+  mcp-user:                                                             # user scope lives in ~/.claude.json, binary state: never written as a file
+    format: registry
+    apply:
+      read: ".claude.json#mcpServers"
+      add: "claude mcp add-json --scope user {name} {json}"
+      remove: "claude mcp remove --scope user {name}"
+
+map:
+
+  persona:
+    kind: persona
+    target: CLAUDE.md
+    rows:
+      - {from: name,        to: "#h1"}
+      - {from: essence,     to: "#para"}
+      - {from: epigraph,    to: "#quote"}
+      - {from: origin,      to: "#Damien"}
+      - {from: unity,       to: "#One mind, two materials"}
+      - {from: temperament, to: "#Temperament"}
+      - {from: face,        to: "#The engineer"}
+      - {from: stance,      to: "#Philosophy and logic", glue: "\n"}
+      - {from: reasoning,   to: "#Philosophy and logic", glue: "\n"}
+      - {from: voice,       to: "#Voice", glue: "\n"}
+      - {from: critique,    to: "#Voice", glue: "\n"}
+      - {from: prudence,    to: "#Method: prudence before action", glue: "\n"}
+      - {from: method,      to: "#Method: prudence before action", glue: "\n"}
+      - {from: honesty,     to: "#Honesty"}
+      - {from: soul,        to: "#Engineering soul"}
+      - {from: knowledge,   to: "#Knowledge architecture"}
+      - {from: categories,  to: "#Software categories"}
+      - {from: pillars,     to: "#The three pillars"}
+      - {from: rules,       to: "#Skill creation rules"}
+      - {from: conduct,     to: "#Operating contract", glue: "\n"}
+      - {from: contract,    to: "#Operating contract", glue: "\n"}
+      - {from: skills,      to: "#Skills"}
+    unmapped:
+      about:   {reason: house, detail: "bond slot: human-hemisphere content; the tekton harness renders doctrine, not bond"}
+      profile: {reason: house, detail: "user memory seed: only the nomos harnesses plant it"}
+    notes: >-
+      Claude Code reads AGENTS.md only as project instruction (cwd and
+      ancestors, and only without CLAUDE.md): user memory is
+      ~/.claude/CLAUDE.md.
+
+  skill:
+    kind: instanced
+    target: "skills/{id}/SKILL.md"
+    rows:
+      - {from: name,         to: "#fm.name", required: true}
+      - {from: description,  to: "#fm.description", required: true}
+      - {from: metadata,     to: "#fm.metadata"}
+      - {from: name,         to: "#title"}
+      - {from: instructions, to: "#body", required: true}
+      - {from: references,   to: "#copy"}
+    notes: >-
+      Same SKILL.md as OpenCode's. Claude's own frontmatter extensions
+      (when_to_use, argument-hint, allowed-tools, context: fork…) have no core
+      field yet: a field born in core/schema.yaml becomes a row here.
+
+  agent:
+    kind: instanced
+    target: "agents/{id}.md"
+    rows:
+      - {from: id,             to: "#fm.name", required: true}        # without `name` Claude treats the file as documentation
+      - {from: description,    to: "#fm.description", required: true}
+      - {from: skills_preload, to: "#fm.skills"}                      # native preload: the whole skill, not a line
+      - {from: max_steps,      to: "#fm.maxTurns"}
+      - {from: mcp_servers,    to: "#fm.mcpServers"}                  # names of servers already registered (mcp-user)
+      - from: permission
+        to: "#fm.disallowedTools"
+        via:
+          denied:
+            tools: {read: [Read], glob: [Glob], grep: [Grep], bash: [Bash],
+                    edit: [Edit, Write, NotebookEdit], task: [Agent],
+                    todowrite: [TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate],
+                    webfetch: [WebFetch], websearch: [WebSearch], lsp: [LSP],
+                    question: [AskUserQuestion], skill: [Skill]}
+      - {from: prompt,         to: "#body", required: true}
+    unmapped:
+      persona:           {reason: house, detail: "narrative identity of the role; it does not travel"}
+      mode:              {reason: absent, detail: "every Claude agent is a subagent: no mode key (sub-agents.md, checked 2026-10-02)"}
+      model:             {reason: house, detail: "the native key exists but is omitted (= inherit): tiers name bailian ids Claude does not serve; a tier → Claude alias in core would unlock it"}
+      hidden:            {reason: absent, detail: "no native key (sub-agents.md frontmatter reference, checked 2026-10-02)"}
+      skills_ondemand:   {reason: house, detail: "unlisted skills stay invocable through the Skill tool"}
+      skills_full_scope: {reason: house, detail: "documents the role's scope; Claude does not gate skills per agent"}
+    notes: >-
+      Pattern-scoped permissions (bash 'git push*': deny, a skill allowlist,
+      list, external_directory) have no per-agent equivalent: only flat vetoes
+      travel, as disallowedTools.
+
+  command:
+    kind: instanced
+    target: "commands/{id}.md"
+    rows:
+      - {from: description, to: "#fm.description", required: true}
+      - {from: inputs,      to: "#fm.arguments", via: names}
+      - {from: inputs,      to: "#fm.argument-hint", via: hint}
+      - {from: template,    to: "#body", required: true, via: {positional: {slot: inputs, placeholder: "${name}"}}}
+    unmapped:
+      id:      {reason: covered, detail: "the file name is the command"}
+      agent:   {reason: house, detail: "deliberate: the command runs in the main session; the equivalence (context: fork + agent) is not used"}
+      subtask: {reason: house, detail: "same as agent"}
+      skills:  {reason: house, detail: "house wiring, not a frontmatter key"}
+    notes: >-
+      Claude's argument indices are 0-based: named arguments are emitted
+      (${name} → $name), no index arithmetic.
+
+  workflow:
+    kind: instanced
+    status: pending
+    notes: >-
+      Native form exists: .claude/workflows/<name>.js, a deterministic script
+      (meta + agent()/parallel()/pipeline()) the Workflow tool runs. Missing:
+      a `script` combinator (graph → script: nodes in order, siblings in
+      parallel(), run nodes as a command-running agent, when as guards, loop
+      unrolled) checked against workflows.md, and whether ~/.claude/workflows
+      is a scope Claude reads.
+
+  config:
+    kind: config
+    target: settings.json
+    rows:
+      - {value: "https://json.schemastore.org/claude-code-settings.json", to: "#$schema"}
+      - {from: main.model.alias.claudecode, to: "#model"}               # Claude sees no tiers: its session alias
+      - {from: main.effort,                 to: "#effortLevel"}
+      - {from: main.display.tui,            to: "#tui"}
+      - {from: telemetry,                   to: "#env", via: claude_telemetry}
+      - {from: permissions.rules.allow,     to: "#permissions.allow"}
+      - {from: permissions.default_mode,    to: "#permissions.defaultMode"}
+      - {from: permissions.external_dirs,   to: "#permissions.additionalDirectories"}
+      - {from: hooks,                       to: "#hooks", via: claude_hooks}
+      - {from: plugins.claudecode,          to: "#enabledPlugins", via: claude_plugins}
+      - {value: true,  to: "#skipDangerousModePermissionPrompt"}        # Claude-only UI preference, pinned at its live value (2026-10-22)
+      - {value: false, to: "#switchModelsOnFlag"}                       # same
+      - {from: main.instructions, to: "rules/instructions.md", via: at_imports}
+      - {from: mcp.servers, to: "mcp-user#{name}", each: name, via: mcp_claudecode}
+    assets:
+      - {from: hooks/autolearn.mjs,        to: hooks/autolearn.mjs}
+      - {from: mcp/playwright.json,        to: mcp/playwright.json}
+    unmapped:
+      main.user:             {reason: pending, detail: "no username key known in settings.json; confirm against the settings schema"}
+      main.model.default:    {reason: house, detail: "tiers name bailian ids; Claude takes the session alias (#model)"}
+      main.model.small:      {reason: house, detail: "same as main.model.default"}
+      models:                {reason: house, detail: "tiers and providers are OpenCode's (opencode.jsonc#provider)"}
+      agents:                {reason: house, detail: "the runtime agent registry is OpenCode's (opencode.jsonc#agent)"}
+      plugins.opencode:      {reason: house, detail: "npm OpenCode plugins"}
+      plugins.tui:           {reason: house, detail: "OpenCode TUI plugins"}
+      plugins.sdk:           {reason: house, detail: "OpenCode plugin SDK"}
+      permissions.granular:  {reason: pending, detail: "Claude's permissions.ask/deny with Tool(pattern) rules could carry the edit/bash patterns (.env*, sudo *…); the translation transform is not built and would add live prompts — a decision, not a gap to close silently"}
+      security:              {reason: internal, detail: "scanner acceptances, never rendered"}
+      mcp.servers.*.note:    {reason: pending, detail: "no description field known in Claude's MCP entry; confirm against mcp.md"}
+      mcp.servers.*.smoke:   {reason: internal, detail: "evaluation data (op eval run config)"}
+    notes: >-
+      settings.json is owned whole: outputStyle, statusLine or any key Claude
+      writes on a UI action is drift until the core models it. settings.local.json
+      is outside the governed tree and stays Claude's. Hooks: command type only
+      (exit 2 blocks). MCP user scope lives in ~/.claude.json: delivered through
+      the registry, never by writing the file; settings.json admits no
+      mcpServers.
+
+transforms:
+  claude_telemetry:
+    consumes: [telemetry.endpoint, telemetry.protocol, telemetry.signals]
+    returns: "settings.json#env — CLAUDE_CODE_ENABLE_TELEMETRY='1', OTEL_<SIGNAL>_EXPORTER='otlp' per signal in order (METRICS, LOGS, TRACES), OTEL_EXPORTER_OTLP_PROTOCOL, OTEL_EXPORTER_OTLP_ENDPOINT"
+  claude_hooks:
+    consumes: [hooks]
+    binds: [out]
+    returns: "settings.json#hooks — {event: [{matcher?, hooks: [{type: command, command: shlex.join(run)}]}]}: one entry per event × matcher, no matcher key when the event admits none; {out} bound"
+  claude_plugins:
+    consumes: [plugins.claudecode]
+    returns: "settings.json#enabledPlugins — {'plugin@marketplace': true} in order"
+  at_imports:
+    consumes: [main.instructions]
+    binds: [out]
+    returns: "text — one '@<path>' line per entry that reaches claudecode (a bare path, or {path, backends} naming it), {out} bound"
+  mcp_claudecode:
+    consumes: [mcp.servers.*.command, mcp.servers.*.url, mcp.servers.*.env, mcp.servers.*.headers, mcp.servers.*.backends]
+    binds: [out]
+    returns: "one registry entry per server whose backends include claudecode (absent = all): stdio {type: stdio, command: argv[0], args: argv[1:], env only when set} or http {type: http, url, headers only when set}; {out} bound in every string"
+
+trial:
+  llm: anthropic
+  network: local
+  env:
+    PATH: ${path}
+    HOME: ${home}
+    TMPDIR: ${home}/tmp
+    CLAUDE_CONFIG_DIR: ${tree}
+    ANTHROPIC_BASE_URL: ${llm}
+    ANTHROPIC_API_KEY: sk-ghost
+    DISABLE_TELEMETRY: "1"
+    DISABLE_AUTOUPDATER: "1"
+    CLAUDE_CODE_MAX_RETRIES: "0"
+  state:                                # an established install: a fresh ~/.claude.json runs migrations that rewrite settings.model
+    - path: ${home}/.claude.json
+      text: '{"migrationVersion": 14, "opusProMigrationComplete": true, "sonnet1m45MigrationComplete": true, "hasCompletedOnboarding": true}'
+  probes:
+    - {name: session, kind: capture, argv: [claude, -p, ghost, --max-turns, "1"]}
+  sees:
+    persona: [session]                  # CLAUDE.md verbatim in `system`
+    skill: [session]                    # the Skill tool lists every skill
+    agent: [session]                    # the Agent tool lists every subagent
+  notes: "The session fails with 400 on purpose: the request already arrived, and it is what is read. Verified 2026-10-06 on 2.1.291 under the Landlock fence: 31/31 skills, 11/11 agents."

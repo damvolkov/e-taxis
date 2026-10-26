@@ -64,6 +64,31 @@ layer = "ops"
 depends_on = []
 
 [[modules]]
+path = "e_taxis.transpile.commands"
+layer = "cli"
+depends_on = ["e_taxis.harness.commands"]
+
+[[modules]]
+path = "e_taxis.transpile.services"
+layer = "services"
+depends_on = []
+
+[[modules]]
+path = "e_taxis.transpile.engine"
+layer = "processors"
+depends_on = []
+
+[[modules]]
+path = "e_taxis.transpile.adapters"
+layer = "adapters"
+depends_on = []
+
+[[modules]]
+path = "e_taxis.transpile.models"
+layer = "models"
+depends_on = ["e_taxis.harness.models"]
+
+[[modules]]
 path = "e_taxis.harness.models"
 layer = "models"
 depends_on = []

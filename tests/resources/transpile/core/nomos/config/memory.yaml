@@ -1,0 +1,13 @@
+# memory — con qué se indexa el recuerdo y cuánto se trae. El embedder es un servicio local (TEI).
+engine:                              # dónde vive la memoria: un servidor propio, nunca la nube del harness
+  kind: cortexdb
+  endpoint: "http://127.0.0.1:45180" # servicio cortexdb del compose de nomos (v0.10.4, Apache-2.0): embeddings TEI, extracción vLLM
+  key: CORTEXDB_API_KEY              # el secreto lo guarda el harness (credential store), jamás el core
+embedder:
+  endpoint: "http://localhost:45110/v1"
+  model: Qwen/Qwen3-Embedding-0.6B   # lo que TEI sirve de verdad (curl :45110/info, 2026-10-06)
+  dimensions: 1024                   # fijo: el árbol de memoria no admite otra cifra
+sync: 60                             # minutos entre sincronizaciones de cada fuente: sin cifra, el harness solo lee bajo demanda
+recall:
+  relevance: 0.4                     # puntuación mínima para traer un recuerdo
+  window: maximum                    # cuánto recuerdo entra por turno: minimal · balanced · extended · maximum

@@ -1,0 +1,6 @@
+# converge · node publish
+id: publish
+depends: [triage]
+when: {publish: "true"}
+run: >-
+  git push -q -u origin HEAD && (gh pr view >/dev/null 2>&1 || gh pr create --fill)
