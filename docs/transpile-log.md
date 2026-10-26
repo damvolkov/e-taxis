@@ -189,3 +189,28 @@ probe is proven against fakes only.
 
 **Found and fixed in e-nous** (PR #87, merged): the `jail_ro` contract promised `~` expanded; v1 and the live config
 keep toolchains as written (the app expands them).
+
+## 2026-10-26 · T6 — the brain retired; `install` on transpile
+
+**Done.** `taxis brain`, `BrainService`, `ClaudecodeHarness`, the hand-written content contract (`models/core.py`,
+`models/brain.py`), `CorePort` / `HarnessPort`, `CoreError` (13) and `BrainError` (14) removed, with their tests and
+the `tests/resources/core` fixture. `install`'s brain half is now `LandService` — plan without `--yes`, landing with
+it — under `~`, the same journal run as the world half, so one `history undo` reverts both. A target no spec
+projects (`system`) skips the brain with a notice. `SettingsPrimitive.read` (only the brain read through it) went
+with it. `HEADER` lives in `transpile.commands`; tach now reads `harness.commands → transpile.commands`, not back.
+
+**Evidence.** 508 unit tests, coverage 100 %; ruff, ty, tach, prek green; e2e `test_land` green. Install suite:
+dry prints both plans and writes nothing; `--json` is one line per half; `--yes` lands brain then world as one
+`install` entry undone whole; a failed world (`flaky`) exits 10 and undo still removes the landed brain; `system`
+skips the brain.
+
+**Decided alone.**
+- The brain lands under `HOME/<spec tree>`, not `CLAUDE_CONFIG_DIR`: the spec is the only truth about where a
+  harness reads. A relocated Claude config dir is a spec binding to add if it is ever needed.
+- `install` does not refuse on plan findings: `missing` / `drift` / `stale` are what a landing exists to settle;
+  a broken checkout still raises its transpile code before any system is touched.
+
+**For the owner.** The brain/world overlap stays open (point 4 of the T5 notes): catalog recipes such as `otel-env`
+and the MCP recipes write keys and registrations the claudecode spec now owns, and `doctor` cannot see it, because
+ownership now lives in the spec. Next step proposed: `doctor --nous PATH` holds each recipe's `owns` against the
+spec's non-foreign fragments.

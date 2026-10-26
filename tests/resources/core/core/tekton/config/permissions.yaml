@@ -1,5 +1,0 @@
-default_mode: auto
-external_dirs: [/srv/shared]
-granular: { read: allow }
-rules:
-  allow: ["Bash(*)", "WebSearch"]

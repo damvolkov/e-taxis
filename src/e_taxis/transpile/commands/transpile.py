@@ -14,7 +14,6 @@ from rich.console import Console
 from rich.markup import escape
 from rich.table import Table
 
-from e_taxis.harness.commands.stack import HEADER
 from e_taxis.harness.runtime.deps import Inject
 from e_taxis.transpile.adapters.nous import GitNous
 from e_taxis.transpile.models.error import CheckError, TrialError
@@ -25,6 +24,9 @@ from e_taxis.transpile.services.land import LandService
 from e_taxis.transpile.services.reverse import ReverseService
 from e_taxis.transpile.services.run import RunService
 from e_taxis.transpile.services.trial import TrialService
+
+##### DEFAULTS #####
+HEADER: str = "bold #6f9bff"
 
 
 ##### UTILITIES #####

@@ -13,7 +13,6 @@ typo fails the gate, never a user.
     taxis plan     --target T (--profile P | --nous PATH) [--json]
     taxis verify   --target T (--profile P | --nous PATH) [--json]
     taxis doctor   [--json]
-    taxis brain    --target T --nous PATH [--ref REF | --worktree] [--yes] [--json]
     taxis install  --target T --nous PATH [--profile P] [--ref REF | --worktree] [--yes]
                    [--accept-licence ID] [--confirm ID] [--json]
     taxis apply    --target T (--profile P | --nous PATH) [--only id,...] [--dry-run] [--yes]
@@ -57,9 +56,6 @@ CARDS: tuple[CommandCard, ...] = (
     ),
     CommandCard(
         path="doctor", target="e_taxis.harness.commands.catalog:doctor", summary="Check the catalog's integrity."
-    ),
-    CommandCard(
-        path="brain", target="e_taxis.harness.commands.brain:brain", summary="Install a core's brain; dry unless --yes."
     ),
     CommandCard(
         path="apply", target="e_taxis.harness.commands.install:apply", summary="Carry the plan out; dry unless --yes."

@@ -1,4 +1,4 @@
-"""tests/unit/e_taxis/commands/install: `apply` and `uninstall` as a user sees them — dry by default, written with
+"""tests/unit/e_taxis/commands/install: `install`, `apply` and `uninstall` as a user sees them — dry by default, written with
 --yes into the temp HOME, journaled so `history undo` takes the run back."""
 
 import json
@@ -105,3 +105,46 @@ def test_install_uninstall_then_history_undo(taxis, on_world, claude_dir: Path) 
 def test_install_uninstall_failure_exits(taxis, on_world, part: str, message: str) -> None:
     code, _, err = taxis("uninstall", part, "--target", "claudecode", "--cascade", "--yes")
     assert (code, message in err) == (11, True)
+
+
+def test_install_without_yes_prints_both_plans(taxis, on_world, brain_root: Path, home: Path) -> None:
+    code, out, _ = taxis(
+        "install", "--target", "claudecode", "--nous", str(brain_root), "--worktree", "--profile", "house"
+    )
+    assert code == 0
+    assert all(word in out for word in ("CLAUDE.md", "missing", "tool", "gated"))
+    assert not (home / ".claude").exists()
+
+
+def test_install_json_prints_each_half(taxis, on_world, brain_root: Path) -> None:
+    install = ("install", "--target", "claudecode", "--nous", str(brain_root), "--worktree", "--profile", "house")
+    code, out, _ = taxis(*install, "--json")
+    brain, world = (msgspec.json.decode(line) for line in out.splitlines())
+    assert (code, "findings" in brain, "steps" in world) == (0, True, True)
+
+
+def test_install_lands_brain_then_systems_in_one_undoable_run(
+    taxis, on_world, brain_root: Path, home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("GATED_TOKEN", "set")
+    install = ("install", "--target", "claudecode", "--nous", str(brain_root), "--worktree", "--profile", "house")
+    code, out, _ = taxis(*install, *OPEN, "--yes")
+    assert (code, "applied" in out) == (0, True)
+    assert (home / ".claude/CLAUDE.md").is_file()
+    assert [entry.split()[2] for entry in taxis("history", "list")[1].splitlines()[1:]] == ["install"]
+    assert taxis("history", "undo")[0] == 0
+    assert not (home / ".claude/CLAUDE.md").exists()
+
+
+def test_install_systems_failure_still_undoes_the_brain(taxis, on_world, brain_root: Path, home: Path) -> None:
+    install = ("install", "--target", "claudecode", "--nous", str(brain_root), "--worktree", "--profile", "flaky")
+    code, _, err = taxis(*install, "--yes")
+    assert (code, "flaky" in err) == (10, True)
+    assert (home / ".claude/CLAUDE.md").is_file()
+    assert taxis("history", "undo")[0] == 0
+    assert not (home / ".claude/CLAUDE.md").exists()
+
+
+def test_install_target_without_spec_skips_the_brain(taxis, on_world, brain_root: Path) -> None:
+    code, out, _ = taxis("install", "--target", "system", "--nous", str(brain_root), "--worktree", "--profile", "house")
+    assert (code, "no spec projects system" in out) == (0, True)

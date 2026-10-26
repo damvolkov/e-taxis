@@ -26,7 +26,7 @@ depends_on = []
 [[modules]]
 path = "e_taxis.harness.commands"
 layer = "cli"
-depends_on = []
+depends_on = ["e_taxis.transpile.commands"]
 
 [[modules]]
 path = "e_taxis.harness.runtime"
@@ -66,7 +66,7 @@ depends_on = []
 [[modules]]
 path = "e_taxis.transpile.commands"
 layer = "cli"
-depends_on = ["e_taxis.harness.commands"]
+depends_on = []
 
 [[modules]]
 path = "e_taxis.transpile.services"

@@ -1,22 +1,24 @@
 """commands.install: driving adapter for the writing half — `install` mounts a harness whole (the core's brain,
-then the systems around it), `apply` carries a target's plan out, `uninstall` takes one part back out.
+landed by the transpiler from its spec, then the systems around it), `apply` carries a target's plan out,
+`uninstall` takes one part back out.
 
 All are dry by default: without `--yes` they print what they would do and exit 0, having written
 nothing (`--dry-run` keeps it so even beside `--yes`). With `--yes`, every change goes through the
-undo journal — `taxis history undo` reverts the run, an install's two halves together. A brain that
-cannot land exits 14 before any system is touched; a refused apply, a failed step or a failed verify
-exits 10; a failed uninstall exits 11 — always after the full report."""
+undo journal — `taxis history undo` reverts the run, an install's two halves together. A target no spec
+projects (`system`) has no brain half. A brain that cannot land exits with its transpile code before any
+system is touched; a refused apply, a failed step or a failed verify exits 10; a failed uninstall exits 11 —
+always after the full report."""
 
 from collections.abc import Mapping
 from pathlib import Path
 from types import MappingProxyType
 from typing import Final
 
+import anyio
 import msgspec
 from rich.console import Console
 from rich.table import Table
 
-from e_taxis.harness.commands.brain import brain
 from e_taxis.harness.commands.stack import HEADER, STYLES
 from e_taxis.harness.models.apply import ApplyOptions, ApplyStatus
 from e_taxis.harness.models.catalog import Target
@@ -26,8 +28,10 @@ from e_taxis.harness.runtime.deps import Inject
 from e_taxis.harness.runtime.settings import TaxisSettings
 from e_taxis.harness.runtime.source import FlagSource
 from e_taxis.harness.services.apply import ApplyService
-from e_taxis.harness.services.brain import BrainService
 from e_taxis.harness.services.uninstall import UninstallService
+from e_taxis.transpile.adapters.nous import GitNous
+from e_taxis.transpile.commands.transpile import render_report
+from e_taxis.transpile.services.land import LandService
 
 ##### DEFAULTS #####
 DRY: str = "[dim]dry run — nothing written; pass --yes to apply it[/]"
@@ -164,7 +168,7 @@ async def install(
     accept_licence: tuple[str, ...] = (),
     confirm: tuple[str, ...] = (),
     json: bool = False,
-    projector: Inject[BrainService],
+    lander: Inject[LandService],
     applier: Inject[ApplyService],
     settings: Inject[TaxisSettings],
     console: Inject[Console],
@@ -182,16 +186,19 @@ async def install(
         confirm: open the confirmation gate of this entry id (repeatable).
         json: each half's plan or report as one JSON line.
     """
-    await brain(
-        target=target,
-        nous=nous,
-        ref=ref,
-        worktree=worktree,
-        yes=yes,
-        json=json,
-        projector=projector,
-        console=console,
-    )
+    source = GitNous(nous, None if worktree else ref)
+    where = Path(await anyio.Path(Path.home()).resolve())
+    projected = any(key.rpartition("/")[2] == target for key in (await source.load()).specs)
+    match (projected, json):
+        case (False, _):
+            console.print(f"[dim]no spec projects {target}: no brain to land[/]")
+        case (True, True):
+            report = await (lander.apply(source, target, where) if yes else lander.plan(source, target, where))
+            console.out(msgspec.json.encode(report).decode(), highlight=False)
+        case _:
+            render_report(
+                await (lander.apply(source, target, where) if yes else lander.plan(source, target, where)), console
+            )
     await apply(
         target=target,
         profile=profile,
