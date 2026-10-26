@@ -18,6 +18,9 @@ from e_taxis.harness.services.doctor import DoctorService
 from e_taxis.harness.services.plan import PlanService
 from e_taxis.harness.services.uninstall import UninstallService
 from e_taxis.harness.services.verify import VerifyService
+from e_taxis.transpile.adapters.capture import HttpCapture
+from e_taxis.transpile.models.ports import CapturePort
+from e_taxis.transpile.services.trial import TrialService
 
 
 def _state() -> State:
@@ -61,6 +64,8 @@ async def test_deps_binds_the_writing_side(runner) -> None:
         assert isinstance(await deps.resolve(UninstallService), UninstallService)
         assert isinstance(await deps.resolve(UndoPort), UndoPort)
         assert await deps.resolve(RunnerPort) is runner
+        assert isinstance(await deps.resolve(TrialService), TrialService)
+        assert isinstance(await deps.resolve(CapturePort), HttpCapture)
 
 
 async def test_deps_real_runner_and_downloader_outside_the_sandbox() -> None:

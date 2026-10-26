@@ -1,0 +1,5 @@
+#!/bin/sh
+# a landrun stand-in for CI: drops every flag up to `--`, then runs the rest unfenced.
+while [ "$1" != "--" ]; do shift; done
+shift
+exec "$@"

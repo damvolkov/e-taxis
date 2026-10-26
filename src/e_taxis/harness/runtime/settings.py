@@ -15,6 +15,8 @@ from e_taxis.core.settings.base import BaseSettings
 CATALOG: Path = Path(str(files("e_taxis.harness") / "catalog"))
 TIMEOUT: float = 10.0
 DOWNLOAD: float = 300.0
+### the Landlock CLI a trial fences its phantoms with: pinned and checksum-verified where it is installed.
+LANDRUN: Path = Path("~/.local/bin/landrun")
 
 
 class TaxisSettings(BaseSettings):
@@ -22,7 +24,7 @@ class TaxisSettings(BaseSettings):
 
     TAXIS_NPM_PREFIX: where `npm -g` installs (unset: the user's npm prefix). TAXIS_DOWNLOAD_TIMEOUT bounds a
     whole binary download. TAXIS_TEMP stages downloads (unset: the system's temp dir). CLAUDE_CONFIG_DIR, when
-    set, is where `~/.claude` resolves."""
+    set, is where `~/.claude` resolves. TAXIS_LANDRUN is the landrun binary a trial's fence runs."""
 
     taxis_catalog: Path = CATALOG
     taxis_timeout: float = TIMEOUT
@@ -30,3 +32,4 @@ class TaxisSettings(BaseSettings):
     taxis_download_timeout: float = DOWNLOAD
     taxis_temp: Path | None = None
     claude_config_dir: Path | None = None
+    taxis_landrun: Path = LANDRUN

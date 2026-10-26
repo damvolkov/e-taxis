@@ -16,10 +16,12 @@ from rich.table import Table
 from e_taxis.harness.commands.stack import HEADER
 from e_taxis.harness.runtime.deps import Inject
 from e_taxis.transpile.adapters.nous import GitNous
-from e_taxis.transpile.models.error import CheckError, TranspileError
+from e_taxis.transpile.models.error import CheckError, TranspileError, TrialError
+from e_taxis.transpile.models.ports import CapturePort
 from e_taxis.transpile.models.report import Report
 from e_taxis.transpile.services.check import CheckService
 from e_taxis.transpile.services.run import RunService
+from e_taxis.transpile.services.trial import TrialService
 
 
 ##### UTILITIES #####
@@ -117,3 +119,50 @@ async def run(
             console.print(
                 f"{projection.backend} → {projection.out} · {len(projection.files)} files · {entries} registry entries"
             )
+
+
+async def trial(
+    *,
+    target: str,
+    nous: Path,
+    ref: str = "HEAD",
+    worktree: bool = False,
+    json: bool = False,
+    prover: Inject[TrialService],
+    capture: Inject[CapturePort],
+    console: Inject[Console],
+) -> None:
+    """Raise the real harness on a sandboxed home, fenced, and check it loaded what the core renders.
+
+    Args:
+        target: the backend, by its spec's name.
+        nous: the e-nous checkout.
+        ref: the git ref core and specs are read at, together.
+        worktree: read the checkout as it stands, uncommitted changes included.
+        json: the trial report as JSON.
+    """
+    report = await prover.run(GitNous(nous, None if worktree else ref), target, capture)
+    match json:
+        case True:
+            console.out(msgspec.json.encode(report).decode(), highlight=False)
+        case _:
+            table = Table("entity", "probes", "seen", "missing", box=None, header_style=HEADER)
+            _ = [
+                table.add_row(
+                    sight.entity,
+                    ", ".join(sight.probes),
+                    f"{sight.expected - len(sight.missing)}/{sight.expected}",
+                    escape(", ".join(sight.missing)[:200]),
+                )
+                for sight in report.sights
+            ]
+            console.print(table)
+            console.print(
+                f"{report.backend}: {len(report.runs)} probe(s) · {report.captured} reached the model · {'held' if report.held else 'NOT held'}"
+            )
+    match report.held:
+        case True:
+            pass
+        case _:
+            msg = f"{report.backend}: the phantom did not show everything the core renders"
+            raise TrialError(msg)

@@ -88,6 +88,11 @@ CARDS: tuple[CommandCard, ...] = (
         target="e_taxis.transpile.commands.transpile:run",
         summary="Project a core for one backend; --out for a pure export.",
     ),
+    CommandCard(
+        path="transpile trial",
+        target="e_taxis.transpile.commands.transpile:trial",
+        summary="Raise the real harness fenced on the render; check what it loaded.",
+    ),
     CommandCard(path="logo", target="e_taxis.ops.logo:logo", summary="Deterministic family wordmarks into assets/."),
     CommandCard(path="repo resolve", target="e_taxis.ops.repo:resolve", summary="The commit a ref names on a remote."),
     CommandCard(path="repo tree", target="e_taxis.ops.repo:tree", summary="Every file under a path at a ref."),

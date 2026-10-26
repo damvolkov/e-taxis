@@ -34,3 +34,9 @@ class RenderError(TranspileError):
     """A render that cannot hold: a missing required value, a lookup with no entry, a graph that does not close."""
 
     exit_code: ClassVar[int] = 21
+
+
+class TrialError(TranspileError):
+    """A phantom harness that did not show what the render put in its tree."""
+
+    exit_code: ClassVar[int] = 22

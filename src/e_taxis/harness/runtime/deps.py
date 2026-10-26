@@ -57,8 +57,12 @@ from e_taxis.harness.services.plan import PlanService
 from e_taxis.harness.services.resolver import ResolverService
 from e_taxis.harness.services.uninstall import UninstallService
 from e_taxis.harness.services.verify import VerifyService
+from e_taxis.transpile.adapters.capture import HttpCapture
+from e_taxis.transpile.adapters.fence import LandrunFence
+from e_taxis.transpile.models.ports import CapturePort
 from e_taxis.transpile.services.check import CheckService
 from e_taxis.transpile.services.run import RunService
+from e_taxis.transpile.services.trial import TrialService
 
 T = TypeVar("T")
 ### cyclopts reads `Annotated` metadata but does not unwrap PEP 695 `type` aliases: the classic generic alias is what it sees.
@@ -185,6 +189,14 @@ class Deps:
     async def _resolve_run(self) -> RunService:
         return RunService(await self.resolve(CheckService))
 
+    async def _resolve_trial(self) -> TrialService:
+        """The fence over the configured landrun; phantoms find their binaries on this process's PATH."""
+        landrun = (await self.resolve(TaxisSettings)).taxis_landrun.expanduser()
+        return TrialService(await self.resolve(RunService), LandrunFence(landrun), path=os.environ.get("PATH", ""))
+
+    async def _resolve_capture(self) -> HttpCapture:
+        return HttpCapture()
+
     async def _resolve_uninstall(self) -> UninstallService:
         home, claude = await self._common_homes()
         return UninstallService(
@@ -214,6 +226,8 @@ class Deps:
             VerifyService: _resolve_verify,
             CheckService: _resolve_check,
             RunService: _resolve_run,
+            TrialService: _resolve_trial,
+            CapturePort: _resolve_capture,
             DoctorService: _resolve_doctor,
             RunnerPort: _resolve_runner,
             DownloaderPort: _resolve_downloader,
