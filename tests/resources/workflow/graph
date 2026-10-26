@@ -1,0 +1,9 @@
+#!/bin/sh
+# a codebase-memory-mcp stand-in: `cli --quiet --json <tool> --args-file <f>` answers an MCP envelope. Its
+# detect_changes reports the working tree's junk, as the real one does — scan must not believe it.
+case "$4" in
+  detect_changes)
+    printf '%s\n' '{"content": [{"type": "text", "text": "{\"changed_files\": [\".claude/worktrees/agent-x/\", \"wip.py\"], \"impacted\": [{\"qn\": \"p.a.py.x\", \"label\": \"Variable\", \"file\": \"a.py\"}]}"}]}' ;;
+  *)
+    printf '%s\n' '{"content": [{"type": "text", "text": "{}"}]}' ;;
+esac

@@ -21,6 +21,9 @@ typo fails the gate, never a user.
     taxis history  list · undo
     taxis transpile check --nous PATH [--ref REF | --worktree] [--json]   # schema + spec law; writes nothing
     taxis transpile run   --target T --nous PATH --out DIR [--ref REF | --worktree] [--json]   # pure export
+    taxis workflow run ID --nous PATH [name=value ...]                  # a corpus workflow, end to end
+    taxis workflow list --nous PATH · check [ID ...] --nous PATH
+    taxis distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas --nous PATH --rundir DIR …
     taxis logo NAMES [--out DIR] [--prefix P] [--background HEX] [--foreground HEX] [--force]
     taxis repo resolve URL REF                     # the commit a branch, tag or sha names
     taxis repo tree    URL REF [PATH]              # every file the remote holds at REF
@@ -41,6 +44,12 @@ GROUPS: tuple[CommandGroup, ...] = (
     CommandGroup(path="repo", help="Deterministic git reads on a remote: resolve, browse, unpack — no checkout."),
     CommandGroup(
         path="transpile", help="An e-nous core into each harness, from its specs — and back, to see what moved."
+    ),
+    CommandGroup(
+        path="workflow", help="Corpus workflows: graphs of command and agent steps, run from an e-nous checkout."
+    ),
+    CommandGroup(
+        path="distill", help="reverse-distill's deterministic steps, one per workflow node: --nous, --rundir."
     ),
 )
 
@@ -93,6 +102,71 @@ CARDS: tuple[CommandCard, ...] = (
         path="transpile trial",
         target="e_taxis.transpile.commands.transpile:trial",
         summary="Raise the real harness fenced on the render; check what it loaded.",
+    ),
+    CommandCard(
+        path="workflow run",
+        target="e_taxis.workflow.commands.workflow:run",
+        summary="Run a workflow; exits 24 when a step failed.",
+    ),
+    CommandCard(
+        path="workflow list",
+        target="e_taxis.workflow.commands.workflow:listing",
+        summary="Every workflow, its parameters and steps.",
+    ),
+    CommandCard(
+        path="workflow check",
+        target="e_taxis.workflow.commands.workflow:check",
+        summary="Hold workflows to their static law; writes nothing.",
+    ),
+    CommandCard(
+        path="distill guard",
+        target="e_taxis.workflow.commands.distill:guard",
+        summary="Fix the scope; exit 3 when nothing is past the base.",
+    ),
+    CommandCard(
+        path="distill intake",
+        target="e_taxis.workflow.commands.distill:intake",
+        summary="The range's commits and touched files.",
+    ),
+    CommandCard(
+        path="distill index",
+        target="e_taxis.workflow.commands.distill:index",
+        summary="e-nous, e-arkhetypo and the project into the code graph.",
+    ),
+    CommandCard(
+        path="distill scan",
+        target="e_taxis.workflow.commands.distill:scan",
+        summary="The range's changed files and impacted symbols.",
+    ),
+    CommandCard(
+        path="distill drift",
+        target="e_taxis.workflow.commands.distill:drift",
+        summary="The project's own drift checks, read.",
+    ),
+    CommandCard(
+        path="distill inventory",
+        target="e_taxis.workflow.commands.distill:inventory",
+        summary="Every plane, without a model: what the cores do not say.",
+    ),
+    CommandCard(
+        path="distill grade",
+        target="e_taxis.workflow.commands.distill:grade",
+        summary="Merge the miners, propagate contradictions, weigh.",
+    ),
+    CommandCard(
+        path="distill report",
+        target="e_taxis.workflow.commands.distill:report",
+        summary="Join verdicts and reviews; write report.md and briefs.",
+    ),
+    CommandCard(
+        path="distill ship",
+        target="e_taxis.workflow.commands.distill:ship",
+        summary="Run the commands that apply the musts.",
+    ),
+    CommandCard(
+        path="distill schemas",
+        target="e_taxis.workflow.commands.distill:schemas",
+        summary="Write (or --check) every port's JSON Schema.",
     ),
     CommandCard(path="logo", target="e_taxis.ops.logo:logo", summary="Deterministic family wordmarks into assets/."),
     CommandCard(path="repo resolve", target="e_taxis.ops.repo:resolve", summary="The commit a ref names on a remote."),

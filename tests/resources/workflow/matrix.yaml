@@ -1,0 +1,290 @@
+# core/versioning — la tabla única de equivalencias del harness.
+#
+# Qué clase de cambio es cada cosa y cuánto pesa. Doctrina de la casa, agnóstica del
+# backend: no se transpila, porque no es corpus que un agente lea sino herramienta
+# interna de ops. La lee ops/internal/history/matrix.py.
+#
+# TRES SECCIONES, y se leen en este orden:
+#   grades     la escala. Seis niveles, cada uno con su bump de SemVer. Contrato: ni
+#              se reordenan ni se renombran, porque el historial ya escrito los cita.
+#   lifecycle  qué pesa que una entidad entera aparezca o desaparezca, por entidad.
+#   slots      qué pesa cada slot, por entidad. Explícito uno a uno: el mismo nombre
+#              vale distinto según dónde viva — `instructions` en una skill es el
+#              cuerpo que gobierna la conducta; en config es la lista de ficheros que
+#              el coder carga al arrancar.
+#
+# EXPLÍCITA POR DECISIÓN. No hay comodines salvo `references/*`, que es una familia
+# real de ficheros. Un slot que no figure aquí detiene el ledger en vez de pasar por
+# patch: si el corpus ha crecido un slot, la doctrina tiene que pronunciarse sobre él.
+# Un test compara esta tabla contra lo que los specs declaran emitir, así que la
+# omisión se descubre al instante y no meses después en un historial mal graduado.
+#
+# CÓMO CRECE. Entidad nueva → una entrada en `lifecycle` y una sección en `slots`.
+# Slot nuevo → una línea. Grado nuevo → una fila al final, nunca intercalada.
+version: 1
+
+# ---------------------------------------------------------------- la escala
+grades:
+  - name: cosmetic
+    level: 0
+    bump: patch
+    description: >-
+      Prose, an example or formatting inside something that already existed. Neither what the
+      agent does once inside, nor what reaches it, changes.
+    example: "a typo in the sample; a licence field filled in"
+
+  - name: deepening
+    level: 1
+    bump: patch
+    description: >-
+      Depth added, extended or trimmed behind a door that already existed — a reference, an
+      on-demand hint. The router is untouched and the rules are untouched.
+    example: "test-py-tdd gains references/antipatterns.md"
+
+  - name: guidance
+    level: 2
+    bump: minor
+    description: >-
+      The body that governs behaviour moved: a rule rewritten, a prompt or a command template
+      changed. What the agent does once loaded is no longer the same.
+    example: "test-py-tdd rule 7 rewritten to ban the change-detector assertion"
+
+  - name: routing
+    level: 3
+    bump: minor
+    description: >-
+      Tier 2 moved — the description, or the name it is indexed under. This decides what enters
+      and what stays out, so it invalidates the activation evidence already measured.
+    example: "para-py-iteration drops `sync builtin alternative` and gains an exclusion"
+
+  - name: surface
+    level: 4
+    bump: minor
+    description: >-
+      The harness offers something it did not offer before. Nothing that existed is taken away,
+      so nothing that worked can stop working.
+    example: "a new skill, agent or command lands in the corpus"
+
+  - name: contract
+    level: 5
+    bump: major
+    description: >-
+      Something the rest of the system may have relied on is gone or answers differently: an
+      entity removed or renamed, a permission or mode changed, a model tier or an MCP rewired.
+      A harness loading the old corpus and the new one does not behave equivalently.
+    example: "an agent loses `task: deny`; an MCP server disappears; a skill is renamed"
+
+# ------------------------------------------- aparecer y desaparecer, por entidad
+lifecycle:
+  skill:    {added: surface,  removed: contract}
+  agent:    {added: surface,  removed: contract}
+  command:  {added: surface,  removed: contract}
+  workflow: {added: surface,  removed: contract}
+  persona:  {added: contract, removed: contract}   # sin persona no hay identidad que cargar
+  config:   {added: contract, removed: contract}   # un fichero de config que aparece o falta cambia el arranque
+
+# ---------------------------------------------------- cada slot, por entidad
+slots:
+  # SKILL — specs/tekton/common/skill.yaml
+  skill:
+    name: routing
+    description: routing
+    instructions: guidance          # el cuerpo del SKILL.md: las reglas
+    references/*: deepening
+    license: cosmetic
+    compatibility: cosmetic
+    metadata: cosmetic
+
+  # AGENT — specs/tekton/opencode/agent.yaml · specs/tekton/claudecode/agent.yaml
+  agent:
+    name: routing                   # claudecode: el id bajo el que se indexa
+    description: routing
+    prompt: guidance                # el cuerpo: cómo trabaja
+    mode: contract                  # primary/subagent decide si es invocable
+    model: contract                 # el tier que lo mueve
+    permission: contract            # lo que puede tocar
+    steps: contract                 # el techo de pasos
+    hidden: contract                # deja de ofrecerse en el selector
+    skills: contract                # claudecode: skills precargadas enteras en el contexto
+    maxTurns: contract              # claudecode: el techo de turnos
+    disallowedTools: contract       # claudecode: lo que no puede tocar
+    mcpServers: contract            # claudecode: los MCP del subagente; cambia lo que puede consultar
+
+  # COMMAND — specs/tekton/opencode/command.yaml · specs/tekton/claudecode/command.yaml
+  command:
+    description: routing
+    arguments: contract             # claudecode: la firma de invocación, como parameters en workflow
+    argument-hint: cosmetic         # claudecode: la pista del autocompletado
+    template: guidance              # el cuerpo: qué ejecuta
+    agent: contract                 # quién lo ejecuta
+    subtask: contract               # aislado o en la sesión
+    model: contract
+
+  # WORKFLOW — specs/tekton/opencode/workflow.yaml; el cuerpo plano es DERIVADO de nodes,
+  # así que mover nodes mueve la conducta entera: guidance. parameters es la firma
+  # de invocación: los commands pasan nombres, romperla rompe al que llama.
+  workflow:
+    id: routing
+    description: routing
+    parameters: contract
+    nodes: guidance                 # output no se gradúa: viaja dentro del cuerpo derivado, no es slot emitido
+
+  # PERSONA — specs/<harness>/<backend>/persona.yaml: un slot por fila, el mismo nombre en cualquier documento
+  # que lo reciba. La capa (base/tekton/nomos) no pesa: pesa lo que el slot gobierna.
+  persona:
+    name: routing
+    essence: routing
+    epigraph: cosmetic
+    origin: guidance
+    unity: guidance
+    stance: guidance
+    temperament: guidance           # Demian entero: inquieto, certero, audaz, parco
+    face: guidance                  # la cara de la faceta que el harness renderiza
+    reasoning: guidance
+    voice: guidance
+    critique: guidance
+    prudence: guidance
+    method: guidance
+    honesty: guidance
+    soul: guidance
+    knowledge: guidance
+    categories: guidance
+    pillars: guidance               # e-nous · e-arkhetypo · e-taxis
+    rules: guidance
+    conduct: guidance
+    contract: guidance
+    skills: guidance
+    about: guidance                 # Damien, en tercera persona
+    profile: guidance               # semilla del aprendizaje de OpenHuman
+    worldview: guidance
+    lineage: guidance
+    family: contract                # nombres élficos: los reales jamás
+    mission: guidance
+    commitments: guidance
+    epistemics: guidance
+    antagonists: guidance
+    limits: contract                # lo que nunca hará sin confirmación
+    modes: guidance
+    discourse: guidance
+    craft: guidance
+    reach: contract                 # los instrumentos conectados (e-metaxy): cambiar uno cambia lo que el agente puede hacer
+    lexicon: guidance
+    nature: guidance                # qué es y cómo se sabe a sí mismo
+    memory: guidance                # qué guarda, qué olvida, cómo aprende
+    attunement: guidance            # cómo recibe la emoción
+    taste: guidance                 # su medida estética
+    "*": guidance                   # un bloque que ninguna spec declara (un encabezado que creció el harness): `unplaced`
+
+  # CONFIG — specs/tekton/opencode/config.yaml · specs/tekton/claudecode/config.yaml, claves de los ficheros emitidos
+  config:
+    $schema: cosmetic
+    username: cosmetic
+    tui: cosmetic                   # claudecode: el modo de pantalla
+    model: contract                 # el modelo por defecto de toda sesión
+    effortLevel: contract           # claudecode: cuánto razona cada turno
+    permissions: contract           # claudecode: lo que el coder puede hacer sin preguntar
+    hooks: contract                 # claudecode: scripts que corren en cada evento de sesión
+    small_model: contract
+    agent: contract                 # overrides por agente
+    plugin: contract                # lo que se carga al arrancar
+    instructions: contract          # ficheros de contexto que el coder lee siempre
+    mcp: contract                   # servidores y herramientas disponibles
+    permission: contract            # lo que el coder puede hacer sin preguntar
+    enabled_providers: contract     # solo estos proveedores existen; el resto del catálogo, fuera
+    provider: contract              # proveedor, credenciales, tiers
+    dependencies: contract          # el SDK de plugins que el harness necesita
+    # openhuman (specs/nomos/openhuman/config.yaml): rutas con punto dentro de config.toml
+    default_model: contract         # el modelo de toda sesión sin papel asignado
+    primary_cloud: contract         # el proveedor cloud por defecto (un id)
+    chat_provider: contract         # quién responde cada papel
+    reasoning_provider: contract
+    agentic_provider: contract
+    coding_provider: contract
+    memory_provider: contract
+    vision_provider: contract       # quién lee las imágenes
+    model_registry: contract        # que el modelo de visión conste como capaz de ver
+    stt_provider: contract          # la voz que escucha
+    tts_provider: contract          # la voz que habla
+    cloud_providers: contract       # endpoints y modo de auth de cada proveedor
+    voice_providers: contract
+    memory.embedding_provider: contract
+    memory.embedding_model: contract
+    memory.embedding_dimensions: contract   # fijo en 1024: el árbol de memoria no admite otra cifra
+    custom_embeddings: contract
+    memory.engine: contract         # dónde vive la memoria
+    memory.engines.cortexdb.endpoint: contract
+    memory.sources: contract        # qué alimenta la memoria (v0.64.15: target + schedule_mins)
+    autonomy.trusted_roots: contract # qué ve y dónde escribe en el vault
+    runtime.local_jail.extra_read_only: contract   # lo mismo para la jaula de la shell
+    runtime.local_jail.extra_read_write: contract
+    update.enabled: contract        # el harness no se reemplaza solo
+    searxng.base_url: contract
+    search.roles: guidance          # el orden de búsqueda
+    search.providers: contract
+    agent.agents_md_enabled: contract       # si el asistente carga sus instrucciones permanentes
+    autonomy.enabled: contract      # si actúa por sí mismo
+    autonomy.level: contract        # cuánto actúa sin preguntar
+    autonomy.workspace_only: contract  # dónde puede actuar
+    search.max_results: guidance
+    search.timeout_secs: guidance
+    web_search.max_results: guidance
+    web_search.timeout_secs: guidance
+    agent.max_tool_iterations: guidance
+    agent.agent_timeout_secs: guidance
+    agent.parallel_tools: guidance
+    agent.max_parallel_tools: guidance
+    agent.tool_dispatcher: contract          # el protocolo con el que el modelo pide herramientas
+    agent.tool_result_budget_bytes: guidance
+    context.tool_result_budget_bytes: guidance
+    http_request.max_response_size: guidance
+    http_request.timeout_secs: guidance
+    curl.max_download_bytes: guidance
+    curl.timeout_secs: guidance
+    multimodal.allow_remote_fetch: guidance
+    multimodal_files.allow_remote_fetch: guidance
+    channels_config.message_timeout_secs: guidance   # cuánto espera el canal a un turno
+    mcp_client.servers: contract                     # qué MCP alcanza el asistente
+    mcp_client.direct_servers: contract              # qué MCP tiene en la mano cada turno (e-metaxy)
+    channels_config.discord.channel_id: contract     # dónde escucha el bot
+    channels_config.discord.allowed_users: contract  # quién puede hablarle
+    multimodal_files.trusted_channel_senders: contract  # quién le pasa ficheros que lee
+    local_ai.stt_provider: contract
+    local_ai.tts_provider: contract
+    # hermes (specs/nomos/hermes/config.yaml): rutas con punto dentro de config.yaml y claves de .env
+    model.provider: contract        # quién conversa
+    model.default: contract
+    providers.*: contract           # endpoint, protocolo y secreto de cada proveedor
+    fallback_providers: contract    # a quién cae si el principal no responde
+    auxiliary.compression.provider: contract
+    auxiliary.compression.model: contract
+    auxiliary.memory_query_rewrite.provider: contract
+    auxiliary.memory_query_rewrite.model: contract
+    auxiliary.title_generation.provider: contract
+    auxiliary.title_generation.model: contract
+    auxiliary.approval.provider: contract
+    auxiliary.approval.model: contract
+    auxiliary.triage_specifier.provider: contract
+    auxiliary.triage_specifier.model: contract
+    auxiliary.goal_judge.provider: contract
+    auxiliary.goal_judge.model: contract
+    auxiliary.review.provider: contract
+    auxiliary.review.model: contract
+    auxiliary.curator.provider: contract
+    auxiliary.curator.model: contract
+    auxiliary.background_review.provider: contract
+    auxiliary.background_review.model: contract
+    delegation.provider: contract   # quién sirve a los subagentes
+    delegation.model: contract
+    agent.max_turns: guidance       # pasos por turno
+    terminal.cwd: contract          # dónde actúa y de dónde lee AGENTS.md
+    terminal.timeout: guidance
+    tool_output.max_bytes: guidance
+    web.search_backend: contract
+    approvals.mode: contract        # cuánto actúa sin preguntar
+    timezone: guidance
+    context_file_max_chars: contract   # cabe la identidad entera o se trunca
+    discord.require_mention: contract
+    discord.allowed_channels: contract
+    mcp_servers.*: contract         # servidores y herramientas disponibles
+    DISCORD_ALLOWED_USERS: contract # quién puede hablarle
+    SEARXNG_URL: contract

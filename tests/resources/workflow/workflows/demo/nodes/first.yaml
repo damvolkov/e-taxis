@@ -1,0 +1,4 @@
+id: first
+run: printf '%s' "{{value}}" > "{{rundir}}/value.txt" && printf 'wrote %s\n' '{{run}}'
+outputs:
+  - {name: value, model: Value}

@@ -1,0 +1,6 @@
+id: think
+depends: [first]
+actor: builder
+readonly: true
+steps: 4
+instruction: Read {{rundir}}/value.txt and say what it holds.

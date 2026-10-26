@@ -1,0 +1,5 @@
+id: echo
+depends: [first]
+run: cat {{rundir}}/value.txt
+inputs:
+  - {name: value, model: Value, from: first.value}
