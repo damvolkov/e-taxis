@@ -1,0 +1,72 @@
+# specs/nomos/openhuman — catálogo de fuentes para el agente mantenedor (cron).
+# Mismas nueve categorías que specs/tekton/*/sources.yml. La doc oficial es floja: el contrato
+# real es el código de upstream, así que se vigilan ficheros fuente crudos de `main` (kind
+# markdown = texto plano) además de la doc. Persona: esta instancia; config/system/provision/
+# manual: la instancia de configuración añade sus fuentes en las mismas categorías.
+
+backend: openhuman
+product: OpenHuman
+verified: "2026-10-06"                 # todas las URLs comprobadas (HTTP 200) en esta fecha
+repo: https://github.com/tinyhumansai/openhuman
+docs_root: "https://tinyhumans.gitbook.io/openhuman/"
+docs_format: "gitbook: `<página>` HTML y `<página>.md` markdown; fuente en gitbooks/ del repo"
+
+entities_index:
+  - { name: docs-llms, kind: markdown, url: "https://tinyhumans.gitbook.io/openhuman/llms.txt", note: "índice de la doc: página nueva = superficie nueva" }
+  - { name: docs-summary, kind: markdown, url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/gitbooks/SUMMARY.md" }
+
+categories:
+
+  core:
+    watch: "nueva versión → bump `release` en todas las specs del backend"
+    sources:
+      - { name: github-releases-atom, kind: atom, url: "https://github.com/tinyhumansai/openhuman/releases.atom" }
+      - { name: github-releases-api, kind: api, url: "https://api.github.com/repos/tinyhumansai/openhuman/releases/latest" }
+      - { name: tags-atom, kind: atom, url: "https://github.com/tinyhumansai/openhuman/tags.atom" }
+
+  changelog:
+    watch: "notas por versión → reclasificar en las categorías de abajo"
+    sources:
+      - { name: release-notes, kind: api, url: "https://api.github.com/repos/tinyhumansai/openhuman/releases", note: "no hay CHANGELOG.md en main: el cuerpo de la release es el changelog" }
+      - { name: commits, kind: atom, url: "https://github.com/tinyhumansai/openhuman/commits/main.atom", note: "señal temprana antes de la release" }
+
+  config:
+    watch: "clave nueva, retirada o renombrada en config.toml (la instancia de configuración lo puebla)"
+    sources:
+      - { name: prompt-caps, kind: markdown, url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/agent/prompts/types.rs", note: "BOOTSTRAP_MAX_CHARS (20000) y USER_FILE_MAX_CHARS (2000): los `limit` de persona.yaml" }
+
+  entities:
+    watch: "fichero de persona nuevo o retirado, cambio de quién lo carga, de su límite o de cómo se siembra"
+    specs:
+      persona: { spec: persona.yaml, docs: "https://tinyhumans.gitbook.io/openhuman/features/personalization.md", note: "SOUL/IDENTITY/ROLE/STYLE/AGENTS/PROFILE/MEMORY en ~/.config/memory/persona (enlazado desde el workspace)" }
+    sources:
+      - { name: prompts-readme, kind: markdown, url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/agent/prompts/README.md", note: "inventario de ficheros de persona, quién los ve, siembra y fallback" }
+      - { name: workspace-files, kind: markdown, url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/agent/prompts/render_helpers/workspace_files.rs", note: "sync_workspace_file: hash de fábrica; un fichero editado no se pisa" }
+      - { name: agents-md, kind: markdown, url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/agent/prompts/agents_md.rs", note: "AGENTS.md en dos capas: workspace (global) y action_dir (local)" }
+      - { name: personalization, kind: markdown, url: "https://tinyhumans.gitbook.io/openhuman/features/personalization.md", note: "aprendizaje que escribe PROFILE.md" }
+
+  tools:
+    watch: "herramientas del agente que escriben ficheros de persona (otros escritores del árbol)"
+    sources:
+      - { name: workspace-tools, kind: markdown, url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/config/workspace/tools.rs", note: "workspace_update_persona / workspace_reset_persona (SOUL, IDENTITY), opt-in" }
+
+  extensions:
+    watch: "editores de la app que reescriben secciones de persona"
+    sources:
+      - { name: persona-sections, kind: markdown, url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/app/src/components/settings/panels/persona/personaSections.ts", note: "Ajustes → Persona: ## Personality, ## Voice, ## About You de SOUL.md" }
+
+  cli:
+    watch: "subcomandos nuevos del binario `openhuman`"
+    sources:
+      - { name: docs-summary-cli, kind: markdown, url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/gitbooks/SUMMARY.md", note: "sin referencia CLI dedicada: el índice de la doc es el detector" }
+
+  deprecations:
+    watch: "retiradas → nota y `status` en la spec afectada"
+    sources:
+      - { name: phase-out-profile, kind: markdown, url: "https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/config/migrations/phase_out_profile_md.rs", note: "PROFILE.md en retirada como inyección; en main ya no existe profile_md_renderer.rs (2026-10-06)" }
+      - { name: issues-search, kind: api, url: "https://api.github.com/search/issues?q=repo:tinyhumansai/openhuman+deprecated+OR+removal+in:title" }
+
+  community:
+    watch: "señal temprana: decisiones de diseño, retiradas anunciadas"
+    sources:
+      - { name: issues, kind: api, url: "https://api.github.com/repos/tinyhumansai/openhuman/issues?state=all&sort=updated" }

@@ -1,0 +1,91 @@
+# Machine spec — how core/nomos/config becomes OpenHuman's config.toml. Data, not code.
+# Consumed by ops/transpiler/render.py (`_config_openhuman`). `{profile}` = settings.transpiler.profiles.openhuman.
+entity: config
+release: "2026.10.13"                  # v0.64.15 (our .deb: 0.64.15-demian.N)
+verified: "2026-10-13"                 # esquema migrado leído en vivo y fuentes de config/schema cotejadas este día
+sources:
+  - core/nomos/config
+  - https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/config/schema/voice_providers.rs
+  - https://raw.githubusercontent.com/tinyhumansai/openhuman/main/crates/openhuman-core/src/inference/provider/factory/access_gates.rs
+status: ready
+config:
+  exactness: keys                      # TOML por rutas con punto: lo que la app guarda en las mismas tablas es suyo
+  modules: [main, models, memory, sources, voice, search, channels, tools, permissions, mcp]
+  native:                              # lo que solo OpenHuman tiene: el core habla agnóstico, esto lo traduce
+    ids: {alibaba: p_alibaba_tp01k, local: p_vllm_local}   # ids de cloud_providers que la app ya conoce (primary_cloud apunta a uno)
+    providers:                         # su propio backend, que el core no nombra
+      openhuman: {id: p_openhuman_pf4fk, label: OpenHuman, endpoint: "https://api.openhuman.ai/v1", auth: openhumanjwt}
+    roles: {default: main, chat: main, reasoning: reason, agentic: act, coding: code, memory: memory, vision: vision}   # v0.64.15 retiró learning_provider y memory_tree.smart_walk_model
+    auth: {anthropic: anthropic, openai: bearer}           # protocolo del core → auth_style
+    levels: {read: readonly, ask: supervised, auto: supervised, full: full}   # permissions.mode → autonomy.level
+    routes: {platform: managed, self: direct, key: direct} # search via → route
+    unbounded: 100                     # tools.steps = 0 (sin tope): OpenHuman exige cifra
+  files:
+    - out: "memory/openhuman/users/{profile}/config.toml"
+      format: toml
+      items:                           # listas compartidas: el core es dueño solo de estos elementos; los demás son de la app
+        mcp_client.servers: {}           # servidores por nombre: el core actualiza los suyos y nunca quita los que añade la app
+        memory.sources: {kind: folder}  # carpetas del KB: el core actualiza las suyas por id y nunca quita ninguna
+        autonomy.trusted_roots: {}       # raíces por ruta: las del vault son del core; las que añada la app se quedan
+        model_registry: {}               # modelos por id: el core marca su modelo de visión (vision = true); el catálogo de la app se queda
+      within:                          # tablas que crea la app al conectar (con su secreto): sin ellas, sus claves no se escriben
+        - channels_config              # la crea la app al configurar su primer canal
+        - channels_config.discord      # DiscordConfig exige bot_token; una tabla sin él invalida todo el config.toml
+      keys:
+        - default_model
+        - primary_cloud                # un id de proveedor, nunca un slug
+        - chat_provider
+        - reasoning_provider
+        - agentic_provider
+        - coding_provider
+        - memory_provider
+        - vision_provider              # el modelo que lee las imágenes adjuntas cuando el principal no ve
+        - model_registry               # solo la entrada del modelo de visión (items): la app guarda aquí su catálogo
+        - stt_provider
+        - tts_provider
+        - cloud_providers
+        - voice_providers
+        - memory.embedding_provider
+        - memory.embedding_model
+        - memory.embedding_dimensions
+        - custom_embeddings
+        - memory.engine                   # v0.64.15: sin motor la memoria está apagada; el legacy local ya no existe
+        - memory.engines.cortexdb.endpoint   # la clave va al credential store (memory_engine_set), nunca al TOML
+        - memory.sources
+        - searxng.base_url
+        - search.roles
+        - search.providers
+        - agent.agents_md_enabled
+        - autonomy.enabled             # el resto de [autonomy] (allowed_commands, auto_approve…) es de la app
+        - autonomy.level
+        - autonomy.workspace_only
+        - autonomy.trusted_roots          # el vault: lectura en todo, escritura en sus carpetas (core/nomos/config/permissions.yaml)
+        - runtime.local_jail.extra_read_only   # la misma declaración para la jaula de la shell: sin ella, `ls` del vault es Permission denied
+        - runtime.local_jail.extra_read_write
+        - update.enabled                 # nunca se autoactualiza: su imagen se reconstruye con nuestros parches (make image)
+        - search.max_results
+        - search.timeout_secs
+        - web_search.max_results
+        - web_search.timeout_secs
+        - agent.max_tool_iterations
+        - agent.agent_timeout_secs
+        - agent.parallel_tools
+        - agent.tool_dispatcher        # native: con python el modelo escribe las llamadas como texto y a veces en un formato que no se parsea
+        - agent.max_parallel_tools
+        - agent.tool_result_budget_bytes
+        - context.tool_result_budget_bytes
+        - http_request.max_response_size
+        - http_request.timeout_secs
+        - curl.max_download_bytes
+        - curl.timeout_secs
+        - multimodal.allow_remote_fetch
+        - multimodal_files.allow_remote_fetch
+        - channels_config.message_timeout_secs   # cuánto espera el canal a un turno; nunca por debajo de agent.agent_timeout_secs
+        - mcp_client.servers             # el buscador de OpenCode (Exa) y el resto de MCP del core
+        - mcp_client.direct_servers      # parche nuestro (0013): servidores del registro cuyas tools van en cada turno (e-metaxy)
+        - channels_config.discord.channel_id     # poseída aunque falte: el render la omite para abrir el bot a todo el servidor y a los DM
+        - channels_config.discord.allowed_users
+        - multimodal_files.trusted_channel_senders   # parche nuestro (0006): quién de un canal pasa ficheros que el asistente lee
+        - local_ai.stt_provider        # la app guarda la ruta de voz dos veces; poseer ambas detecta su reescritura a cloud
+        - local_ai.tts_provider
+notes: "Invariantes que el check ve como deriva: rutas de voz evoice-stt:<modelo>/evoice-tts:<voz> (la UI las reescribe a cloud); primary_cloud es id; memory_sources: carpetas reales bajo memory/ (el KB), nunca su raíz ni memory_tree; dimensiones del embedder 1024; tools fija el rendimiento de las herramientas nativas (pasos, tiempos, salidas, paralelo) con Claude Code y OpenCode como vara: el orquestador conserva el tope de pasos de su propia definición (15), que gana a agent.max_tool_iterations; search.providers.gemini apagado: sin sesión de pago web_answer esperaba 30 s y fallaba; agent.tool_result_budget_bytes es alias heredado de context.tool_result_budget_bytes: se escriben ambos para que ninguno quede corto; una clave poseída que el render omite se borra del fichero (channels_config.discord.channel_id: con él puesto el bot descarta todo mensaje ajeno a ese canal, DMs incluidos; los DM pasan además solo con allowed_users no vacío); cloud_providers lleva además slug custom con el endpoint del embedder: el host de memoria de v0.64.10 resuelve el endpoint del módulo tinymemory solo por slug entre cloud_providers e ignora memory.embedding_provider y [custom_embeddings] (openhuman#6984; sin él, cero vectores y ningún seal). Retirar cuando upstream lo resuelva. Claves de proveedores fuera del TOML: keychain cifrado de la app (auth:provider:<slug>:default), jamás en core. search.gemini.api_key vive en el TOML y es de la app: no está en keys, se conserva al escribir. La app migra el fichero al arrancar (schema_version): las claves que no poseemos son suyas."

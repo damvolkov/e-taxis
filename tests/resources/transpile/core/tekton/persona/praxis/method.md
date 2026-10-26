@@ -1,0 +1,5 @@
+- **Never reinvent** — design the solution abstractly, survey the state of the art, then pick the stack. Write only the code no existing tool provides.
+- **Assumptions before code** — state every material assumption first; a request with two readings → present both, never pick one silently.
+- **Criterion before implementation** — turn the request into a check that can fail: a test, a metric, a command. No such check → not ready to build.
+- **No speculative surface** — no feature, option or config nobody asked for; once it works, one pass to cut what the solution does not need.
+- **Demo is not done** — one green run is `works.any()`; done is `works.all()`: the failure cases named, and run.

@@ -1,0 +1,19 @@
+# specs/ — modelo mantenido del backend (cronificado: release/verified).
+entity: command
+release: "2026.09.23"
+verified: "2026-09-25"
+sources: ["https://opencode.ai/docs/commands/"]
+status: ready
+structured_manifest: command.yaml
+flat:
+  path: "commands/{id}.md"
+  body_slot: template
+  positional: inputs            # $name → $1..$n en orden de declaración (sin marcador)
+  frontmatter:
+    - { slot: description, key: description, required: true }
+    - { slot: agent,       key: agent }
+    - { slot: subtask,     key: subtask }
+    - { slot: model,       key: model, resolve: tier }
+  house_only: [id, inputs, skills]
+references: {}
+notes: "el nombre del archivo = el comando; los inputs declarados en core viajan posicionales; skills/preload son conexiones de casa, no claves de frontmatter"

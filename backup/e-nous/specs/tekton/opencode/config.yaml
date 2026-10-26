@@ -1,0 +1,16 @@
+# specs/ — modelo mantenido del backend (cronificado: release/verified).
+entity: config
+release: "2026.10.02"
+verified: "2026-10-02"
+sources: ["https://opencode.ai/docs/config/", "https://opencode.ai/docs/mcp-servers/", "https://opencode.ai/docs/agents/"]
+status: ready
+config:
+  exactness: byte                # artefacto generado: JSON indentado, sin prosa; los comentarios viven en core/tekton/config
+  modules: [main, models, agents, permissions, plugins]   # mcp.yaml lo lee el render entero (Transpiler.mcp)
+  files:
+    - { out: opencode.jsonc, keys: ["$schema", username, model, small_model, agent, plugin, instructions, mcp, permission, enabled_providers, provider] }
+    - { out: tui.json,       keys: [plugin] }
+    - { out: package.json,   keys: [dependencies] }
+  assets:
+    - { out: mcp/playwright.json, slot: mcp }     # PLAYWRIGHT_MCP_CONFIG del servidor playwright
+notes: "hooks.yaml no se proyecta: un hook de OpenCode es un plugin (módulo JS/TS, API v1; la v2 beta con ctx.session.hook no se usa), y un plugin local se autocarga desde plugins/, por eso plugins.yaml solo lista npm (autolearn es un fichero del runtime). Los permisos MCP por comodín sobre el nombre de tool no están modelados en core. El issue de hooks de plugin que no veían subagentes (anomalyco/opencode#5894) está cerrado como resuelto (2026-04-15); no usamos hooks de plugin como barrera. builder por backend en el transpiler; el spec fija targets, formato de comparación, orden canónico de claves (keys) y qué módulos de core/tekton/config alimentan. Una clave emitida que no figure en keys es un error. Un proveedor/tier/plantilla nuevo = filas aquí o en core/tekton/config, nunca código."

@@ -1,0 +1,12 @@
+# persona · tekton — lo exclusivo del ingeniero, el hemisferio técnico. Mismo registro de slots que core/base; la spec de tekton lo compone con base.
+slots:
+  origin: {source: persona/bond/origin.md}
+  face: {source: persona/character/face.md}
+  method: {source: persona/praxis/method.md}
+  contract: {source: persona/praxis/contract.md}
+  soul: {source: persona/techne/soul.md}
+  knowledge: {source: persona/techne/knowledge.md}
+  categories: {source: persona/techne/categories.md}
+  pillars: {source: persona/world/pillars.md}
+  rules: {source: persona/techne/rules.md}
+  skills: {source: persona/praxis/skills.md}

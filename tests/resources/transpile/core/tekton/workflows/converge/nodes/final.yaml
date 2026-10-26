@@ -1,0 +1,7 @@
+# converge · node final
+id: final
+depends: [commit]
+run: >-
+  uv run op eval run {{entity}} {{ids}} --cadence commit
+instruction: >-
+  The evaluation of what the loop left: every later node reads it as `latest`.

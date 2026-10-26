@@ -1,0 +1,4 @@
+# telemetry — a dónde mandan los coders su telemetría nativa (OTLP). Agnóstico: cada spec lo traduce a su superficie.
+endpoint: "http://127.0.0.1:45910"     # colector OTel local (suelo nativo del bench)
+protocol: http/protobuf
+signals: [metrics, logs]

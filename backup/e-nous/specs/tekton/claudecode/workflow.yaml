@@ -1,0 +1,8 @@
+# specs/ — modelo mantenido del backend. El agente cronificado actualiza
+# release/verified/frente a las docs; el transpiler solo lee status: ready.
+entity: workflow
+release: ""                          # release upstream representado (vacío = sin cotejar aún)
+verified: ""
+sources: ["https://code.claude.com/docs/en/workflows"]
+status: pending
+notes: "Claude Code SÍ tiene workflows nativos (herramienta Workflow, scripts deterministas que orquestan subagentes); OpenCode no — allí la forma plana es convención de casa interpretada por /workflow. Formato nativo .claude/workflows/<name>.js (meta + agent()/parallel()/pipeline()); mapeo desde el grafo agnóstico pendiente"

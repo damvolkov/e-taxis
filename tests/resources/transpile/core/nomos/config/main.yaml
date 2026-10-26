@@ -1,0 +1,6 @@
+# main — la sesión del asistente, agnóstica: quién es su humano, en qué lengua y hora vive, qué carga siempre. Cada spec de harness mapea.
+user: damien
+language: es                # lengua de trato (BCP 47)
+timezone: Europe/Madrid     # IANA
+instructions: true          # carga sus instrucciones permanentes (el documento de cómo operar)
+updates: false              # el harness no se actualiza solo: su imagen se reconstruye con nuestros parches (make image, timer diario)

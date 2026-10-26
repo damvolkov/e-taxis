@@ -1,0 +1,33 @@
+# Machine spec — how a phantom OpenCode is raised in a sandbox and what it must see. Data, not code.
+# Consumed by ops/trial (tests/integration). Placeholders: ${home} ${tree} ${llm} ${path} ${profile} ${port} ${document} ${name} ${mcp}.
+# Verified 2026-10-06 against opencode 1.18.34 under the Landlock fence: 31/31 skills; agents and commands via debug config.
+backend: opencode
+release: "2026.10.06"
+verified: "2026-10-06"
+status: ready
+sources: ["https://opencode.ai/docs/config/", "https://opencode.ai/docs/providers/"]
+tree: .config/opencode
+llm: openai                            # the fake endpoint answers POST /v1/chat/completions
+network: local                         # @ai-sdk/openai-compatible ships inside the binary: no npm fetch
+env:
+  PATH: ${path}
+  HOME: ${home}
+  TMPDIR: ${home}/tmp
+  XDG_CONFIG_HOME: ${home}/.config
+  XDG_DATA_HOME: ${home}/.local/share
+  XDG_STATE_HOME: ${home}/.local/state
+  XDG_CACHE_HOME: ${home}/.cache
+  OPENCODE_DISABLE_CLAUDE_CODE: "1"
+  OPENCODE_DISABLE_AUTOUPDATE: "1"
+  # inline config sits above the global one: a ghost provider is layered, the generated tree is never edited
+  OPENCODE_CONFIG_CONTENT: '{"provider":{"ghost":{"npm":"@ai-sdk/openai-compatible","name":"ghost","options":{"baseURL":"${llm}/v1","apiKey":"ghost"},"models":{"x":{"name":"x"}}}},"model":"ghost/x","small_model":"ghost/x","mcp":${mcp}}'
+probes:
+  - { name: session, kind: capture, argv: [opencode, run, --pure, ghost] }
+  - { name: config, kind: command, argv: [opencode, debug, config, --pure] }
+  - { name: skills, kind: command, argv: [opencode, debug, skill, --pure] }
+sees:
+  persona: [session]                   # AGENTS.md in the system message
+  skill: [session, skills]
+  agent: [config]                      # primary agents never reach the prompt: the resolved config holds them all
+  command: [config]
+notes: "--pure en todas las sondas: sin él, OpenCode instala desde npm los plugins del árbol y, sin red, se cuelga reintentando. La sesión falla con 400 a propósito (un 500 lo reintenta el SDK con backoff): lo que se lee es la petición. ${mcp} apaga los servidores MCP del árbol: sin red no arrancan y la sesión esperaría su timeout (33 s → 1,4 s); los MCP tienen sus propias puertas."

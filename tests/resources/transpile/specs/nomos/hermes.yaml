@@ -1,0 +1,236 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# specs/nomos/hermes.yaml — Hermes Agent: the single file the transpiler
+# reads. Template O (specs/base.yaml). Data, not code.
+# ═══════════════════════════════════════════════════════════════════════════
+
+spec: "2.0"
+backend: hermes
+harness: nomos
+product: Hermes Agent
+status: ready
+tree: .hermes                         # HERMES_HOME
+govern: []                            # no directory is wholly ours: memories/ and workspace/ hold the agent's own files
+
+upstream:
+  version: v0.22.4                                              # GitHub latest — read 2026-10-22 (published 2026-10-21)
+  channel: https://api.github.com/repos/NousResearch/hermes-agent/releases/latest
+  read: "2026-10-22"
+  verified: {version: v0.21.6, date: "2026-10-09"}              # v0.21.6 code (818c13be) read and a real prompt captured that day
+  # SIGNAL LIT: v0.22.4 != v0.21.6 → re-check every row against v0.22.x.
+
+sources:
+  - {url: "https://api.github.com/repos/NousResearch/hermes-agent/releases/latest", kind: api, covers: [upstream]}
+  - {url: "https://github.com/NousResearch/hermes-agent/releases.atom", kind: atom, covers: [upstream], note: "release notes: reclassify into sections"}
+  - {url: "https://hermes-agent.nousresearch.com/docs/guides/use-soul-with-hermes", kind: html, covers: [persona]}
+  - {url: "https://hermes-agent.nousresearch.com/docs/developer-guide/prompt-assembly", kind: html, covers: [persona, config]}
+  - {url: "https://hermes-agent.nousresearch.com/docs/user-guide/configuration", kind: html, covers: [config]}
+  - {url: "https://hermes-agent.nousresearch.com/docs/user-guide/configuring-models", kind: html, covers: [config]}
+  - {url: "https://hermes-agent.nousresearch.com/docs/reference/mcp-config-reference", kind: html, covers: [config]}
+  - {url: "https://hermes-agent.nousresearch.com/docs/reference/cli-commands", kind: html, covers: [config]}
+  - {url: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/agent/system_prompt.py", kind: code, covers: [persona]}
+  - {url: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/agent/prompt_builder.py", kind: code, covers: [persona]}
+  - {url: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/hermes_cli/config_defaults.py", kind: code, covers: [config], note: "every config key and its factory value"}
+
+targets:
+  SOUL.md: {format: md, limit: 60000, audience: all, absorb: true}   # prompt slot 1; replaces the factory identity whole
+  memories/USER.md:                                                    # the profile seed: the agent grows it
+    format: md
+    limit: 1375                                                        # memory.user_char_limit
+    audience: all
+    absorb: true
+    foreign:
+      - kind: marker
+        start: "\n§\n"
+        end: "\\Z"
+        sample: "§\nghost ${nonce}"
+        why: "every entry the agent adds goes after '\\n§\\n': from there on it is its memory"
+  workspace/AGENTS.md: {format: md, limit: 60000, audience: all, absorb: true}   # project context of terminal.cwd
+  config.yaml:
+    format: yaml
+    foreign:
+      - {kind: key, at: _config_version, why: "Hermes stamps its migration level on start"}
+  .env:
+    format: env
+    foreign:
+      - {kind: key, at: "*", why: "secrets and tokens (API keys, DISCORD_BOT_TOKEN) are the user's: the core only names the variables"}
+
+native:
+  names: {alibaba: nomos-alibaba, local: nomos-vllm}            # provider names of its own: `alibaba` is already a factory provider (DashScope)
+  api: {anthropic: anthropic_messages, openai: chat_completions, responses: codex_responses}
+  auxiliary:                          # Hermes auxiliary task → core role
+    compression: memory
+    memory_query_rewrite: memory
+    title_generation: fast
+    approval: fast
+    triage_specifier: fast
+    goal_judge: reason
+    review: reason
+    curator: learn
+    background_review: learn
+  levels: {read: manual, ask: manual, auto: smart, full: smart}   # permissions.mode → approvals.mode
+  search: {exa: exa, searxng: searxng, gemini: gemini}
+  context: 60000                      # context_file_max_chars: SOUL.md measures ~24000; without a known window Hermes cuts at 20000
+
+map:
+
+  persona:
+    kind: persona
+    rows:
+      # ── SOUL.md — the whole identity: Hermes has no separate IDENTITY or STYLE file
+      - {from: name,        to: "SOUL.md#h1"}
+      - {from: essence,     to: "SOUL.md#para"}
+      - {from: epigraph,    to: "SOUL.md#quote"}
+      - {from: temperament, to: "SOUL.md#Personality"}
+      - {from: face,        to: "SOUL.md#Personality"}
+      - {from: critique,    to: "SOUL.md#Personality"}
+      - {from: about,       to: "SOUL.md#About You"}
+      - {from: family,      to: "SOUL.md#Family"}
+      - {from: attunement,  to: "SOUL.md#Attunement"}
+      - {from: unity,       to: "SOUL.md#One mind, two materials"}
+      - {from: stance,      to: "SOUL.md#Outlook"}
+      - {from: worldview,   to: "SOUL.md#Worldview"}
+      - {from: lineage,     to: "SOUL.md#Lineage"}
+      - {from: taste,       to: "SOUL.md#Taste"}
+      - {from: mission,     to: "SOUL.md#Mission"}
+      - {from: nature,      to: "SOUL.md#Nature"}
+      - {from: honesty,     to: "SOUL.md#Honesty"}
+      - {from: reasoning,   to: "SOUL.md#Epistemics"}             # a list item then prose: a blank line, or the prose folds into the item
+      - {from: epistemics,  to: "SOUL.md#Epistemics"}
+      - {from: memory,      to: "SOUL.md#Memory"}
+      - {from: commitments, to: "SOUL.md#Commitments"}
+      - {from: antagonists, to: "SOUL.md#Antagonists"}
+      - {from: limits,      to: "SOUL.md#Limits"}
+      - {from: voice,       to: "SOUL.md#Voice", glue: "\n"}
+      - {from: discourse,   to: "SOUL.md#Voice", glue: "\n"}
+      # ── memories/USER.md — the minimal profile as first entry
+      - {from: profile,     to: "memories/USER.md#para"}
+      # ── workspace/AGENTS.md — how it operates
+      - {from: conduct,     to: "workspace/AGENTS.md#Conduct"}
+      - {from: lexicon,     to: "workspace/AGENTS.md#Lexicon"}
+      - {from: craft,       to: "workspace/AGENTS.md#Craft"}
+      - {from: prudence,    to: "workspace/AGENTS.md#Method"}
+      - {from: modes,       to: "workspace/AGENTS.md#Modes"}
+    unmapped:
+      reach: {reason: house, detail: "no Reach block in Hermes's AGENTS.md: that doctrine reaches it through Nomos skills"}
+    notes: >-
+      Hermes v0.21.6 (agent/system_prompt.py) assembles the prompt in three
+      layers: stable (SOUL.md, tool guide), context (system_message and the
+      context files of the working directory — .hermes.md/HERMES.md,
+      AGENTS.md, CLAUDE.md, .cursorrules), volatile (skill index, MEMORY.md,
+      USER.md, memory provider, time). SOUL.md lives only in HERMES_HOME and
+      replaces the factory identity; Hermes seeds it when missing and never
+      overwrites it. AGENTS.md is found from the working directory: in the
+      gateway that is terminal.cwd, pinned to HERMES_HOME/workspace. Cap per
+      context file: context_file_max_chars, else 6 % of the model window with
+      a floor of 20000. MEMORY.md (2200) is not emitted: the agent curates it.
+      Personalities (/personality) are session overlays: unused.
+
+  config:
+    kind: config
+    target: config.yaml
+    rows:
+      # ── model and providers
+      - {from: models.roles.main, to: "#model.provider", via: [{split: {on: "/", take: head}}, {table: names}]}
+      - {from: models.roles.main, to: "#model.default", via: {split: {on: "/", take: tail}}}
+      - {from: models.providers,  to: "#providers", via: providers_hermes}
+      - {from: models.fallback,   to: "#fallback_providers", via: routes}
+      - {from: native.auxiliary,  to: "#auxiliary", via: auxiliary_hermes}
+      - {from: models.roles.act,  to: "#delegation.provider", via: [{split: {on: "/", take: head}}, {table: names}]}
+      - {from: models.roles.act,  to: "#delegation.model", via: {split: {on: "/", take: tail}}}
+      # ── performance and environment
+      - {from: tools.steps,       to: "#agent.max_turns", via: {falsy: null}}   # 0 = no cap: the key is omitted, Hermes has none by default
+      - {value: "{out}/workspace", to: "#terminal.cwd"}
+      - {from: tools.timeout,     to: "#terminal.timeout"}
+      - {from: tools.output,      to: "#tool_output.max_bytes"}
+      # ── search
+      - {from: search,            to: "#web.search_backend", via: search_backend}
+      # ── approvals, context and channel
+      - {from: permissions,       to: "#approvals.mode", via: approvals}         # approvals.deny and Hermes's hard list veto even in off
+      - {from: main.timezone,     to: "#timezone"}
+      - {from: native.context,    to: "#context_file_max_chars"}
+      - {from: channels.discord.mention, to: "#discord.require_mention"}
+      - {from: channels.discord.channel, to: "#discord.allowed_channels", via: {falsy: ""}}   # empty = all; DMs always work
+      # ── MCP
+      - {from: mcp.servers,       to: "#mcp_servers", via: mcp_hermes}
+      # ── .env
+      - {from: channels.discord.users,     to: ".env#DISCORD_ALLOWED_USERS", via: {join: ","}}
+      - {from: search.engines.searxng.url, to: ".env#SEARXNG_URL"}
+    unmapped:
+      main.user:                {reason: absent, detail: "no user key: the identity lives in SOUL (config_defaults.py v0.21.6, 2026-10-09)"}
+      main.language:            {reason: house, detail: "the language of treatment belongs to the persona (SOUL#Voice)"}
+      main.instructions:        {reason: absent, detail: "no switch: Hermes always loads AGENTS.md from the cwd, which matches true (prompt-assembly docs, 2026-10-09)"}
+      main.updates:             {reason: absent, detail: "updating is the `hermes update` CLI or the image: no config key"}
+      models.primary:           {reason: covered, detail: "#model.provider (roles.main) picks the effective main"}
+      models.providers.*.label: {reason: pending, detail: "whether a custom provider entry takes a display name is not checked"}
+      models.roles.code:        {reason: pending, detail: "no coding auxiliary task found in v0.21.6; recheck v0.22.x"}
+      models.roles.vision:      {reason: pending, detail: "a vision auxiliary task may exist; not checked"}
+      memory:                   {reason: absent, detail: "memory is MEMORY.md/USER.md curation plus optional external providers: no embedder/engine/sync keys (config_defaults.py, 2026-10-09)"}
+      sources:                  {reason: absent, detail: "Hermes ingests no folders"}
+      search.engines.*.via:     {reason: house, detail: "who pays: Hermes picks its backend by name only"}
+      voice:                    {reason: pending, detail: "stt/tts are per-provider; e-voice speaks OpenAI-compatible /v1, so a custom voice provider may be the equivalence — resolve against v0.22.x"}
+      tools.parallel:           {reason: absent, detail: "Hermes decides its own tool parallelism: no key"}
+      tools.fanout:             {reason: absent, detail: "same as tools.parallel"}
+      tools.calls:              {reason: pending, detail: "tool-call format key not checked"}
+      tools.fetch:              {reason: absent, detail: "no fetch size/timeout keys"}
+      tools.download:           {reason: absent, detail: "no download keys"}
+      tools.search:             {reason: absent, detail: "web.search_backend carries no results/timeout"}
+      tools.remote:             {reason: absent, detail: "no remote-fetch key"}
+      permissions.scope:        {reason: absent, detail: "the local backend is not confined to a workspace"}
+      permissions.vault:        {reason: absent, detail: "no trusted roots: the limit is the container and its HERMES_HOME"}
+      permissions.toolchains:   {reason: absent, detail: "no jail to extend"}
+      channels.reply:           {reason: absent, detail: "no channel timeout key"}
+      channels.discord.files:   {reason: pending, detail: "who may send readable attachments: not checked"}
+      mcp.servers.*.note:       {reason: pending, detail: "whether mcp_servers.<name> takes a description is not checked"}
+      mcp.servers.*.oauth:      {reason: pending, detail: "Hermes MCP OAuth support not checked"}
+      mcp.servers.*.pinned:     {reason: pending, detail: "no always-on tool surface checked"}
+      mcp.servers.*.consent:    {reason: house, detail: "the secret file belongs to the watcher (make mcp), never to the render"}
+      mcp.servers.*.smoke:      {reason: internal, detail: "evaluation data (op eval run config)"}
+    notes: >-
+      config.yaml is owned whole: a key Hermes adds on its start migration is
+      drift until modeled or declared foreign — the v0.22.x re-check settles
+      which. Custom providers: providers.<name>{base_url, api_mode, key_env};
+      model{provider, default} picks the main one; auxiliary.<task>{provider,
+      model} the secondary roles. web.search_backend: one engine only;
+      SearXNG needs SEARXNG_URL and only searches.
+
+transforms:
+  providers_hermes:
+    consumes: [models.providers.*.endpoint, models.providers.*.api, models.providers.*.key, native.names, native.api]
+    returns: "providers — {native.names[alias]: {base_url: endpoint, api_mode: native.api[api], key_env: key}} in order; the secret's value is the user's"
+  routes:
+    consumes: [models.fallback, native.names]
+    returns: "fallback_providers — [{provider: native.names[alias], model}] in the core's order"
+  auxiliary_hermes:
+    consumes: [native.auxiliary, models.roles.memory, models.roles.fast, models.roles.reason, models.roles.learn, native.names]
+    returns: "auxiliary — {task: {provider: native.names[alias], model}} of the role native.auxiliary assigns, in native order"
+  search_backend:
+    consumes: [search.order, search.engines.*.off, native.search]
+    returns: "web.search_backend — native.search[the first engine of the order that is not off]"
+  approvals:
+    consumes: [permissions.guard, permissions.mode, native.levels]
+    returns: "approvals.mode — native.levels[mode] when guard, else 'off'"
+  mcp_hermes:
+    consumes: [mcp.servers.*.command, mcp.servers.*.url, mcp.servers.*.env, mcp.servers.*.headers]
+    returns: "mcp_servers — {<name>: stdio {command: argv[0], args: argv[1:], env?} | remote {url, headers?}} in order"
+
+trial:
+  llm: openai
+  network: local
+  env:
+    PATH: ${path}
+    HOME: ${home}
+    TMPDIR: ${home}/tmp
+    HERMES_HOME: ${home}/.hermes
+    HERMES_STATE_DB_GUARD_BYPASS: "1"   # Hermes sees pytest among its ancestors and refuses its own state.db: this HERMES_HOME is already a sandbox
+  overlays:                             # every provider the render names, answered by the fake
+    - path: ${home}/.hermes/config.yaml
+      format: yaml
+      swap: {"@models.providers.*.endpoint": "${llm}/v1"}
+  probes:
+    - name: session                     # a real one-shot turn from the working directory
+      kind: capture
+      argv: [sh, -c, "cd ${home}/.hermes/workspace && exec hermes chat --oneshot -Q -q ghost-${turn}"]
+      timeout: 180
+  sees:
+    persona: [session]
+  notes: "Hermes installs provider SDKs on demand: its environment carries them (`uv sync --frozen --extra anthropic`). The turn fails with 400 on purpose. Without a key in .env Hermes sends the no-key-required marker."

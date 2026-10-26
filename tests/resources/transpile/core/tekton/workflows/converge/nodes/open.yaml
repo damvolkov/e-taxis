@@ -1,0 +1,7 @@
+# converge · node open
+id: open
+depends: [final]
+run: >-
+  uv run op eval needs {{entity}} || true
+instruction: >-
+  Every need the final evaluation left open, by subject and kind: the triage and the report read it here, never the ledger.

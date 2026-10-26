@@ -1,0 +1,19 @@
+# security — lo aceptado de los escáneres, por skill: fingerprint (o el prefijo de 12 que imprime `op reports show`),
+# el fichero de la skill donde está y por qué. El fingerprint es el hash del texto, no del sitio: la aceptación se
+# ata al fichero, y el mismo texto en otro fichero vuelve a ser un hallazgo. Aceptar es tuyo, nunca del enhancer.
+#   ops-gen-iac:
+#     - {fingerprint: 6b8072b03bc3, file: instructions.md, why: "state de Terraform, no memoria de agente"}
+accepted:                            # aceptado por Damien el 2026-10-14 sobre la propuesta del triage de converge
+  flow-gen-research:
+    - {fingerprint: 6bcd7f7b0a38, file: instructions.md, why: "endpoint público deps.dev: es la fuente que el skill manda consultar"}
+    - {fingerprint: 6bcd7f7b0a38, file: references/python_libraries.md, why: "tabla de APIs de metadatos: deps.dev nombrado, no transmitido a un destino oculto"}
+    - {fingerprint: 6bcd7f7b0a38, file: references/scoring_script.md, why: "constantes del script de puntuación, mismo endpoint que la tabla"}
+    - {fingerprint: 061abab0022b, file: references/python_libraries.md, why: "api.github.com como fuente de issues y pushed_at, documentado en la matriz"}
+  logic-gen-probability:
+    - {fingerprint: 9341b6f34d6a, file: references/lib.md, why: "línea Never: 'without checking' está en lo prohibido, no en lo ordenado"}
+  ops-gen-containers:
+    - {fingerprint: f27910c27a04, file: references/images.md, why: "el flag aparece en 'no --privileged': la regla prohíbe el escape"}
+    - {fingerprint: 9cd0d35605a5, file: references/images.md, why: "CMD en exec form + tini: recomienda la forma segura frente a shell form"}
+  ops-gen-iac:
+    - {fingerprint: 6b8072b03bc3, file: instructions.md, why: "state de Terraform, no memoria de agente"}
+    - {fingerprint: 6b8072b03bc3, file: references/workflow.md, why: "corrupt state como riesgo a evitar con locking y state mv/import/rm"}

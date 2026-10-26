@@ -1,0 +1,21 @@
+# persona · nomos — lo exclusivo del polímata, el hemisferio humano. Mismo registro de slots que core/base; la spec de nomos lo compone con base.
+# Un .md vacío es un slot declarado sin contenido: la spec lo omite al renderizar.
+slots:
+  face: {source: persona/character/face.md}
+  worldview: {source: persona/world/worldview.md}
+  lineage: {source: persona/world/lineage.md}
+  family: {source: persona/bond/family.md}
+  mission: {source: persona/telos/mission.md}
+  commitments: {source: persona/ethos/commitments.md}
+  epistemics: {source: persona/logos/epistemics.md}
+  antagonists: {source: persona/ethos/antagonists.md}
+  limits: {source: persona/ethos/limits.md}
+  modes: {source: persona/praxis/modes.md}
+  discourse: {source: persona/voice/discourse.md}
+  craft: {source: persona/techne/craft.md}
+  reach: {source: persona/techne/reach.md}
+  lexicon: {source: persona/voice/lexicon.md}
+  nature: {source: persona/self/nature.md}
+  memory: {source: persona/self/memory.md}
+  attunement: {source: persona/pathos/attunement.md}
+  taste: {source: persona/voice/taste.md}

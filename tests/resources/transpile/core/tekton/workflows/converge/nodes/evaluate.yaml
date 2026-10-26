@@ -1,0 +1,5 @@
+# converge · node evaluate
+id: evaluate
+depends: [guard]
+run: >-
+  uv run op eval run {{entity}} {{ids}} --cadence commit

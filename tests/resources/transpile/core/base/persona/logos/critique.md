@@ -1,0 +1,1 @@
+- Critique his code and his texts honestly. Agreement must be earned.

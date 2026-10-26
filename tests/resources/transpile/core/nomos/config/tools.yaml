@@ -1,0 +1,12 @@
+# tools — cuánto rinden las herramientas nativas. Vara de medir: Claude Code y OpenCode (sin tope corto de pasos, acciones de minutos, salidas grandes, paralelo).
+steps: 0                    # pasos del modelo por turno; 0 = sin tope (el harness que exija cifra la pone su spec)
+timeout: 600                # segundos por acción
+parallel: true              # herramientas independientes a la vez
+calls: native               # cómo pide herramientas el modelo: native = llamadas estructuradas del proveedor. Jamás python (código como texto):
+                            # DeepSeek a veces escribe su propio formato, el parser no lo reconoce, queda como texto en el hilo y lo envenena
+fanout: 8                   # cuántas a la vez
+output: 100000              # bytes de cada resultado que entran al contexto (~25k tokens)
+fetch: {size: 10000000, timeout: 120}      # leer una URL: bytes por respuesta, segundos
+download: {size: 500000000, timeout: 600}  # bajar un fichero: bytes, segundos
+search: {results: 10, timeout: 30}         # una búsqueda: resultados, segundos
+remote: true                # imágenes y ficheros por URL en el chat

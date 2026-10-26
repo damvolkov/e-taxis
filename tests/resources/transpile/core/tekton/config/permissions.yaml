@@ -1,0 +1,47 @@
+# permissions — política global, unión de ambos coders. Cada backend schema
+# emite SOLO su sintaxis; el otro lado se conserva agnóstico aquí.
+default_mode: auto                              # claude: permissions.defaultMode
+external_dirs:                                  # claude: additionalDirectories / opencode: external_directory
+  - /home/damien/workspaces/damien/et-mlapi/.vscode
+  - /home/damien/workspaces/damien/e-voice/.vscode
+  - /home/damien/.claude/plugins/marketplaces/claude-plugins-official/plugins/frontend-design/skills/frontend-design
+granular:                                       # opencode: permission{}
+  read: allow
+  external_directory: allow
+  webfetch: allow
+  edit:
+    "*": allow
+    ".env*": ask
+    ".ssh/**": ask
+    ".aws/**": ask
+    ".gnupg/**": ask
+    "*.pem": ask
+    "*.key": ask
+    "id_rsa*": ask
+    "*/.git/config": ask
+  bash:
+    "*": allow
+    "rm -rf *": ask
+    "sudo *": ask
+    "dd *": ask
+    "chmod -R *": ask
+    "curl * | *": ask
+    "mkfs*": ask
+  skill:                                      # innegociables de la casa: todo agente puede invocarlas sin aprobación
+    tax-py-naming: allow
+    conc-py-async: allow
+    para-py-dispatch: allow
+rules:                                          # claude: permissions.allow (settings + local)
+  allow:
+    - "Bash(*)"
+    - "Read(*)"
+    - "Write(*)"
+    - "Edit(*)"
+    - "MultiEdit(*)"
+    - "Glob(*)"
+    - "WebFetch(*)"
+    - "TodoWrite(*)"
+    - "Read(//home/damien/workspaces/damien/e-voice/src/e_voice/**)"
+    - "Read(//home/damien/workspaces/damien/e-core/libs/ecore/src/ecore/**)"
+    - "mcp__codebase-memory-mcp"
+    - "WebSearch"

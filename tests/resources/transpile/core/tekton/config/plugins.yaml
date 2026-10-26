@@ -1,0 +1,10 @@
+# plugins — extensiones de cada coder: paquetes npm de OpenCode y plugins de marketplace de Claude Code. Un plugin local (autolearn) es un fichero en
+# ~/.config/opencode/plugins/: opencode lo carga solo, listarlo aquí lo cargaría dos veces.
+opencode:
+  - token-optimizer-opencode
+  - opencode-skill-creator
+tui:
+  - opencode-context-tui                        # tui.json
+sdk: "@opencode-ai/plugin@1.18.32"              # package.json → se genera al instalar
+claudecode:                                     # plugins de marketplace activos en Claude Code (settings.json · enabledPlugins)
+  - discord@claude-plugins-official

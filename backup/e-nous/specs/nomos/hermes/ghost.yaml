@@ -1,0 +1,34 @@
+# Machine spec — how a phantom Hermes Agent is raised in a sandbox and what it must see. Data, not code.
+# Consumed by ops/trial (tests/integration). Placeholders: ${home} ${tree} ${llm} ${path} ${port} ${turn}.
+# Verified 2026-10-09 against Hermes v0.21.6: a real one-shot turn (`hermes chat --oneshot -Q -q`) sends
+# SOUL.md and the working directory's AGENTS.md to the fake LLM — no account, no network.
+backend: hermes
+release: "2026.10.08"
+verified: "2026-10-09"
+status: ready
+sources:
+  - https://hermes-agent.nousresearch.com/docs/reference/cli-commands
+  - https://hermes-agent.nousresearch.com/docs/developer-guide/prompt-assembly
+tree: .hermes                          # HERMES_HOME: SOUL.md, config.yaml, .env, workspace/AGENTS.md
+llm: openai
+network: local
+env:
+  PATH: ${path}
+  HOME: ${home}
+  TMPDIR: ${home}/tmp
+  HERMES_HOME: ${home}/.hermes
+  HERMES_STATE_DB_GUARD_BYPASS: "1"    # Hermes sees pytest among its ancestors and refuses its own state.db: this HERMES_HOME is already a sandbox
+overlays:                              # every provider the render names answered by the fake; the next apply restores the render
+  - path: ${home}/.hermes/config.yaml
+    format: yaml
+    swap:                              # core/nomos/config/models.yaml: each provider's endpoint, wherever the render put it
+      "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1": "${llm}/v1"
+      "http://127.0.0.1:45100/v1": "${llm}/v1"
+probes:
+  - name: session                      # a real one-shot turn from the working directory: SOUL.md is slot 1, AGENTS.md project context
+    kind: capture
+    argv: [sh, -c, "cd ${home}/.hermes/workspace && exec hermes chat --oneshot -Q -q ghost-${turn}"]
+    timeout: 180
+sees:
+  persona: [session]                   # every document, as the first request carries it
+notes: "Hermes instala SDKs de proveedor bajo demanda (anthropic para api_mode anthropic_messages); el fence corta la red: el entorno de Hermes los lleva instalados (`uv sync --frozen --extra anthropic`). El turno falla a propósito con 400 del endpoint falso (Hermes no reintenta un error de formato de petición). AGENTS.md se descubre desde el directorio de trabajo: la sonda entra en terminal.cwd. Sin clave en .env, Hermes manda el marcador no-key-required. Hermes migra config.yaml al arrancar (_config_version): las claves que no poseemos son suyas."

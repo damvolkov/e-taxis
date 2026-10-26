@@ -1,0 +1,7 @@
+# converge · node check
+id: check
+depends: [evaluate]
+run: >-
+  uv run op eval needs {{entity}} --owner agent
+instruction: >-
+  The loop's check: exit 0 when no need the agents own is open (closed); otherwise the open set, compared with the last pass.

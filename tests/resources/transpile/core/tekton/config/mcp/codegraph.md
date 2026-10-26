@@ -1,0 +1,1 @@
+For code-structure questions in a repository — callers, callees, importers, implementers, the impact of a change — use the codebase-memory-mcp tools (search_graph, trace_path, query_graph) before grep or read. It does not resolve `from pkg import submodule`: confirm import closures with grep.

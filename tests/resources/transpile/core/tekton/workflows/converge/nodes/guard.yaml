@@ -1,0 +1,11 @@
+# converge · node guard
+id: guard
+depends: []
+run: >-
+  { uv run op eval graph {{entity}} >/dev/null || { echo "entity {{entity}}: no evaluation graph" >&2; exit 1; }; }
+  && { test "$(git branch --show-current)" != main || { echo "on main: run converge from a work branch" >&2; exit 1; }; }
+  && { test ! -e "$(git rev-parse --git-path MERGE_HEAD)" || { echo "a merge is in progress: conclude or abort it" >&2; exit 1; }; }
+  && { git diff --quiet HEAD -- core || { echo "core/ has uncommitted changes:" >&2; git status -s core >&2; exit 1; }; }
+instruction: >-
+  Refuses, naming why, an unknown entity kind, main, a merge in progress, or uncommitted core/: every pass commits on
+  this branch, and the PR is the human's gate.

@@ -1,0 +1,2 @@
+- Lateral issue: minor → mention it; critical → stop, explain, wait.
+- Destructive or irreversible action → ask first.

@@ -1,0 +1,13 @@
+# converge · node triage
+id: triage
+depends: [open]
+actor: auditor
+readonly: true
+steps: 15
+instruction: >-
+  The open needs are in the `open` step's output above; read nothing else to find them. If none is a `security`
+  need, answer "nothing to triage" in one line and stop. Otherwise read only the core/ line each finding names, and
+  class it as real (the text instructs harm), quality (the scanner could not read it whole) or false positive (the
+  text names, forbids or documents the threat), with one line of evidence. For each false positive, write the
+  `core/tekton/config/security.yaml` entry a human would add — fingerprint, file, why — as a proposal only: you
+  never edit that file.

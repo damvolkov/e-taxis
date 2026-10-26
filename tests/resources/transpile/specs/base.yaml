@@ -1,0 +1,313 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# specs/base.yaml — TEMPLATE O · the single data model of the bridge
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# One idea only: the core is the ground truth (structured, agnostic) and every
+# harness receives a flat, concrete projection. Everything the transpiler needs
+# to know about a backend fits in ONE equivalence row:
+#
+#     source → target#fragment   (with order and transform)
+#
+# The core's own shape lives in core/schema.yaml: every `from` resolves there.
+# This file defines the spec model; backends instantiate it in
+# specs/<harness>/<backend>.yaml — ONE self-contained file per backend:
+# projection, ownership, self-maintenance sources and the trial sandbox. No
+# common/, no inheritance: what two backends share is repeated, so each diff is
+# complete and there is no merge to debug.
+#
+# This repo (e-nous) holds data only. The validators (msgspec structs), the
+# renderer and the transforms live in e-taxis; here transforms are NAMED and
+# their contract declared, never their code.
+#
+# Extensibility:
+#   · new backend   → new <backend>.yaml; nothing enumerates backends
+#   · new harness   → new top-level folder; this base serves it the same
+#   · new entity    → core/schema.yaml entity + a section under map/
+#   · new format    → entry in `formats` = a minor bump of this model
+#   · new transform → a pipeline of combinators, or a named transform declared
+#                     in the backend spec (contract here, code in e-taxis)
+
+model: spec
+version: "2.0"
+doctrine:
+  ground_truth: "core/ shaped by core/schema.yaml: every row is born from a real core path, a native table or a constant"
+  ownership: "total by default: every target is the core's whole; what the harness may hold inside it is a closed, argued list (foreign)"
+  output: "flat and deterministic: same input → same bytes; order is data, never chance"
+  purity: "the render reads core/ + spec + bindings; never its own output"
+  data_not_code: "the spec is law; the irreducible goes to a named transform, never to a per-backend builder"
+
+# ─── Types ──────────────────────────────────────────────────────────────────
+# Named words the kinds use as types, in the grammar of core/schema.yaml.
+types:
+  entity: {shape: str, doc: "a key of core/schema.yaml · entities, or persona, or config"}
+  probe:  {shape: str, doc: "the name of one of the trial's probes"}
+  name:   {shape: str, doc: "a placeholder or transform name"}
+
+# ─── Kinds ──────────────────────────────────────────────────────────────────
+# Each kind is one msgspec struct in e-taxis.
+kinds:
+
+  Spec:
+    spec:       {type: str, required: true, doc: "version of this model the file obeys"}
+    backend:    {type: str, required: true, doc: "kebab id; the file name repeats it"}
+    harness:    {type: str, required: true, doc: "a facet of core/schema.yaml (tekton, nomos)"}
+    product:    {type: str, required: true}
+    status:     {type: "enum[ready, pending, retired]", default: ready, doc: "only `ready` renders"}
+    tree:       {type: path, required: true, doc: "live root, relative to $HOME"}
+    govern:     {type: "list<path>", default: [], doc: "directories of the tree wholly ours: a file in them no row renders is stale and deleted"}
+    foreign:    {type: "list<{path: glob, why: str}>", default: [], doc: "paths inside governed directories that are the harness's or another installer's: never written, never pruned"}
+    bindings:   {type: "map<name, Binding>", default: {}, doc: "placeholders beyond the built-ins (out, id, value); a name never collides with an `each` variable"}
+    upstream:   {type: Upstream, required: true}
+    sources:    {type: "list<Source>", default: [], doc: "what self-maintenance watches to keep the rows true"}
+    targets:    {type: "map<path-template, Target>", required: true}
+    native:     {type: "map<str, any>", default: {}, doc: "tables only this harness has; transforms and `table` look them up; the core never names them"}
+    transforms: {type: "map<name, Transform>", default: {}}
+    map:        {type: "map<entity, Section>", required: true}
+    trial:      {type: Trial, doc: "the phantom harness that proves the render lands (sandboxed, offline)"}
+    notes:      {type: str, default: ""}
+
+  Binding:
+    read: {type: str, required: true, doc: "'<path relative to the tree>#<dotted.key>': a value the harness itself keeps (e.g. its active profile)"}
+
+  Upstream:
+    version:  {type: str, required: true, doc: "CURRENT version of the harness in its channel"}
+    channel:  {type: url, required: true}
+    read:     {type: date, required: true}
+    verified: {type: "{version: str | null, date: date}", required: true, doc: "the version the rows were checked against; null = never pinned"}
+    # version != verified.version (or null) → re-check signal, not an error.
+
+  Source:
+    url:    {type: url, required: true}
+    kind:   {type: "enum[markdown, html, json, api, atom, npm, code]", required: true}
+    covers: {type: "list<entity | 'upstream'>", required: true, doc: "the sections whose rows this source backs: a change here re-checks exactly those"}
+    note:   {type: str, default: ""}
+
+  Target:
+    format:   {type: "enum[md, md+fm, json, toml, yaml, env, text, file, link, registry]", required: true}
+    limit:    {type: int, default: 0, doc: "the harness's character cap; a render above it is REFUSED, never truncated"}
+    audience: {type: str, doc: "who loads it (information)"}
+    absorb:   {type: bool, default: false, doc: "harness edits to OUR fragments may fold back to core (three-way, human-reviewed); false = such an edit is drift, overwritten on apply"}
+    foreign:  {type: "list<Foreign>", default: [], doc: "what inside this file is not ours; empty = the whole file is ours"}
+    to:       {type: path, doc: "link: the path (relative to the tree) the link points to"}
+    apply:    {type: "{read: str, add: str, remove: str}", doc: "registry: where its live state is read ('<file>#<key>' under $HOME) and the commands that add/remove one entry ({name}, {json})"}
+
+  Foreign:                            # one harness-owned part of one of our files — a claim with its reason
+    kind:   {type: "enum[key, items, table, marker]", required: true}
+    at:     {type: str, doc: "key|items|table: dotted path, '*' = any segment (json/toml/yaml) or a variable glob (env)"}
+    by:     {type: str, doc: "items: the identity field of an item (id, name, path)"}
+    ours:   {type: "map<str, any>", default: {}, doc: "items: unrendered items matching this filter are ours too (stale → deleted); {} = only rendered items are ours, every other one is the harness's"}
+    start:  {type: regex, doc: "marker: opening (groups may be back-referenced in end)"}
+    end:    {type: regex}
+    sample: {type: str, doc: "one instance as the harness writes it, ${nonce} inside: what a trial plants to prove it survives"}
+    why:    {type: str, required: true}
+    # kinds:
+    #   key     — a key (or every key under a path) the harness writes; ours never collide with it
+    #   items   — a list we share: our items by identity (`by`) and `ours`, the rest the harness's
+    #   table   — a table only the harness creates (with its secret): until it exists, rows under it
+    #             emit nothing; once it does, the table is foreign except the rows' own keys
+    #   marker  — a delimited markdown region the harness owns
+
+  Section:
+    kind:     {type: "enum[persona, instanced, config]", required: true}
+    status:   {type: "enum[ready, pending, retired]", default: ready, doc: "pending/retired = no rows; notes say why"}
+    target:   {type: path-template, doc: "default target: a `to` that starts with '#' inherits it"}
+    rows:     {type: "list<Row>", default: [], doc: "declaration order IS emission order; a ready section has at least one"}
+    assets:   {type: "list<{from: path, to: path}>", default: [], doc: "config: files of the facet's config assets that travel byte for byte"}
+    unmapped: {type: "map<core-path, Unmapped>", default: {}, doc: "what the core declares and this backend does NOT project, with a coded reason"}
+    verified: {type: "{version: str | null, date: date}", doc: "when this section was checked against another version than the spec"}
+    notes:    {type: str, default: ""}
+    # A section is absent from map/ only when the core declares no instance of
+    # that entity for the facet; the validator checks the absence against core/.
+
+  Unmapped:
+    reason: {type: "enum[absent, house, internal, covered, pending]", required: true}
+    detail: {type: str, required: true, doc: "absent: what was searched, where, when · covered: the row or mechanism · pending: what is missing"}
+    #   absent   — no native surface AND no semantic equivalent, the search exhausted (dated evidence)
+    #   house    — house wiring or a deliberate non-projection
+    #   internal — corpus-internal data (evaluation, security): not runtime config
+    #   covered  — another row or mechanism carries it; detail names it
+    #   pending  — an equivalence may exist or is not built: a tracked gap. In doubt, pending — never absent.
+
+  Row:
+    from:  {type: core-path, doc: "registry slot (persona) · manifest field (instanced) · <module>.<dotted.path> (config) · native.<path>. Omitted only with `value`"}
+    value: {type: any, doc: "a constant emitted as it stands; strings bind {bindings}"}
+    to:    {type: str, required: true, doc: "<target>#<fragment>, or #<fragment> under the section's target"}
+    required: {type: bool, default: false, doc: "an empty source fails the render"}
+    via:   {type: "Via | list<Via>", doc: "a combinator, a named transform, or a list of them applied left to right"}
+    each:  {type: str, doc: "registry targets only: iterates the children of the source; the variable binds in `to` and `apply`"}
+    glue:  {type: str, default: "\n\n", doc: "md: how the slots of one block are glued ('\\n' when they are fragments of one list); identical across the block"}
+
+  Via:
+    shape: "str | map<str, any>"
+    doc: "a combinator or transform name, or {combinator: params}"
+
+  Transform:
+    consumes: {type: "list<core-path>", required: true, doc: "every core path it reads, the row's source included: exactly what it covers"}
+    binds:    {type: "list<name>", default: [], doc: "bindings it formats ({out}, {profile}…)"}
+    returns:  {type: str, required: true, doc: "the contract in one sentence: shape and every rule the gate and the human read"}
+    # Pure: (value, read-only ctx) → output. No I/O, no state, never the render's output.
+
+  Trial:
+    llm:      {type: "enum[anthropic, openai]", required: true, doc: "the protocol the fake endpoint answers"}
+    network:  {type: "enum[local]", default: local}
+    env:      {type: "map<str, str>", default: {}}
+    state:    {type: "list<{path: str, text: str}>", default: [], doc: "files of an established install planted before the render lands"}
+    setup:    {type: "list<list<str>>", default: [], doc: "argv run once before the probes"}
+    overlays: {type: "list<{path: str, format: str, swap: map<str, str>, set: map<str, any>, extend: map<str, list<any>>}>", default: [], doc: "the render bent to the fake endpoint; the next apply restores it. A swap key '@<core-path>' stands for every value it resolves to (never a copied URL)"}
+    probes:   {type: "list<Probe>", required: true}
+    sees:     {type: "map<entity, list<probe>>", required: true, doc: "which probe proves each section landed"}
+    pipeline: {type: "map<str, any>", doc: "a harness-specific end-to-end check (OpenHuman's memory): opaque to the model, read by its trial"}
+    notes:    {type: str, default: ""}
+    # Placeholders: ${home} ${tree} ${llm} ${path} ${profile} ${port} ${turn} ${document} ${name} ${mcp} ${nonce}
+    # — `${…}`, never `{…}`: trial strings embed JSON.
+
+  Probe:
+    name:    {type: str, required: true}
+    kind:    {type: "enum[capture, command]", required: true, doc: "capture: the request reaching the fake endpoint · command: stdout"}
+    argv:    {type: "list<str>", required: true}
+    serve:   {type: "list<str>", doc: "a server started first"}
+    ready:   {type: "list<str>", doc: "polled until it succeeds"}
+    timeout: {type: int, default: 120}
+    wait:    {type: int, default: 0}
+
+# ─── Grammar ────────────────────────────────────────────────────────────────
+grammar:
+
+  from:
+    persona:   "<slot> of the facet's registry (core/schema.yaml · persona)"
+    instanced: "<field> of the entity (core/schema.yaml · entities)"
+    config:    "<module>.<dotted.path> of the facet (core/schema.yaml · config); native.<path> also valid"
+
+  core-path: "dotted; '*' matches exactly one segment (mcp.servers.*.smoke); a path covers itself and everything below"
+
+  to: "<target>#<fragment>; the target is declared in targets/ or is the section's `target`"
+
+  fragment:
+    md:              "#h1 · #para · #quote · #<heading> (an h2) — h1, para and quote are reserved, never headings"
+    md+fm:           "#fm.<key> · #title (`# <value>` before the body) · #preload (a line before the body) · #body · #copy (the value's files beside the target)"
+    json|toml|yaml:  "#<dotted.key>"
+    env:             "#<VARIABLE>"
+    text|file|link:  "no fragment: the whole file"
+    registry:        "#{<each>}: one entry per child"
+
+  placeholders:
+    out:      "the tree where the render lands"
+    id:       "the instance id (instanced)"
+    value:    "the current value, inside `template`"
+    "<name>": "an `each` variable or a declared binding (no dots)"
+    "<a.b>":  "in `to` only: a core path (dots) whose value names the key (#memory.engines.{memory.engine.kind}.endpoint)"
+    order:    "an `each` variable shadows nothing: a name declared twice is a gate error"
+
+  blocks: "md: consecutive rows with the same target and fragment form ONE block, glued by `glue`; the same fragment twice non-consecutively is an error"
+
+  order: "declaration order = emission order: canonical key order (json/toml/yaml), block order (md), frontmatter order (#fm)"
+
+# ─── Combinators (closed vocabulary) ───────────────────────────────────────
+# Trivial pure functions in e-taxis. inverse: true = the row stays invertible
+# (allowed on an absorb target). Params prefixed `native.` resolve against the
+# spec's native table.
+combinators:
+  tier:        {doc: "house tier → '<models.providers[alias].id>/<model>' from models.tiers.<tier>.model 'alias/model'", params: none, inverse: false}
+  names:       {doc: "map of inputs → list of its keys, in order", params: none, inverse: false}
+  hint:        {doc: "map of inputs → '[a] [b]'", params: none, inverse: false}
+  denied:      {doc: "house Permission → the backend's vetoed tools: a tool vetoed flat (deny), or '*': deny with no allow", params: "{tools: map<house-tool, list<backend-tool>>}", inverse: false}
+  template:    {doc: "string composition", params: "text with {value} and placeholders", inverse: false}
+  table:       {doc: "lookup in a native table; a missing key is an error", params: "the table's name", inverse: false}
+  replace:     {doc: "string → the first `count` occurrences of `old` replaced by `new`", params: "{old: str, new: str, count: int}", inverse: false}
+  split:       {doc: "'a/b/c' → head ('a') or tail ('b/c') at the first separator", params: "{on: str, take: head | tail}", inverse: false}
+  pluck:       {doc: "map of structs → list of one field", params: "the field", inverse: false}
+  pick:        {doc: "struct → sub-struct", params: "list of fields", inverse: false}
+  join:        {doc: "list → string", params: "the separator", inverse: false}
+  falsy:       {doc: "falsy value → substitute", params: "a literal (null allowed) or native.<path>", inverse: false}
+  equals:      {doc: "value == X → bool", params: "X", inverse: false}
+  wrap:        {doc: "value → {key: value}", params: "the key", inverse: false}
+  prefix_each: {doc: "every item of a list, prefixed", params: "the prefix", inverse: false}
+  bind:        {doc: "formats strings (or lists of them) with placeholders", params: "list of placeholder names", inverse: false}
+  positional:  {doc: "#body: ${name} of the template → the backend's placeholder", params: "{slot: the inputs field, placeholder: '${n}' | '${name}'}", inverse: false}
+  graph:       {doc: "#body: a workflow graph rendered — mermaid, one '### <id>' step per node in order (depends, *only when*, @actor), loop and output blocks; validated: no empty graph, no undeclared edge, no cycle, start/done labels never clash with a node id", params: "{output: field, loop: field, start: label, done: label}", inverse: false}
+
+# ─── Ownership ──────────────────────────────────────────────────────────────
+# Total by default. The render is the file; `foreign` is the only way the
+# harness keeps anything inside it.
+ownership:
+  - "a file = the render ∪ its foreign parts as they live; nothing else survives"
+  - "an owned fragment the render omits is deleted from the live file; a null value IS an omission"
+  - "a foreign part is carried verbatim; rows always win over a wildcard foreign key (it means 'every key no row owns'); a row inside an explicit foreign key is a gate error (collision)"
+  - "items: an item is ours when its identity (`by`) is rendered or it matches `ours`; ours not rendered → deleted; the rest → kept; a live twin of ours is merged field by field, its extra fields kept"
+  - "table: absent live → rows under it emit nothing (dormant, reported); present → the rows' keys are ours, the rest is foreign"
+  - "md: our blocks in row order, then the foreign regions in their live order, verbatim"
+  - "env: our variables in row order, then every foreign line byte for byte"
+  - "structured formats are re-serialised canonically; foreign keys keep their live order after the owned keys of the same table; comments do not survive"
+  - "a governed directory holds only rendered files and its declared foreign paths; anything else is stale"
+  - "an owned path that is a symlink is replaced by a real file (a harness that opens with O_NOFOLLOW ignores links); a `link` target is the only symlink we write"
+  - "registry: the live entries are read through `apply.read`; ours are re-added when they differ; entries no row renders are removed"
+
+# ─── Lifecycle ──────────────────────────────────────────────────────────────
+lifecycle:
+  render: "core + spec → files under an out dir that is never a live tree; pure"
+  plan:   "render vs live → findings; touches nothing"
+  apply:  "plan, confirm, land: owned fragments written, stale deleted, symlinks replaced, registry synced; the landed bytes are recorded as the base of the next three-way"
+  absorb: "on absorb targets only: three-way (recorded · live · render) per block or fragment; a part only the harness moved is split back into its core sources and must re-render to the live bytes (fixpoint), else held; both moved → held; foreign parts are learned, never absorbed"
+
+# ─── Reports ────────────────────────────────────────────────────────────────
+# One finding per divergence, every one traceable to its row and core path.
+report:
+  finding:
+    backend:  str
+    target:   path
+    fragment: str
+    kind:     "a key of report.kinds"
+    row:      "the spec row (section + index) that owns the fragment, null for stale/orphan"
+    core:     "the core path(s) behind it"
+    grade:    "from core/versioning/matrix.yaml"
+    detail:   str
+  kinds:
+    missing:   "rendered, absent live"
+    drift:     "owned bytes differ live, and the target does not absorb"
+    harness:   "owned bytes the harness moved on an absorb target: an absorb candidate"
+    stale:     "live in a governed directory or registry, rendered by no row"
+    symlink:   "an owned path that is a link"
+    collision: "a row fragment inside a foreign part"
+    dormant:   "rows under a foreign table that does not exist yet"
+    limit:     "a document above its target's limit (refused)"
+    required:  "a required row with an empty source"
+    uncovered: "a core leaf in neither rows, transform consumes nor unmapped"
+    orphan:    "a from, consumes or unmapped path that resolves to nothing in core"
+    signal:    "upstream.version != verified.version"
+    invalid:    "a core instance or a spec its compiled schema refuses, or a slot two layers of one facet declare"
+    undeclared: "a target, a via or a harness the spec names and nothing declares"
+    unused:     "a transform declared and used by no row"
+    block:      "a Markdown block split in two runs, or glued two ways"
+    invertible: "a row on an absorb target that cannot be inverted"
+    presence:   "an entity section mapped though core holds no instance, or missing though it does"
+
+# ─── Invariants (gates e-taxis verifies) ───────────────────────────────────
+invariants:
+  - "schema: every spec validates against these kinds; every core instance against core/schema.yaml"
+  - "declared destination: every `to` names a declared target or inherits the section's"
+  - "ground truth: every from, consumes and unmapped path resolves in core/schema.yaml (or native)"
+  - "coverage: every leaf the facet's schema declares for a mapped entity or module is covered — by a row without a named transform (its from and below), by a named transform's consumes (exactly those paths and below: the row's from alone covers nothing), or by unmapped"
+  - "equivalence-first: an `absent` without dated evidence is an error"
+  - "blocks: contiguous, one glue per block; reserved md fragments never used as headings"
+  - "ownership: no collision; every foreign part has a why"
+  - "absorb: every row landing on an absorb target is invertible (no via, or only inverse combinators)"
+  - "required: a required row with an empty source fails the render"
+  - "transforms: every named via is declared; every declared transform is used; binds ⊆ placeholders"
+  - "limits: a document above its target's limit is refused whole"
+  - "purity and determinism: same core + spec + bindings → same bytes"
+  - "idempotence: apply twice → the second plan is empty"
+  - "fidelity: after apply, the live tree re-plans to nothing but foreign parts"
+  - "upstream: a version mismatch is a signal, never an error"
+
+# ─── Formats ────────────────────────────────────────────────────────────────
+formats:
+  md:       "typeset: '# h1' · para verbatim · '> ' on every quote line · '## heading' then its block; blocks joined by a blank line; an empty slot or block skipped; NO trailing newline"
+  md+fm:    "'---\\n' + YAML frontmatter (keys in row order, empty values dropped) + '---\\n\\n' + [#title + '\\n\\n'] + [#preload + '\\n\\n'] + body + '\\n'"
+  json:     "2-space indent, keys in row order, trailing newline; JSONC accepted on read"
+  toml:     "dotted rows nested into tables, tables in first-appearance order"
+  yaml:     "block style, keys in row order"
+  env:      "KEY=value lines"
+  text:     "free text (e.g. @import lines), trailing newline"
+  file:     "copied byte for byte"
+  link:     "an absolute symlink to $HOME/<tree>/<to>"
+  registry: "entries delivered with `apply`, never a file we write"

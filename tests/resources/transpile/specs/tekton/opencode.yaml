@@ -1,0 +1,229 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# specs/tekton/opencode.yaml — OpenCode: the single file the transpiler
+# reads. Template O (specs/base.yaml). Data, not code.
+# ═══════════════════════════════════════════════════════════════════════════
+
+spec: "2.0"
+backend: opencode
+harness: tekton
+product: OpenCode
+status: ready
+tree: .config/opencode                # OPENCODE_CONFIG_DIR moves it
+govern: [skills, agents, commands, workflows, mcp]
+foreign:
+  - {path: skills/opencode-skill-creator, why: "shipped by the opencode-skill-creator plugin, which keeps it current"}
+
+upstream:
+  version: 1.19.3                                               # npm @latest — read 2026-10-22
+  channel: https://registry.npmjs.org/opencode-ai/latest
+  read: "2026-10-22"
+  verified: {version: null, date: "2026-10-02"}                 # checked that day without recording a version: the next re-check pins it
+
+sources:
+  - {url: "https://registry.npmjs.org/opencode-ai/latest", kind: npm, covers: [upstream]}
+  - {url: "https://github.com/anomalyco/opencode/releases.atom", kind: atom, covers: [upstream], note: "release notes: reclassify into sections"}
+  - {url: "https://opencode.ai/docs/rules/", kind: html, covers: [persona, config]}
+  - {url: "https://opencode.ai/docs/skills/", kind: html, covers: [skill]}
+  - {url: "https://opencode.ai/docs/agents/", kind: html, covers: [agent, config]}
+  - {url: "https://opencode.ai/docs/commands/", kind: html, covers: [command]}
+  - {url: "https://opencode.ai/docs/config/", kind: html, covers: [config]}
+  - {url: "https://opencode.ai/docs/permissions/", kind: html, covers: [agent, config]}
+  - {url: "https://opencode.ai/docs/mcp-servers/", kind: html, covers: [config]}
+  - {url: "https://opencode.ai/docs/providers/", kind: html, covers: [config]}
+  - {url: "https://opencode.ai/docs/plugins/", kind: html, covers: [config]}
+  - {url: "https://opencode.ai/config.json", kind: json, covers: [config], note: "the config schema: a new root key = a new surface"}
+
+targets:
+  AGENTS.md:            {format: md, audience: all, absorb: true}       # global rules; ~/.claude/CLAUDE.md is only a fallback when this is missing
+  skills/{id}/SKILL.md: {format: md+fm, absorb: true}
+  agents/{id}.md:       {format: md+fm}
+  commands/{id}.md:     {format: md+fm}
+  workflows/{id}.md:    {format: md+fm}                                 # no native type: a house convention the /workflow command walks
+  opencode.jsonc:       {format: json}
+  tui.json:             {format: json}
+  package.json:         {format: json}
+  mcp/playwright.json:  {format: file}
+  mcp/codegraph.md:     {format: file}                                  # codebase-memory's guide, loaded through #instructions (OpenCode only)
+
+map:
+
+  persona:
+    kind: persona
+    target: AGENTS.md
+    rows:
+      - {from: name,        to: "#h1"}
+      - {from: essence,     to: "#para"}
+      - {from: epigraph,    to: "#quote"}
+      - {from: origin,      to: "#Damien"}
+      - {from: unity,       to: "#One mind, two materials"}
+      - {from: temperament, to: "#Temperament"}
+      - {from: face,        to: "#The engineer"}
+      - {from: stance,      to: "#Philosophy and logic", glue: "\n"}
+      - {from: reasoning,   to: "#Philosophy and logic", glue: "\n"}
+      - {from: voice,       to: "#Voice", glue: "\n"}
+      - {from: critique,    to: "#Voice", glue: "\n"}
+      - {from: prudence,    to: "#Method: prudence before action", glue: "\n"}
+      - {from: method,      to: "#Method: prudence before action", glue: "\n"}
+      - {from: honesty,     to: "#Honesty"}
+      - {from: soul,        to: "#Engineering soul"}
+      - {from: knowledge,   to: "#Knowledge architecture"}
+      - {from: categories,  to: "#Software categories"}
+      - {from: pillars,     to: "#The three pillars"}
+      - {from: rules,       to: "#Skill creation rules"}
+      - {from: conduct,     to: "#Operating contract", glue: "\n"}
+      - {from: contract,    to: "#Operating contract", glue: "\n"}
+      - {from: skills,      to: "#Skills"}
+    unmapped:
+      about:   {reason: house, detail: "bond slot: human-hemisphere content; the tekton harness renders doctrine, not bond"}
+      profile: {reason: house, detail: "user memory seed: only the nomos harnesses plant it"}
+
+  skill:
+    kind: instanced
+    target: "skills/{id}/SKILL.md"
+    rows:
+      - {from: name,         to: "#fm.name", required: true}
+      - {from: description,  to: "#fm.description", required: true}
+      - {from: metadata,     to: "#fm.metadata"}
+      - {from: name,         to: "#title"}
+      - {from: instructions, to: "#body", required: true}
+      - {from: references,   to: "#copy"}
+    notes: >-
+      Same SKILL.md as Claude Code's. OpenCode also discovers ~/.claude/skills
+      and ~/.agents/skills: equal names collapse into one (`opencode debug
+      skill`, 0 duplicates, 2026-10-02).
+
+  agent:
+    kind: instanced
+    target: "agents/{id}.md"
+    rows:
+      - {from: description,    to: "#fm.description", required: true}
+      - {from: mode,           to: "#fm.mode"}
+      - {from: model,          to: "#fm.model", via: tier}
+      - {from: max_steps,      to: "#fm.steps"}                       # steps, NOT maxSteps
+      - {from: hidden,         to: "#fm.hidden"}
+      - {from: permission,     to: "#fm.permission"}
+      - {from: skills_preload, to: "#preload", via: [{join: ", "}, {template: "Load first: {value}."}]}   # no native preload; permission.skill is the net
+      - {from: prompt,         to: "#body", required: true}
+    unmapped:
+      id:                {reason: covered, detail: "the file name is the id; no frontmatter name"}
+      persona:           {reason: house, detail: "narrative identity of the role; it does not travel"}
+      skills_ondemand:   {reason: house, detail: "permission.skill already allows them"}
+      skills_full_scope: {reason: house, detail: "documents the role's scope; permission.skill carries the real gate"}
+      mcp_servers:       {reason: covered, detail: "servers are registered at config level (#mcp); the per-agent scope rides in permission as <server>_<tool>"}
+
+  command:
+    kind: instanced
+    target: "commands/{id}.md"
+    rows:
+      - {from: description, to: "#fm.description", required: true}
+      - {from: agent,       to: "#fm.agent"}
+      - {from: subtask,     to: "#fm.subtask"}
+      - {from: template,    to: "#body", required: true, via: {positional: {slot: inputs, placeholder: "${n}"}}}   # $name → $1..$n in declaration order
+    unmapped:
+      id:     {reason: covered, detail: "the file name is the command"}
+      inputs: {reason: covered, detail: "carried positional into the body by the template row"}
+      skills: {reason: house, detail: "house wiring, not a frontmatter key"}
+
+  workflow:
+    kind: instanced
+    target: "workflows/{id}.md"
+    rows:
+      - {from: id,          to: "#fm.id", required: true}
+      - {from: description, to: "#fm.description", required: true}
+      - {from: parameters,  to: "#fm.parameters"}
+      - {from: nodes,       to: "#body", required: true, via: {graph: {output: output, loop: loop, start: start, done: done}}}
+    unmapped:
+      output:   {reason: covered, detail: "the graph combinator's output block"}
+      loop:     {reason: covered, detail: "the graph combinator's loop block"}
+      triggers: {reason: house, detail: "eng-grammar phrases read by the channel hooks (e-metaxy), not by the coder"}
+    notes: >-
+      The lead agent (/workflow) walks the graph and delegates each node with
+      task/@agent: siblings with the same depends and no edge run in parallel;
+      a node with several parents joins; no actor = the lead acts; {{key}}
+      references parameters.
+
+  config:
+    kind: config
+    target: opencode.jsonc
+    rows:
+      - {value: "https://opencode.ai/config.json", to: "#$schema"}
+      - {from: main.user,            to: "#username"}
+      - {from: main.model.default,   to: "#model", via: tier}
+      - {from: main.model.small,     to: "#small_model", via: tier}
+      - {from: agents,               to: "#agent", via: agents_registry}
+      - {from: plugins.opencode,     to: "#plugin"}
+      - {from: main.instructions,    to: "#instructions", via: instructions_opencode}
+      - {from: mcp.servers,          to: "#mcp", via: mcp_opencode}
+      - {from: permissions.granular, to: "#permission"}
+      - {from: models.providers,     to: "#enabled_providers", via: {pluck: id}}
+      - {from: models,               to: "#provider", via: providers_tree}
+      - {from: plugins.tui,          to: "tui.json#plugin"}
+      - {from: plugins.sdk,          to: "package.json#dependencies", via: npm_dependency}
+    assets:
+      - {from: mcp/playwright.json, to: mcp/playwright.json}
+      - {from: mcp/codegraph.md,    to: mcp/codegraph.md}
+    unmapped:
+      main.model.alias:          {reason: house, detail: "the session alias of a backend that sees no tiers (Claude's)"}
+      main.effort:               {reason: pending, detail: "no global effort key known; per-model reasoning rides in the tier options (thinking budget) — confirm a global equivalent in the config schema"}
+      main.display:              {reason: pending, detail: "Claude's fullscreen TUI; no equivalent key checked in tui.json"}
+      telemetry:                 {reason: pending, detail: "OpenCode's OpenTelemetry surface not checked against the config schema"}
+      hooks:                     {reason: absent, detail: "an OpenCode hook is a JS/TS plugin (API v1): code, not data — no deterministic projection from argv hooks (docs/plugins, checked 2026-10-02)"}
+      plugins.claudecode:        {reason: house, detail: "Claude Code marketplace plugins"}
+      models.providers.*.openai_url: {reason: internal, detail: "the OpenAI-compatible twin tools without an Anthropic client use (SkillSpector)"}
+      models.tiers.*.note:       {reason: internal, detail: "cost documentation"}
+      permissions.rules:         {reason: house, detail: "Claude's Tool(pattern) syntax; OpenCode's policy is #permission"}
+      permissions.default_mode:  {reason: house, detail: "Claude's session mode; OpenCode's policy is #permission"}
+      permissions.external_dirs: {reason: pending, detail: "permission.external_directory is a flat allow inside granular; whether it accepts per-path patterns is not checked"}
+      security:                  {reason: internal, detail: "scanner acceptances, never rendered"}
+      mcp.servers.*.note:        {reason: pending, detail: "no description field known in an OpenCode MCP entry"}
+      mcp.servers.*.smoke:       {reason: internal, detail: "evaluation data (op eval run config)"}
+    notes: >-
+      Every target is owned whole. Not governed, hence the harness's:
+      plugins/ (the autolearn runtime, installed by e-taxis — listing it in
+      #plugin would load it twice), node_modules/, package-lock.json and the
+      plugins' own state files. A new provider, tier or plugin is a core
+      change, never a row.
+
+transforms:
+  instructions_opencode:
+    consumes: [main.instructions]
+    binds: [out]
+    returns: "opencode.jsonc#instructions — the path of every entry that reaches opencode (a bare path, or {path, backends} naming it), in order, {out} bound"
+  agents_registry:
+    consumes: [agents.overrides, agents.system, models.tiers.*.model, models.providers.*.id]
+    returns: "opencode.jsonc#agent — overrides then system, each in order, every `model` tier resolved as the tier combinator does; a name in both is a gate error"
+  providers_tree:
+    consumes: [models.providers.*.id, models.providers.*.sdk, models.providers.*.display, models.providers.*.base_url, models.providers.*.api_key, models.tiers.*.model, models.tiers.*.reasoning, models.tiers.*.limits, models.tiers.*.modalities, models.tiers.*.options]
+    returns: "opencode.jsonc#provider — {<id>: {npm: sdk, name: display, options: {baseURL, apiKey}, models: {<model>: {name: <tier>, reasoning?, limit?, modalities?, options?}}}}: only the tiers whose alias is that provider, in tier order, empty keys omitted"
+  npm_dependency:
+    consumes: [plugins.sdk]
+    returns: "package.json#dependencies — 'package@version' → {package: version}, split at the last @"
+  mcp_opencode:
+    consumes: [mcp.servers.*.command, mcp.servers.*.url, mcp.servers.*.env, mcp.servers.*.headers, mcp.servers.*.backends]
+    binds: [out]
+    returns: "opencode.jsonc#mcp — servers whose backends include opencode (absent = all): {<name>: local {type: local, command: argv, environment?, enabled: true} | remote {type: remote, url, headers?, enabled: true}} in order, empty keys omitted, {out} bound"
+
+trial:
+  llm: openai
+  network: local                        # @ai-sdk/openai-compatible ships inside the binary: no npm fetch
+  env:
+    PATH: ${path}
+    HOME: ${home}
+    TMPDIR: ${home}/tmp
+    XDG_CONFIG_HOME: ${home}/.config
+    XDG_DATA_HOME: ${home}/.local/share
+    XDG_STATE_HOME: ${home}/.local/state
+    XDG_CACHE_HOME: ${home}/.cache
+    OPENCODE_DISABLE_CLAUDE_CODE: "1"
+    OPENCODE_DISABLE_AUTOUPDATE: "1"
+    OPENCODE_CONFIG_CONTENT: '{"provider":{"ghost":{"npm":"@ai-sdk/openai-compatible","name":"ghost","options":{"baseURL":"${llm}/v1","apiKey":"ghost"},"models":{"x":{"name":"x"}}}},"model":"ghost/x","small_model":"ghost/x","mcp":${mcp}}'
+  probes:
+    - {name: session, kind: capture, argv: [opencode, run, --pure, ghost]}
+    - {name: config,  kind: command, argv: [opencode, debug, config, --pure]}
+    - {name: skills,  kind: command, argv: [opencode, debug, skill, --pure]}
+  sees:
+    persona: [session]                  # AGENTS.md in the system message
+    skill: [session, skills]
+    agent: [config]                     # primary agents never reach the prompt: the resolved config holds them all
+    command: [config]
+  notes: "Inline config (OPENCODE_CONFIG_CONTENT) layers a ghost provider above the global one: the rendered tree is never edited. --pure on every probe: without it OpenCode installs the tree's plugins from npm and, offline, hangs retrying. The session fails with 400 on purpose (a 500 is retried with backoff). ${mcp} switches the tree's MCP servers off: offline they would hold the session until their timeout."

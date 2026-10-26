@@ -1,0 +1,207 @@
+default_model = "alibaba:deepseek-v4.1-flash"
+primary_cloud = "p_alibaba_tp01k"
+chat_provider = "alibaba:deepseek-v4.1-flash"
+reasoning_provider = "alibaba:deepseek-v4-pro"
+agentic_provider = "alibaba:deepseek-v4.1-flash"
+coding_provider = "alibaba:deepseek-v4-pro"
+memory_provider = "local:demian-model"
+vision_provider = "alibaba:qwen3.8-flash"
+stt_provider = "evoice-stt:parakeet"
+tts_provider = "evoice-tts:damien"
+
+[[model_registry]]
+id = "qwen3.8-flash"
+provider = "alibaba"
+vision = true
+
+[[cloud_providers]]
+id = "p_alibaba_tp01k"
+slug = "alibaba"
+label = "Alibaba Token Plan"
+endpoint = "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"
+auth_style = "anthropic"
+
+[[cloud_providers]]
+id = "p_vllm_local"
+slug = "local"
+label = "LLM local (slot :45100 — Strata"
+endpoint = "http://127.0.0.1:45100/v1"
+auth_style = "bearer"
+
+[[cloud_providers]]
+id = "p_openhuman_pf4fk"
+slug = "openhuman"
+label = "OpenHuman"
+endpoint = "https://api.openhuman.ai/v1"
+auth_style = "openhumanjwt"
+
+[[cloud_providers]]
+id = "p_custom_embedder"
+slug = "custom"
+label = "Embedder (memory host)"
+endpoint = "http://localhost:45110/v1"
+auth_style = "bearer"
+
+[[voice_providers]]
+id = "vp_evoice_stt"
+slug = "evoice-stt"
+label = "e-voice STT"
+endpoint = "http://127.0.0.1:45140/v1"
+auth_style = "bearer"
+capability = "stt"
+stt_api_style = "openaiaudio"
+tts_api_style = "openaiaudio"
+default_stt_model = "parakeet"
+
+[[voice_providers]]
+id = "vp_evoice_tts"
+slug = "evoice-tts"
+label = "e-voice TTS"
+endpoint = "http://127.0.0.1:45150/v1"
+auth_style = "bearer"
+capability = "tts"
+stt_api_style = "openaiaudio"
+tts_api_style = "openaiaudio"
+default_tts_voice = "damien"
+
+[memory]
+embedding_provider = "custom:http://localhost:45110/v1"
+embedding_model = "Qwen/Qwen3-Embedding-0.6B"
+embedding_dimensions = 1024
+engine = "cortexdb"
+
+[memory.engines.cortexdb]
+endpoint = "http://127.0.0.1:45180"
+
+[[memory.sources]]
+id = "src_vault_notes"
+kind = "folder"
+target = "/tmp/e-nous-golden-v1/openhuman/memory/inbox/docs"
+label = "Knowledge base · inbox (documents dropped and converted)"
+schedule_mins = 60
+
+[[memory.sources]]
+id = "kb_wiki"
+kind = "folder"
+target = "/tmp/e-nous-golden-v1/openhuman/memory/wiki"
+label = "Knowledge base · wiki (manual knowledge, written by Damien)"
+schedule_mins = 60
+
+[[memory.sources]]
+id = "kb_workflow"
+kind = "folder"
+target = "/tmp/e-nous-golden-v1/openhuman/memory/workflow"
+label = "Knowledge base · workflow (flow results: reports, ledgers, sources, research)"
+schedule_mins = 60
+
+[custom_embeddings]
+endpoint = "http://localhost:45110/v1"
+model = "Qwen/Qwen3-Embedding-0.6B"
+dimensions = 1024
+
+[searxng]
+base_url = "http://localhost:45600"
+
+[search]
+max_results = 10
+timeout_secs = 30
+
+[search.roles]
+search = ["exa", "searxng"]
+
+[search.providers.exa]
+enabled = true
+route = "managed"
+
+[search.providers.gemini]
+enabled = false
+route = "managed"
+
+[search.providers.searxng]
+enabled = true
+route = "direct"
+
+[agent]
+agents_md_enabled = true
+max_tool_iterations = 100
+agent_timeout_secs = 600
+parallel_tools = true
+tool_dispatcher = "native"
+max_parallel_tools = 8
+tool_result_budget_bytes = 100000
+
+[autonomy]
+enabled = false
+level = "full"
+workspace_only = true
+
+[[autonomy.trusted_roots]]
+access = "read"
+path = "/tmp/e-nous-golden-v1/openhuman/memory/persona"
+
+[[autonomy.trusted_roots]]
+access = "read"
+path = "/tmp/e-nous-golden-v1/openhuman/memory/wiki"
+
+[[autonomy.trusted_roots]]
+access = "read"
+path = "/tmp/e-nous-golden-v1/openhuman/memory/brain"
+
+[[autonomy.trusted_roots]]
+access = "readwrite"
+path = "/tmp/e-nous-golden-v1/openhuman/memory/workflow"
+
+[[autonomy.trusted_roots]]
+access = "readwrite"
+path = "/tmp/e-nous-golden-v1/openhuman/memory/inbox"
+
+[runtime.local_jail]
+extra_read_only = ["/tmp/e-nous-golden-v1/openhuman/memory/persona", "/tmp/e-nous-golden-v1/openhuman/memory/wiki", "/tmp/e-nous-golden-v1/openhuman/memory/brain", "~/.local/bin", "~/.local/share/uv"]
+extra_read_write = ["/tmp/e-nous-golden-v1/openhuman/memory/workflow", "/tmp/e-nous-golden-v1/openhuman/memory/inbox"]
+
+[update]
+enabled = false
+
+[web_search]
+max_results = 10
+timeout_secs = 30
+
+[context]
+tool_result_budget_bytes = 100000
+
+[http_request]
+max_response_size = 10000000
+timeout_secs = 120
+
+[curl]
+max_download_bytes = 500000000
+timeout_secs = 600
+
+[multimodal]
+allow_remote_fetch = true
+
+[multimodal_files]
+allow_remote_fetch = true
+trusted_channel_senders = ["discord:1483749257545515048"]
+
+[mcp_client]
+direct_servers = ["e-metaxy"]
+
+[[mcp_client.servers]]
+name = "e-metaxy"
+enabled = false
+endpoint = "http://127.0.0.1:45190/mcp"
+
+[[mcp_client.servers]]
+name = "exa"
+enabled = true
+endpoint = "https://mcp.exa.ai/mcp"
+
+[[mcp_client.servers]]
+name = "context7"
+enabled = true
+endpoint = "https://mcp.context7.com/mcp"
+
+[local_ai]
+stt_provider = "evoice-stt:parakeet"
+tts_provider = "evoice-tts:damien"

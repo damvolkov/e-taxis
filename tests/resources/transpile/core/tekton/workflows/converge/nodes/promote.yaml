@@ -1,0 +1,9 @@
+# converge · node promote
+id: promote
+depends: [enhance]
+run: >-
+  uv run op enhance promote --yes --all-verdicts
+instruction: >-
+  Applies every promotable verdict — adopt and propose, never reject or hold: on a skill every gate is green but
+  `promote.skill: none` and the unmeasured probes cap the verdict at propose. Inside this branch that is safe; the PR
+  is the human's gate. Needs the mandate of a human terminal.

@@ -1,0 +1,30 @@
+# Machine spec — how the structured persona renders to the OpenCode user-level instructions file.
+# Consumed by ops/transpiler/render.py via eserde+msgspec. Data, not code.
+entity: persona
+release: "2026.10.02"
+verified: "2026-10-02"
+sources: ["core/base/persona.yaml", "core/tekton/persona.yaml", "https://opencode.ai/docs/rules/"]
+status: ready
+documents:
+  - target: AGENTS.md
+    audience: all
+    blocks:
+      - { type: h1,    slots: [name] }
+      - { type: para,  slots: [essence] }
+      - { type: quote, slots: [epigraph] }
+      - { type: h2, heading: "Damien",                         slots: [origin] }
+      - { type: h2, heading: "One mind, two materials",        slots: [unity] }
+      - { type: h2, heading: "Temperament",                    slots: [temperament] }
+      - { type: h2, heading: "The engineer",                   slots: [face] }
+      - { type: h2, heading: "Philosophy and logic",           slots: [stance, reasoning], join: "\n" }
+      - { type: h2, heading: "Voice",                          slots: [voice, critique], join: "\n" }
+      - { type: h2, heading: "Method: prudence before action", slots: [prudence, method], join: "\n" }
+      - { type: h2, heading: "Honesty",                        slots: [honesty] }
+      - { type: h2, heading: "Engineering soul",               slots: [soul] }
+      - { type: h2, heading: "Knowledge architecture",         slots: [knowledge] }
+      - { type: h2, heading: "Software categories",            slots: [categories] }
+      - { type: h2, heading: "The three pillars",              slots: [pillars] }
+      - { type: h2, heading: "Skill creation rules",           slots: [rules] }
+      - { type: h2, heading: "Operating contract",             slots: [conduct, contract], join: "\n" }
+      - { type: h2, heading: "Skills",                         slots: [skills] }
+notes: "OpenCode lee ~/.config/opencode/AGENTS.md como reglas globales; ~/.claude/CLAUDE.md es solo respaldo si falta, y como siempre se emite AGENTS.md, gana. Render determinista (ops/transpiler/typeset.py): bloques unidos por línea en blanco; un h2 es '## {heading}\\n\\n' y sus slots unidos por `join` (\\n cuando son trozos de una misma lista); slot vacío se omite; salida SIN newline final. Slots de core/base + core/tekton."

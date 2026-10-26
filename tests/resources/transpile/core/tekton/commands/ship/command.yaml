@@ -1,0 +1,17 @@
+# ship — instancia estructurada de command (fuente universal; el .md plano por runtime se genera)
+# Slots y scope de referencia: core/schema.yaml
+id: ship
+description: "Clean delivery of verified work: pipeline, evidence, commit/PR prepared. Push is never automatic."
+inputs:
+  note: "contexto opcional para la entrega"
+agent: operator
+subtask: true
+skills:
+  preload:
+    - ops-gen-make
+    - ops-gen-containers
+  ondemand:
+    ops-gen-kubernetes: "el despliegue toca k8s"
+    ops-gen-iac: "la entrega muta infraestructura"
+    ops-gen-cloud: "se aprovisiona un servicio"
+template: {source: template.md}

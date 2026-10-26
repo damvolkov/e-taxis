@@ -1,0 +1,78 @@
+# Machine spec — how core/nomos/config becomes Hermes Agent's config.yaml and .env. Data, not code.
+# Consumed by ops/transpiler/render.py (`_config_hermes`). Árbol: HERMES_HOME (~/.hermes).
+entity: config
+release: "2026.10.08"                  # v0.21.6
+verified: "2026-10-09"                 # DEFAULT_CONFIG de hermes_cli/config_defaults.py en 818c13be y la doc de esa versión
+sources:
+  - core/nomos/config
+  - https://hermes-agent.nousresearch.com/docs/user-guide/configuration
+  - https://hermes-agent.nousresearch.com/docs/user-guide/configuring-models
+  - https://hermes-agent.nousresearch.com/docs/reference/mcp-config-reference
+  - https://hermes-agent.nousresearch.com/docs/user-guide/messaging/discord
+  - https://hermes-agent.nousresearch.com/docs/user-guide/features/web-search
+  - https://raw.githubusercontent.com/NousResearch/hermes-agent/main/hermes_cli/config_defaults.py
+status: ready
+config:
+  exactness: keys                      # YAML por rutas con punto y .env por clave: lo que Hermes guarda al lado es suyo
+  modules: [main, models, memory, sources, voice, search, channels, tools, permissions, mcp]
+  native:                              # lo que solo Hermes tiene: el core habla agnóstico, esto lo traduce
+    names: {alibaba: nomos-alibaba, local: nomos-vllm}   # nombres de proveedor propios: `alibaba` es ya un proveedor de fábrica (DashScope)
+    api: {anthropic: anthropic_messages, openai: chat_completions, responses: codex_responses}   # protocolo del core → api_mode
+    auxiliary:                         # rol del core → tareas auxiliares de Hermes (cada una con su proveedor y modelo)
+      compression: memory
+      memory_query_rewrite: memory
+      title_generation: fast
+      approval: fast
+      triage_specifier: fast
+      goal_judge: reason
+      review: reason
+      curator: learn
+      background_review: learn
+    levels: {read: manual, ask: manual, auto: smart, full: smart}   # permissions.mode → approvals.mode; `off` (sin aprobaciones) lo decide el usuario en la app, como en OpenHuman
+    search: {exa: exa, searxng: searxng, gemini: gemini}            # motor del core → web.search_backend
+    context: 60000                     # context_file_max_chars: SOUL.md mide ~24000 y sin ventana conocida Hermes corta a 20000
+  files:
+    - out: config.yaml
+      format: yaml
+      keys:
+        - model.provider
+        - model.default
+        - providers.*                  # cada proveedor del core; los que añada el usuario en Hermes son suyos
+        - fallback_providers
+        - auxiliary.compression.provider
+        - auxiliary.compression.model
+        - auxiliary.memory_query_rewrite.provider
+        - auxiliary.memory_query_rewrite.model
+        - auxiliary.title_generation.provider
+        - auxiliary.title_generation.model
+        - auxiliary.approval.provider
+        - auxiliary.approval.model
+        - auxiliary.triage_specifier.provider
+        - auxiliary.triage_specifier.model
+        - auxiliary.goal_judge.provider
+        - auxiliary.goal_judge.model
+        - auxiliary.review.provider
+        - auxiliary.review.model
+        - auxiliary.curator.provider
+        - auxiliary.curator.model
+        - auxiliary.background_review.provider
+        - auxiliary.background_review.model
+        - delegation.provider
+        - delegation.model
+        - agent.max_turns
+        - terminal.cwd
+        - terminal.timeout
+        - tool_output.max_bytes
+        - web.search_backend
+        - approvals.mode
+        - timezone
+        - context_file_max_chars
+        - discord.require_mention
+        - discord.allowed_channels
+        - mcp_servers.*                # cada servidor del core; los que añada el usuario son suyos
+    - out: .env
+      format: env
+      keys:
+        - DISCORD_ALLOWED_USERS
+        - SEARXNG_URL
+notes: "Hermes v0.21.6. Rutas: config.yaml (claves con punto) y .env (secretos y variables de canal) en HERMES_HOME. Los secretos (claves de API, DISCORD_BOT_TOKEN) son del usuario en .env: el core solo nombra la variable (providers.*.key_env) y la fusión del .env conserva cada línea que no es nuestra byte a byte. Proveedores propios: providers.<nombre>{base_url, api_mode, key_env}; api_mode ∈ chat_completions · anthropic_messages · codex_responses. model{provider, default} elige el principal; auxiliary.<tarea>{provider, model} son los roles secundarios (provider auto = el principal). agent.max_turns: sin tope por defecto en Hermes; tools.steps 0 → none. terminal.timeout: segundos por comando (180 de fábrica). tool_output.max_bytes: 50000 de fábrica. web.search_backend: un solo motor, el primero del orden del core; SearXNG necesita SEARXNG_URL en .env y solo busca (web_extract usa el anillo sin clave de Exa/Parallel/Firecrawl/Keenable). Discord: DISCORD_ALLOWED_USERS solo existe como variable; require_mention y allowed_channels (vacío = todos) en config.yaml; los DM funcionan siempre sin mención. approvals.mode ∈ smart · manual · off; approvals.deny y la lista dura de Hermes vetan siempre, incluso en off. Sin equivalente en Hermes: permissions.scope (el backend local no encierra en un workspace), tools.parallel/fanout (Hermes decide), tools.fetch/download/remote, memory.embedder/recall y sources (la memoria de Hermes es MEMORY.md/USER.md más proveedores externos opcionales; no ingiere carpetas), voice (stt/tts por proveedor: e-voice no está mapeado). context_file_max_chars se fija aquí porque SOUL.md supera el suelo de 20000."

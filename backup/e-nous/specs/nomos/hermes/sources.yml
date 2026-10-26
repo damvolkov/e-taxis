@@ -1,0 +1,72 @@
+# specs/nomos/hermes — catálogo de fuentes para el agente mantenedor (cron).
+# Mismas nueve categorías que specs/nomos/openhuman/sources.yml. La doc es amplia y vive en el
+# repo (website/docs); el contrato real es DEFAULT_CONFIG y el ensamblado del prompt: se vigilan
+# los ficheros fuente crudos de `main` además de la doc.
+
+backend: hermes
+product: Hermes Agent
+verified: "2026-10-09"                 # todas las URLs comprobadas (HTTP 200) en esta fecha
+repo: https://github.com/NousResearch/hermes-agent
+docs_root: "https://hermes-agent.nousresearch.com/docs/"
+docs_format: "docusaurus: `<página>` HTML; fuente markdown en website/docs/ del repo"
+
+entities_index:
+  - { name: docs-tree, kind: api, url: "https://api.github.com/repos/NousResearch/hermes-agent/contents/website/docs/user-guide", note: "página nueva de la guía = superficie nueva" }
+
+categories:
+
+  core:
+    watch: "nueva versión → bump `release` en todas las specs del backend"
+    sources:
+      - { name: github-releases-atom, kind: atom, url: "https://github.com/NousResearch/hermes-agent/releases.atom" }
+      - { name: github-releases-api, kind: api, url: "https://api.github.com/repos/NousResearch/hermes-agent/releases/latest" }
+      - { name: tags-atom, kind: atom, url: "https://github.com/NousResearch/hermes-agent/tags.atom" }
+
+  changelog:
+    watch: "notas por versión → reclasificar en las categorías de abajo"
+    sources:
+      - { name: release-notes, kind: api, url: "https://api.github.com/repos/NousResearch/hermes-agent/releases" }
+      - { name: commits, kind: atom, url: "https://github.com/NousResearch/hermes-agent/commits/main.atom", note: "señal temprana antes de la release" }
+
+  config:
+    watch: "clave nueva, retirada o renombrada en config.yaml o en .env"
+    sources:
+      - { name: default-config, kind: markdown, url: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/hermes_cli/config_defaults.py", note: "DEFAULT_CONFIG: el contrato de config.yaml; también las variables de .env" }
+      - { name: config-example, kind: markdown, url: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/cli-config.yaml.example" }
+      - { name: configuration-guide, kind: markdown, url: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/website/docs/user-guide/configuration.md" }
+      - { name: mcp-reference, kind: markdown, url: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/website/docs/reference/mcp-config-reference.md" }
+
+  entities:
+    watch: "fichero de identidad o de contexto nuevo o retirado, cambio de su orden en el prompt, de su tope o de cómo se siembra"
+    specs:
+      persona: { spec: persona.yaml, docs: "https://hermes-agent.nousresearch.com/docs/guides/use-soul-with-hermes", note: "SOUL.md en HERMES_HOME (ranura 1); AGENTS.md del directorio de trabajo (terminal.cwd)" }
+      config: { spec: config.yaml, docs: "https://hermes-agent.nousresearch.com/docs/user-guide/configuration", note: "config.yaml por rutas con punto y .env por clave" }
+    sources:
+      - { name: system-prompt, kind: markdown, url: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/agent/system_prompt.py", note: "capas estable/contexto/volátil; SOUL.md en la ranura 1" }
+      - { name: prompt-builder, kind: markdown, url: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/agent/prompt_builder.py", note: "CONTEXT_FILE_MAX_CHARS (20000) y el tope dinámico: el `limit` de persona.yaml" }
+      - { name: soul-guide, kind: markdown, url: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/website/docs/guides/use-soul-with-hermes.md" }
+
+  tools:
+    watch: "herramientas del agente que escriben SOUL.md, AGENTS.md o la memoria (otros escritores del árbol)"
+    sources:
+      - { name: memory-docs, kind: markdown, url: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/website/docs/user-guide/features/memory.md" }
+
+  extensions:
+    watch: "dashboard, setup y `hermes config set` que reescriben config.yaml o .env"
+    sources:
+      - { name: configuring-models, kind: markdown, url: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/website/docs/user-guide/configuring-models.md" }
+
+  cli:
+    watch: "subcomandos y flags nuevos del binario `hermes` (el fantasma usa `chat --oneshot -Q -q`)"
+    sources:
+      - { name: cli-commands, kind: markdown, url: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/website/docs/reference/cli-commands.md" }
+
+  deprecations:
+    watch: "retiradas → nota y `status` en la spec afectada"
+    sources:
+      - { name: config-migrations, kind: markdown, url: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/hermes_cli/config_migrations.py", note: "_config_version: cada migración renombra o retira claves" }
+
+  community:
+    watch: "señal temprana: decisiones de diseño, retiradas anunciadas"
+    sources:
+      - { name: issues, kind: api, url: "https://api.github.com/repos/NousResearch/hermes-agent/issues?state=open&per_page=30" }

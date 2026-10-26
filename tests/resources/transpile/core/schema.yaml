@@ -1,0 +1,251 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# core/schema.yaml — the shape of the ground truth
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# What core/ may hold, typed: the persona registry, the instanced entities and
+# the config modules of each facet. Every `from` of a spec resolves against
+# this file, and the coverage gate walks its leaves. Data, not code: e-taxis
+# turns each struct into a msgspec Struct and validates the instances with it.
+#
+# Closed world on both sides: an instance key the schema does not declare is a
+# validation error, and a schema field no instance uses is dead surface — cut
+# it. A field enters here when the core needs it, never in advance.
+
+model: core
+version: "1.0"
+
+# ─── Types ──────────────────────────────────────────────────────────────────
+# Scalars: str · int · float · bool · null · path · url · date.
+# Composites: list<T> · map<K, T> (insertion order is data) · enum[a, b] · T | U.
+types:
+  Text:
+    shape: "str | {source: path}"
+    doc: "inline text, or a file relative to the declaring manifest; an empty file is a declared slot without content: the render skips it"
+  Action:
+    shape: "enum[allow, ask, deny]"
+  Permission:
+    shape: "map<tool, Action | map<pattern, Action>>"
+    doc: "tool → one action, or patterns → action ('*' first); tool names are the house's (read, edit, bash, task, skill…)"
+  Route:
+    shape: str
+    doc: "'<provider>/<model>': the provider is a key of the facet's models.providers"
+  Argv:
+    shape: "list<str>"
+    doc: "a command as argv; strings bind {out}"
+  backend:
+    shape: str
+    doc: "a backend id: the file name of its spec (specs/<harness>/<backend>.yaml)"
+
+# ─── Layers and facets ──────────────────────────────────────────────────────
+layers: [base, tekton, nomos]
+facets:                                     # a facet = the layers a harness family composes
+  tekton: [base, tekton]
+  nomos:  [base, nomos]
+
+# ─── Persona ────────────────────────────────────────────────────────────────
+persona:
+  file: "core/<layer>/persona.yaml"
+  shape: "{slots: map<slot, Text>}"
+  rules:
+    - "a slot lives in exactly one layer of a facet: the same slot in two layers of one facet is an error"
+    - "groups (core/<layer>/persona/<group>/) are folders only: a spec places slots by name, never by group"
+
+# ─── Instanced entities ─────────────────────────────────────────────────────
+# One folder per instance: core/<facet>/<folder>/<id>/<manifest>. The folder
+# name IS the id. Only tekton declares instances today; nomos declares none.
+entities:
+
+  skill:
+    facet: tekton
+    path: "core/tekton/skills/{id}/skill.yaml"
+    fields:
+      name:         {type: str, required: true, doc: "== the folder id"}
+      description:  {type: str, required: true, doc: "≤200 chars: '<Scope>: <what it governs>. Use when <trigger>.'"}
+      metadata:     {type: "{family: str}", required: true}
+      instructions: {type: Text, required: true, doc: "the SKILL.md body"}
+      references:   {type: "list<path>", default: [], doc: "files under references/, byte for byte; closed: a file there that is not listed is an error"}
+
+  agent:
+    facet: tekton
+    path: "core/tekton/agents/{id}/agent.yaml"
+    fields:
+      id:                {type: str, required: true, doc: "== the folder id"}
+      persona:           {type: str, doc: "narrative name of the role"}
+      description:       {type: str, required: true}
+      mode:              {type: "enum[primary, subagent, all]", required: true}
+      model:             {type: str, doc: "a house tier: key of tekton models.tiers"}
+      max_steps:         {type: int}
+      hidden:            {type: bool, default: false}
+      permission:        {type: Permission, required: true}
+      skills_preload:    {type: "list<str>", default: [], doc: "skill ids loaded before the prompt"}
+      skills_ondemand:   {type: "map<str, str>", default: {}, doc: "skill id → when to load it"}
+      skills_full_scope: {type: bool, default: false, doc: "the role may load any skill"}
+      mcp_servers:       {type: "list<str>", default: [], doc: "names of tekton mcp.servers"}
+      prompt:            {type: Text, required: true}
+
+  command:
+    facet: tekton
+    path: "core/tekton/commands/{id}/command.yaml"
+    fields:
+      id:          {type: str, required: true}
+      description: {type: str, required: true}
+      inputs:      {type: "map<str, str>", default: {}, doc: "argument name → doc; declaration order is positional order"}
+      agent:       {type: str, doc: "an agent id"}
+      subtask:     {type: bool, default: false}
+      skills:      {type: "{preload: list<str>, ondemand: map<str, str>}", default: {}}
+      template:    {type: Text, required: true, doc: "the body; ${name} names an input"}
+
+  workflow:
+    facet: tekton
+    path: "core/tekton/workflows/{id}/workflow.yaml"
+    fields:
+      id:          {type: str, required: true}
+      description: {type: str, required: true}
+      parameters:  {type: "map<str, str | {doc: str, type: str}>", default: {}, doc: "parameter → its doc, or {doc, type}; {{name}} in a node references it"}
+      triggers:    {type: "list<map<str, str>>", default: [], doc: "phrases that launch it, by grammar ({eng: 'flow …'})"}
+      nodes:       {type: "list<Node | {source: path}>", required: true, doc: "declaration order = render order"}
+      loop:        {type: "{nodes: list<str>, max: int, until: str}", doc: "unrolled into copies <id>_<k>: the graph never cycles"}
+      output:      {type: "{type: str, path: str}", required: true}
+    structs:
+      Node:
+        id:          {type: str, required: true}
+        depends:     {type: "list<str>", default: []}
+        when:        {type: "map<str, str | list<str>>", default: {}, doc: "parameter → value(s): the node runs only when every one holds"}
+        run:         {type: str, doc: "a deterministic command; {{name}} binds parameters"}
+        actor:       {type: str, doc: "an agent id; absent = the lead acts"}
+        instruction: {type: str}
+        readonly:    {type: bool, default: false}
+        steps:       {type: int}
+        timeout:     {type: int, doc: "seconds"}
+        inputs:      {type: "list<{name: str, model: str, from: str}>", default: []}
+        outputs:     {type: "list<{name: str, model: str}>", default: []}
+    rules:
+      - "a node has run, instruction or both; depends and loop name declared nodes only"
+
+# ─── Config ─────────────────────────────────────────────────────────────────
+# One module per file: core/<facet>/config/<module>.yaml, declared as
+# {fields, structs?, rules?} or, when the file is one map, {shape, doc}. A
+# subfolder of config/ holds assets (files a spec ships byte for byte).
+config:
+
+  tekton:
+    main:
+      fields:
+        user:         {type: str, required: true}
+        model:        {type: "{default: str, small: str, alias: map<backend, str>}", required: true, doc: "default/small are tiers; alias = the session model of a backend that sees no tiers"}
+        instructions: {type: "list<path | {path: path, backends: list<backend>}>", default: [], doc: "files loaded at every session start; {out} binds; a bare path reaches every backend, {path, backends} only those named"}
+        effort:       {type: str, doc: "reasoning effort of the session (xhigh…)"}
+        display:      {type: "{tui: str}", default: {}}
+    models:
+      fields:
+        providers:    {type: "map<str, {id: str, sdk: str, display: str, base_url: url, openai_url: url, api_key: str}>", required: true, doc: "api_key names the secret ({env:VAR}), never its value"}
+        tiers:        {type: "map<str, Tier>", required: true}
+      structs:
+        Tier: {model: Route, reasoning: bool, limits: "{context: int, output: int}", modalities: "{input: list<str>, output: list<str>}", options: "map<str, any>", note: str}
+    agents:
+      fields:
+        overrides:    {type: "map<str, {model: str}>", default: {}, doc: "runtime built-ins retuned"}
+        system:       {type: "map<str, {description: str, model: str, hidden: bool, steps: int, prompt: str, permission: Permission}>", default: {}, doc: "runtime agents outside the corpus"}
+    permissions:
+      fields:
+        default_mode:  {type: str, doc: "session permission mode (auto…)"}
+        external_dirs: {type: "list<path>", default: []}
+        granular:      {type: Permission, default: {}}
+        rules:         {type: "{allow: list<str>}", default: {}, doc: "Tool(pattern) rules"}
+    mcp:
+      fields:
+        servers:      {type: "map<str, McpServer>", default: {}}
+      structs:
+        McpServer: {command: Argv, url: url, env: "map<str, str>", headers: "map<str, str>", backends: "list<backend>", note: str, smoke: "{tool: str, arguments: map<str, any>}"}
+      rules:
+        - "a server has exactly one of command (stdio) or url (remote)"
+        - "backends absent = every backend of the facet; a server reaches only the backends it lists"
+    hooks:
+      shape: "map<event, list<{matchers: list<str>, run: Argv}>>"
+      doc: "events without matchers admit none (Stop, SessionEnd)"
+    plugins:
+      fields:
+        opencode:     {type: "list<str>", default: []}
+        tui:          {type: "list<str>", default: []}
+        sdk:          {type: str, doc: "'package@version'"}
+        claudecode:   {type: "list<str>", default: [], doc: "'plugin@marketplace' enabled in Claude Code"}
+    telemetry:
+      fields:
+        endpoint:     {type: url, required: true, doc: "OTLP collector"}
+        protocol:     {type: "enum[grpc, http/protobuf, http/json]", required: true}
+        signals:      {type: "list<enum[metrics, logs, traces]>", required: true}
+    security:
+      fields:
+        accepted:     {type: "map<skill, list<{fingerprint: str, file: path, why: str}>>", default: {}, doc: "scanner acceptances: internal, never rendered"}
+    assets: [hooks, mcp]
+
+  nomos:
+    main:
+      fields:
+        user:         {type: str, required: true}
+        language:     {type: str, required: true, doc: "BCP 47"}
+        timezone:     {type: str, required: true, doc: "IANA"}
+        instructions: {type: bool, default: true}
+        updates:      {type: bool, default: false}
+    models:
+      fields:
+        providers:    {type: "map<str, {label: str, endpoint: url, api: enum[anthropic, openai, responses], key: str}>", required: true, doc: "key names the secret variable"}
+        primary:      {type: str, required: true, doc: "a provider key"}
+        roles:        {type: "map<enum[main, fast, reason, act, code, memory, learn, vision], Route>", required: true}
+        fallback:     {type: "list<Route>", default: []}
+    memory:
+      fields:
+        engine:       {type: "{kind: str, endpoint: url, key: str}", required: true, doc: "key names the secret"}
+        embedder:     {type: "{endpoint: url, model: str, dimensions: int}", required: true}
+        sync:         {type: int, doc: "minutes between source syncs"}
+        recall:       {type: "{relevance: float, window: enum[minimal, balanced, extended, maximum]}"}
+    sources:
+      shape: "map<str, {id: str, label: str, path: path, glob: str, off: bool}>"
+      doc: "paths relative to the vault root (memory/); never the root itself"
+    search:
+      fields:
+        order:        {type: "list<str>", required: true, doc: "engine keys"}
+        engines:      {type: "map<str, {via: enum[self, platform, key], url: url, off: bool}>", required: true}
+    tools:
+      fields:
+        steps:        {type: int, default: 0, doc: "0 = no cap"}
+        timeout:      {type: int, doc: "seconds per action"}
+        parallel:     {type: bool}
+        calls:        {type: str, doc: "how the model asks for tools: native = the provider's structured calls; never python"}
+        fanout:       {type: int}
+        output:       {type: int, doc: "bytes per result"}
+        fetch:        {type: "{size: int, timeout: int}"}
+        download:     {type: "{size: int, timeout: int}"}
+        search:       {type: "{results: int, timeout: int}"}
+        remote:       {type: bool}
+    permissions:
+      fields:
+        guard:        {type: bool, required: true}
+        mode:         {type: "enum[read, ask, auto, full]", required: true}
+        scope:        {type: "enum[workspace, home, any]", required: true}
+        vault:        {type: "{read: list<path>, write: list<path>}", required: true}
+        toolchains:   {type: "list<path>", default: []}
+    channels:
+      fields:
+        reply:        {type: int, doc: "seconds a channel waits for a turn"}
+        discord:      {type: "{channel: str | null, users: list<str>, files: list<str>, mention: bool}"}
+    mcp:
+      fields:
+        servers:      {type: "map<str, McpServer>", default: {}}
+      structs:
+        McpServer: {command: Argv, url: url, env: "map<str, str>", headers: "map<str, str>", note: str, oauth: bool, pinned: bool, consent: path, smoke: "{tool: str, arguments: map<str, any>}"}
+      rules:
+        - "a server has exactly one of command (stdio) or url (remote)"
+    voice:
+      fields:
+        stt:          {type: "{endpoint: url, model: str}"}
+        tts:          {type: "{endpoint: url, voice: str}"}
+    assets: []
+
+# ─── Outside the render ─────────────────────────────────────────────────────
+# Core files no spec reads: named here so the closed world has no hole.
+outside:
+  core/<facet>/stack.yaml:     "the parts each facet needs from the world (op stack)"
+  core/common/stack.yaml:      "the parts both facets share"
+  core/versioning/matrix.yaml: "the grade of every emitted slot and key (report severity)"
+  core/nomos/config/openhuman: "the harness's build and deployment (image, compose, patches, systemd): stack material, not config"

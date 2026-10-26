@@ -1,0 +1,7 @@
+# channels — por dónde se habla con el asistente y quién puede. El token de cada bot es del harness (keychain, .env), jamás del core.
+reply: 900                            # segundos que un canal espera la respuesta de un turno: por encima de tools.timeout, o el canal corta al agente a mitad
+discord:
+  channel: null                       # sin canal fijo: cualquiera del servidor y los mensajes directos; un id lo encierra en ese canal
+  users: ["1483749257545515048"]      # quién puede hablarle; sin lista el bot no acepta mensajes directos
+  files: ["1483749257545515048"]      # quién le pasa ficheros que lee como en el chat de escritorio: el dueño; sin lista, ningún adjunto de canal se lee
+  mention: false                      # responde sin que lo mencionen

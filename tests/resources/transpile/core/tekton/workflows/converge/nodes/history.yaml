@@ -1,0 +1,7 @@
+# converge · node history
+id: history
+depends: [final]
+run: >-
+  git log --format="%h %s" --grep="^converge({{entity}}): pass" main..HEAD && git diff --stat main...HEAD -- core
+instruction: >-
+  The commits converge made on this branch (by their subject), and every core/ file the branch moves over main.

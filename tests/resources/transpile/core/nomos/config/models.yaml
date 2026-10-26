@@ -1,0 +1,16 @@
+# models — quién sirve cada papel. Un proveedor es un endpoint, el protocolo que habla y el nombre del secreto que lo abre:
+# el valor del secreto lo guarda el harness (keychain, .env), y el core jamás lo escribe.
+providers:
+  alibaba: {label: Alibaba Token Plan, endpoint: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1", api: anthropic, key: ALIBABA_API_KEY}
+  local: {label: "LLM local (slot :45100 — Strata, o vLLM al enseñar)", endpoint: "http://127.0.0.1:45100/v1", api: openai, key: LLM_API_KEY}
+primary: alibaba            # el proveedor por defecto
+roles:                      # papel → proveedor/modelo
+  main: alibaba/deepseek-v4.1-flash  # el que conversa y ejecuta órdenes: 7/7 en `make drill` a 7-8 s la orden simple (v4-pro 6/7 a 10-14 s; gemma local 4,7 s pero inventa cifras) — 2026-10-19
+  fast: alibaba/qwen3.8-flash      # respuestas rápidas y baratas: 1,00 en 15 s
+  reason: alibaba/deepseek-v4-pro  # pensar despacio
+  act: alibaba/deepseek-v4.1-flash  # bucles de herramientas: el mismo que main, la orden y su bucle van igual de rápidos
+  code: alibaba/deepseek-v4-pro    # escribir y leer código
+  memory: local/demian-model          # resumir, plegar, recorrer la memoria
+  learn: local/demian-model           # aprender del uso
+  vision: alibaba/qwen3.8-flash    # leer imágenes: el principal no ve, y cada imagen adjunta pasa por aquí antes del turno (KIWI 7319 leído en ambos protocolos, 2026-10-15)
+fallback: [alibaba/qwen3.8-max]    # proveedor/modelo en orden si el principal cae (glm-5.3 descartado: no sigue el formato de llamadas a herramientas)

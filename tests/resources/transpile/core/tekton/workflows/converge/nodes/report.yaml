@@ -1,0 +1,13 @@
+# converge · node report
+id: report
+depends: [publish, history]
+readonly: true
+steps: 5
+instruction: >-
+  Assemble the run's output only from the step outputs above — do not explore the repository: how many passes ran
+  and why the loop ended (the `check_<k>` outputs: closed, stalled, or out of passes); each pass's verdicts per
+  subject and their reasons, read verbatim from `enhance_<k>` (adopt · propose · reject · hold · settled), and what
+  `promote_<k>` applied — a verdict not listed under `applied` was not promoted, say which and why; the commits (`history`); the
+  needs still open, split into the agents' and yours (`open`); the triage's classes and proposed security.yaml
+  entries; and the exact commands left to the human (accept the proposals, review `git diff main...HEAD`, run again
+  with publish=true or merge). Name every step skipped and why.

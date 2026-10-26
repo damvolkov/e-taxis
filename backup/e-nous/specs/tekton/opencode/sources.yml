@@ -1,0 +1,93 @@
+# specs/ — catálogo de fuentes para el agente mantenedor (cron).
+# Cada categoría es un tipo de cambio posible en el harness de OpenCode; `sources`
+# dice dónde se detecta. El mantenedor hace diff periódico de estas fuentes y
+# actualiza `release`/`verified`/`status` en las specs del backend.
+# Las categorías son idénticas a las de specs/tekton/claudecode/sources.yml.
+
+backend: opencode
+product: OpenCode
+verified: "2026-09-29"                 # todas las URLs comprobadas (HTTP 200) en esta fecha
+repo: https://github.com/anomalyco/opencode   # antes sst/opencode; el redirect sigue vivo
+docs_root: "https://opencode.ai/docs/"
+docs_format: "mintlify: `<página>/` HTML y `<página>.md` markdown plano"
+no_changelog_page: true                # 404 en /docs/changelog y /blog → las notas viven SOLO en GitHub Releases
+
+entities_index:
+  - { name: docs-nav, kind: html, url: "https://opencode.ai/docs/", purpose: "página nueva en el nav = entidad o superficie nueva" }
+  - { name: config-schema, kind: json, url: "https://opencode.ai/config.json", purpose: "sección nueva raíz = categoría de entidad/config nueva" }
+
+categories:
+
+  core:
+    watch: "nueva versión del harness → bump `release` en todas las specs del backend"
+    sources:
+      - { name: github-releases-atom, kind: atom, url: "https://github.com/anomalyco/opencode/releases.atom" }
+      - { name: github-releases-api, kind: api, url: "https://api.github.com/repos/anomalyco/opencode/releases/latest" }
+      - { name: tags-atom, kind: atom, url: "https://github.com/anomalyco/opencode/tags.atom" }
+      - { name: npm-latest, kind: npm, url: "https://registry.npmjs.org/opencode-ai/latest" }
+      - { name: npm-dist-tags, kind: api, url: "https://registry.npmjs.org/-/package/opencode-ai/dist-tags", note: "latest, beta, next, dev: canales de pre-release; solo `latest` marca la release estable" }
+
+  changelog:
+    watch: "notas por versión: features, fixes, breaking changes → reclasificar en las categorías de abajo"
+    sources:
+      - { name: release-notes, kind: api, url: "https://api.github.com/repos/anomalyco/opencode/releases", note: "el cuerpo de cada release ES el changelog: no hay página dedicada" }
+      - { name: commits, kind: atom, url: "https://github.com/anomalyco/opencode/commits/dev.atom", note: "rama default: dev; señal temprana cuando la release aún no sale" }
+
+  config:
+    watch: "clave nueva, retirada o renombrada en opencode.json / tui.json / package.json(deps)"
+    sources:
+      - { name: opencode-schema, kind: json, url: "https://opencode.ai/config.json", note: "schema canónico de opencode.json: diff de propiedades = filas nuevas en config.yaml" }
+      - { name: tui-schema, kind: json, url: "https://opencode.ai/tui.json" }
+      - { name: docs-config, kind: markdown, url: "https://opencode.ai/docs/config/" }
+      - { name: src-config, kind: git, url: "https://github.com/anomalyco/opencode/tree/dev/packages/opencode/src/config", note: "repo abierto: el fuente es la verdad final cuando schema y docs discrepan" }
+
+  entities:
+    watch: "propiedad nueva en el frontmatter/plantilla de una entidad, entidad nueva, formato retirado"
+    specs:
+      agent:     { spec: agent.yaml, docs: "https://opencode.ai/docs/agents/" }
+      command:   { spec: command.yaml, docs: "https://opencode.ai/docs/commands/" }
+      skill:     { spec: "../common/skill.yaml", docs: "https://opencode.ai/docs/skills/" }
+      persona:   { spec: persona.yaml, docs: "https://opencode.ai/docs/rules/", note: "~/.config/opencode/AGENTS.md" }
+      workflow:  { spec: workflow.yaml, docs: null, note: "sin página oficial aún (404): detectar por diff del docs-nav, release notes y config-schema" }
+    sources:
+      - { name: src-agent, kind: git, url: "https://github.com/anomalyco/opencode/tree/dev/packages/opencode/src/agent" }
+      - { name: src-command, kind: git, url: "https://github.com/anomalyco/opencode/tree/dev/packages/opencode/src/command" }
+      - { name: src-skill, kind: git, url: "https://github.com/anomalyco/opencode/tree/dev/packages/opencode/src/skill" }
+
+  tools:
+    watch: "herramienta built-in nueva/renombrada/retirada; nombres de permiso por herramienta"
+    sources:
+      - { name: docs-tools, kind: markdown, url: "https://opencode.ai/docs/tools/" }
+      - { name: docs-custom-tools, kind: markdown, url: "https://opencode.ai/docs/custom-tools/" }
+      - { name: src-tool, kind: git, url: "https://github.com/anomalyco/opencode/tree/dev/packages/opencode/src/tool", note: "inventario exacto de tools built-in" }
+      - { name: docs-permissions, kind: markdown, url: "https://opencode.ai/docs/permissions/" }
+
+  extensions:
+    watch: "plugins y MCP: campos nuevos de manifest/config, ciclo de vida nuevo"
+    sources:
+      - { name: docs-plugins, kind: markdown, url: "https://opencode.ai/docs/plugins/" }
+      - { name: docs-mcp, kind: markdown, url: "https://opencode.ai/docs/mcp-servers/" }
+      - { name: docs-lsp, kind: markdown, url: "https://opencode.ai/docs/lsp/" }
+
+  cli:
+    watch: "subcomandos/flags nuevos; comandos interactivos y keybinds (superficie del TUI)"
+    sources:
+      - { name: docs-cli, kind: markdown, url: "https://opencode.ai/docs/cli/" }
+      - { name: docs-tui, kind: markdown, url: "https://opencode.ai/docs/tui/" }
+      - { name: docs-keybinds, kind: markdown, url: "https://opencode.ai/docs/keybinds/" }
+
+  deprecations:
+    watch: "retiradas y breaking changes → `status: deprecated` en la spec afectada (p. ej. una entidad que desaparece)"
+    sources:
+      - { name: release-notes-search, kind: api, url: "https://api.github.com/repos/anomalyco/opencode/releases", note: "grep del cuerpo: deprecat|remove|breaking|rename" }
+      - { name: issues-search, kind: api, url: "https://api.github.com/search/issues?q=repo:anomalyco/opencode+deprecate+OR+removal+in:title", note: "sin auth: respetar rate limit" }
+
+  community:
+    watch: "señal temprana antes de release: decisiones de diseño, deprecaciones anunciadas"
+    sources:
+      - { name: issues, kind: api, url: "https://api.github.com/repos/anomalyco/opencode/issues?state=all&sort=updated" }
+      - { name: discord, kind: html, url: "https://opencode.ai/discord", note: "anuncios de core en #changelog del servidor" }
+
+# Modelo de mantenimiento: el agente diff-ea estas fuentes, y por cada señal abre
+# o actualiza la spec de la categoría afectada. Nada entra en el transpiler con
+# `status: pending`.

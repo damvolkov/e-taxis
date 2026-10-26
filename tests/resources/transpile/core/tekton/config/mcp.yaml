@@ -1,0 +1,34 @@
+# mcp — servidores MCP de casa, agnósticos. Cada backend schema los emite en su sintaxis:
+# opencode → opencode.jsonc · mcp; claudecode → ámbito usuario (`claude mcp add-json --scope user`).
+# command = argv (stdio) · url = remoto streamable-http · backends omitido = ambos coders.
+# {out} = el árbol donde aterriza el render (un fichero de config/mcp/ viaja allí como mcp/<fichero>).
+# smoke = la llamada de herramienta que el eval determinista hace tras el handshake (`op eval run config`).
+servers:
+  context7:
+    command: [npx, -y, "@upstash/context7-mcp"]
+    smoke: { tool: resolve-library-id, arguments: { libraryName: msgspec, query: "msgspec Struct" } }
+  serena:
+    command: [uvx, --from, "git+https://github.com/oraios/serena@v2.1.0", serena, start-mcp-server, --context, claude-code, --agent-interface, tools, --project-from-cwd]   # 2.1 retiró ide-assistant; su interfaz por defecto es un REPL
+    smoke: { tool: initial_instructions }
+  exa:
+    url: "https://mcp.exa.ai/mcp"                                  # el buscador de OpenCode, sin clave; en Claude Code solo respaldo: su WebSearch de cuenta va primero
+    smoke: { tool: web_search_exa, arguments: { query: msgspec, numResults: 1 } }
+  searxng:
+    command: [npx, -y, mcp-searxng]
+    env: { SEARXNG_URL: "http://localhost:45600" }                 # contenedor searxng
+    smoke: { tool: searxng_web_search, arguments: { query: msgspec } }
+  playwright:
+    command: [npx, -y, "@playwright/mcp@0.0.56"]
+    env: { PLAYWRIGHT_MCP_CONFIG: "{out}/mcp/playwright.json" }    # remoteEndpoint → el run-server del contenedor
+    smoke: { tool: browser_navigate, arguments: { url: "http://localhost:45600/" } }
+    note: "el contenedor corre `playwright run-server` 1.58.2 y rechaza (428) otra minor: el cliente se fija a 0.0.56 (playwright 1.58), que solo acepta el endpoint por config"
+  docling:
+    command: [uvx, --from, docling-mcp, docling-mcp-server, --transport, stdio]
+    env: { DOCLING_MCP_CONVERSION_MODE: remote, DOCLING_MCP_SERVICE_URL: "http://localhost:45800" }   # contenedor docling-serve
+    smoke: { tool: convert_document_into_docling_document, arguments: { source: "https://example.com/" } }
+  codebase-memory-mcp:
+    command: [/home/damien/.local/bin/codebase-memory-mcp]        # 0.12.1 (stack.yaml): un daemon por cuenta, todo cliente en la misma build
+    smoke: { tool: list_projects }
+  e-gnosis:
+    url: "http://127.0.0.1:45200/mcp"                              # memoria de largo plazo del stack de Claude: aislada, OpenCode no la ve
+    backends: [claudecode]

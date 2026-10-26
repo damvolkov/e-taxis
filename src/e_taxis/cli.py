@@ -20,6 +20,7 @@ typo fails the gate, never a user.
                    [--accept-licence ID] [--confirm ID] [--json]
     taxis uninstall ID --target T [--cascade] [--yes]
     taxis history  list · undo
+    taxis transpile check --nous PATH [--ref REF | --worktree] [--json]   # schema + spec law; writes nothing
     taxis logo NAMES [--out DIR] [--prefix P] [--background HEX] [--foreground HEX] [--force]
     taxis repo resolve URL REF                     # the commit a branch, tag or sha names
     taxis repo tree    URL REF [PATH]              # every file the remote holds at REF
@@ -38,6 +39,9 @@ from e_taxis.harness.runtime.launcher import Launcher
 GROUPS: tuple[CommandGroup, ...] = (
     CommandGroup(path="history", help="Every run that wrote to the store, and the undo of the last one."),
     CommandGroup(path="repo", help="Deterministic git reads on a remote: resolve, browse, unpack — no checkout."),
+    CommandGroup(
+        path="transpile", help="An e-nous core into each harness, from its specs — and back, to see what moved."
+    ),
 )
 
 CARDS: tuple[CommandCard, ...] = (
@@ -72,6 +76,11 @@ CARDS: tuple[CommandCard, ...] = (
     CommandCard(path="history list", target="e_taxis.harness.commands.history:listing", summary="Every recorded run."),
     CommandCard(
         path="history undo", target="e_taxis.harness.commands.history:undo", summary="Revert the last recorded run."
+    ),
+    CommandCard(
+        path="transpile check",
+        target="e_taxis.transpile.commands.transpile:check",
+        summary="Hold a checkout to its schema and every spec's law.",
     ),
     CommandCard(path="logo", target="e_taxis.ops.logo:logo", summary="Deterministic family wordmarks into assets/."),
     CommandCard(path="repo resolve", target="e_taxis.ops.repo:resolve", summary="The commit a ref names on a remote."),

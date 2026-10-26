@@ -1,0 +1,33 @@
+# converge — instancia estructurada de workflow (fuente universal; el .md plano se genera)
+# Slots y scope de referencia: core/schema.yaml
+# Dos ejecutores, una fuente: `op workflow run converge entity=skill` (determinista, nodo a nodo en vivo) o `/workflow converge`.
+id: converge
+description: >-
+  Evaluate an entity kind, act on the needs its agents own, promote and commit, and evaluate
+  again — at most three passes, until no agent need is open or the open set stops moving.
+  Then judge what is left (real, quality or false-positive finding), propose the acceptances
+  only a human writes, and report; open the PR only when publish is true.
+parameters:
+  entity: "skill | agent | command | workflow | tool | persona | config"
+  ids: "subjects, space-separated; empty = every subject of the kind"
+  publish: "true to push the branch and open its PR at the end; empty stops at the report"
+nodes:                                   # un fichero por nodo en nodes/, nombrado por su id; orden = orden del render
+  - {source: nodes/guard.yaml}
+  - {source: nodes/evaluate.yaml}
+  - {source: nodes/check.yaml}
+  - {source: nodes/enhance.yaml}
+  - {source: nodes/promote.yaml}
+  - {source: nodes/commit.yaml}
+  - {source: nodes/final.yaml}
+  - {source: nodes/open.yaml}
+  - {source: nodes/history.yaml}
+  - {source: nodes/triage.yaml}
+  - {source: nodes/publish.yaml}
+  - {source: nodes/report.yaml}
+loop:                                    # desenrollado en copias <id>_<k>: el grafo nunca tiene ciclo
+  nodes: [evaluate, check, enhance, promote, commit]
+  max: 3
+  until: check                           # exit 0 = sin needs de agente (closed); el mismo conjunto dos veces = stalled
+output:
+  type: report
+  path: session

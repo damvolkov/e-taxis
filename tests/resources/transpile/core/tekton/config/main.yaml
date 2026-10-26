@@ -1,0 +1,15 @@
+# main — identidad de sesión y valores globales (agnóstico; los backend schemas mapean)
+user: damien
+model:
+  default: builder        # tier de casa → resuelto vía models.yaml por backend
+  small: scout
+  alias: { claudecode: "opus[1m]" }   # claude no ve tiers: su elección de sesión (la ventana de 1M)
+instructions:             # inyección continua de memoria/contexto; {out} = el árbol donde aterriza el render
+  - ~/.autolearn/personas/default/memory.context.md
+  - "{out}/skills/tax-py-naming/SKILL.md"               # innegociables precargados: impepinables por
+  - "{out}/skills/conc-py-async/SKILL.md"               # system prompt, no por sugerencia del agente
+  - "{out}/skills/para-py-dispatch/SKILL.md"
+  - { path: "{out}/mcp/codegraph.md", backends: [opencode] }   # parte 2 reabierta: guiado, sube calidad en OpenCode; en Claude solo encarece
+effort: xhigh
+display:
+  tui: fullscreen         # claude settings.tui

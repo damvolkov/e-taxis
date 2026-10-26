@@ -1,0 +1,16 @@
+# algo-py-core — instancia estructurada (fuente universal; la SKILL.md plana se genera)
+# Slots y scope de referencia: core/schema.yaml
+name: algo-py-core
+description: >-
+  Python: base structures and algorithms and their real cost — sorting,
+  binary search, heaps, hashing, dedup, top-k, DP, greedy, backtracking. Use
+  when sorting, searching, grouping or deduplicating.
+metadata:
+  family: design
+instructions: {source: instructions.md}
+references:
+  - references/lib.md
+  - references/structures.md
+  - references/algorithms.md
+  - references/antipatterns.md
+  - references/bibliography.md

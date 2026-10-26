@@ -1,0 +1,60 @@
+# Machine spec — how the structured persona renders to Hermes Agent's identity and context files.
+# Consumed by ops/transpiler/render.py (via ops/transpiler/typeset.py). Data, not code.
+# Slots: core/base + core/nomos (FACETS[nomos]). Árbol: HERMES_HOME (~/.hermes).
+entity: persona
+release: "2026.10.08"                  # v0.21.6
+verified: "2026-10-09"                 # código de v0.21.6 (818c13be) leído y un prompt real capturado este día
+sources:
+  - core/base/persona.yaml
+  - core/nomos/persona.yaml
+  - https://hermes-agent.nousresearch.com/docs/guides/use-soul-with-hermes
+  - https://hermes-agent.nousresearch.com/docs/developer-guide/prompt-assembly
+  - https://raw.githubusercontent.com/NousResearch/hermes-agent/main/agent/system_prompt.py
+  - https://raw.githubusercontent.com/NousResearch/hermes-agent/main/agent/prompt_builder.py
+status: ready
+documents:
+  - target: SOUL.md                    # identidad: ranura 1 del prompt, sustituye entera la de fábrica; quién es, qué es, qué persigue, cómo conoce, siente, recuerda y habla
+    limit: 60000                       # context_file_max_chars de config.yaml (60000): sin ventana conocida Hermes cortaría a 20000
+    audience: all
+    blocks:
+      - { type: h1,    slots: [name] }
+      - { type: para,  slots: [essence] }
+      - { type: quote, slots: [epigraph] }
+      - { type: h2, heading: "Personality",             slots: [temperament, face, critique] }
+      - { type: h2, heading: "About You",               slots: [about] }
+      - { type: h2, heading: "Family",                  slots: [family] }
+      - { type: h2, heading: "Attunement",              slots: [attunement] }
+      - { type: h2, heading: "One mind, two materials", slots: [unity] }
+      - { type: h2, heading: "Outlook",                 slots: [stance] }
+      - { type: h2, heading: "Worldview",               slots: [worldview] }
+      - { type: h2, heading: "Lineage",                 slots: [lineage] }
+      - { type: h2, heading: "Taste",                   slots: [taste] }
+      - { type: h2, heading: "Mission",                 slots: [mission] }
+      - { type: h2, heading: "Nature",                  slots: [nature] }
+      - { type: h2, heading: "Honesty",                 slots: [honesty] }
+      - { type: h2, heading: "Epistemics",              slots: [reasoning, epistemics] }
+      - { type: h2, heading: "Memory",                  slots: [memory] }
+      - { type: h2, heading: "Commitments",             slots: [commitments] }
+      - { type: h2, heading: "Antagonists",             slots: [antagonists] }
+      - { type: h2, heading: "Limits",                  slots: [limits] }
+      - { type: h2, heading: "Voice",                   slots: [voice, discourse], join: "\n" }
+  - target: memories/USER.md           # semilla mínima del perfil de Damien: el agente la hace crecer con sus propias entradas
+    limit: 1375                        # memory.user_char_limit de Hermes
+    audience: all
+    blocks:
+      - { type: para, slots: [profile] }
+    regions:
+      - kind: marker                   # cada entrada que añade el agente va tras un separador '\n§\n': de ahí al final es suyo
+        start: "\n§\n"
+        end: "\\Z"
+        sample: "§\nghost ${nonce}"
+  - target: workspace/AGENTS.md        # instrucciones permanentes de cómo operar: contexto de proyecto del directorio de trabajo (terminal.cwd)
+    limit: 60000
+    audience: all
+    blocks:
+      - { type: h2, heading: "Conduct", slots: [conduct] }
+      - { type: h2, heading: "Lexicon", slots: [lexicon] }
+      - { type: h2, heading: "Craft",   slots: [craft] }
+      - { type: h2, heading: "Method",  slots: [prudence] }
+      - { type: h2, heading: "Modes",   slots: [modes] }
+notes: "Hermes v0.21.6 (agent/system_prompt.py) monta el prompt en tres capas: estable (SOUL.md, guía de herramientas), contexto (system_message, ficheros de contexto del directorio de trabajo — .hermes.md/HERMES.md, AGENTS.md, CLAUDE.md, .cursorrules — y la instantánea del repo), volátil (índice de skills, MEMORY.md, USER.md, bloque del proveedor de memoria, hora y entorno). SOUL.md vive solo en HERMES_HOME y sustituye la identidad de fábrica; Hermes lo siembra si falta y nunca lo sobrescribe; el escáner de prompt-injection avisa pero no bloquea un SOUL propio. Por eso IDENTITY (misión, naturaleza, honestidad, epistemología, memoria, límites) y STYLE (voz) caen en SOUL: Hermes no tiene ficheros separados para ellos. PROFILE es semilla: memories/USER.md lleva solo el perfil mínimo como primera entrada; lo que el agente añada tras '\n§\n' es región suya (nunca deriva, nunca se absorbe), igual que los bloques de aprendizaje del PROFILE de OpenHuman. AGENTS.md es contexto de proyecto: se busca desde el directorio de trabajo; en el gateway (Discord) es terminal.cwd, que config.yaml fija en HERMES_HOME/workspace; ROLE (método y modos) va aquí porque es cómo opera. Tope por fichero de contexto: context_file_max_chars si está fijado, si no 6 % de la ventana del modelo con suelo de 20000 (sin ventana conocida, el de un proveedor propio, se queda en 20000): config.yaml lo fija en 60000. MEMORY.md (2200) no se emite: lo cura el agente desde cero. Personalidades (/personality, display.personality) son superposiciones de sesión: no se usan; la identidad es una sola."
