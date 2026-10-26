@@ -52,3 +52,18 @@ async def test_nous_source_escaping_its_folder_is_refused(nous_root: Path) -> No
     manifest.write_text(manifest.read_text().replace("{source: instructions.md}", "{source: ../../persona.yaml}"))
     with pytest.raises(NousError, match="escapes"):
         await GitNous(nous_root, None).load()
+
+
+async def test_nous_unparsable_yaml_is_a_nous_error(nous_root: Path) -> None:
+    (nous_root / "specs/nomos/hermes.yaml").write_text("a: [\n")
+    with pytest.raises(NousError, match=r"hermes\.yaml"):
+        await GitNous(nous_root, None).load()
+
+
+async def test_nous_source_of_another_kind_is_refused(nous_root: Path) -> None:
+    folder = nous_root / "core/tekton/skills/algo-py-core"
+    (folder / "body.txt").write_text("plain\n")
+    manifest = folder / "skill.yaml"
+    manifest.write_text(manifest.read_text().replace("{source: instructions.md}", "{source: body.txt}"))
+    with pytest.raises(NousError, match="Markdown or YAML"):
+        await GitNous(nous_root, None).load()

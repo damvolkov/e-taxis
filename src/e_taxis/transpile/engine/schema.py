@@ -196,8 +196,8 @@ class Schema:
             case ("word", word):
                 cursor.take()
                 return ScalarSchema(word) if word in SCALARS else RefSchema(word)
-            case (_, found):
-                msg = f"type `{cursor.text}`: unexpected `{found or 'end'}`"
+            case _:
+                msg = f"type `{cursor.text}`: unexpected `{cursor.peek()[1] or 'end'}`"
                 raise SchemaError(msg)
 
     def _parse_fields(self, cursor: CursorSchema, owner: str) -> tuple[FieldSchema, ...]:
@@ -256,8 +256,8 @@ class Schema:
                 return (name, kind)
             case (_, None):
                 return (name, kind | None, None)
-            case (_, default):
-                return (name, kind, default)
+            case _:
+                return (name, kind, item.default)
 
     def _compile_struct(self, node: StructSchema) -> Any:
         match self._built.get(node.name):
@@ -348,8 +348,8 @@ class Schema:
         match cursor.peek():
             case ("end", _):
                 return node
-            case (_, extra):
-                msg = f"type `{text}`: trailing `{extra}`"
+            case _:
+                msg = f"type `{text}`: trailing `{cursor.peek()[1]}`"
                 raise SchemaError(msg)
 
     def declare(self, name: str, node: Node) -> Node:

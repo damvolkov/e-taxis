@@ -4,11 +4,11 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from e_taxis.transpile.engine.model import CoreModel, SpecModel
 from e_taxis.transpile.models.error import SchemaError
 from e_taxis.transpile.models.report import ReportKind
 
 if TYPE_CHECKING:
-    from e_taxis.transpile.engine.model import CoreModel, SpecModel
     from e_taxis.transpile.models.nous import NousTree
 
 
@@ -76,3 +76,9 @@ async def test_model_spec_refuses_an_undeclared_row_field(spec_model: SpecModel,
 
 async def test_model_spec_declares_every_kind_the_report_emits(spec_model: SpecModel) -> None:
     assert {kind.value for kind in ReportKind} <= set(spec_model.kinds)
+
+
+async def test_model_core_refuses_a_module_without_fields_or_shape(nous_tree: NousTree) -> None:
+    raw = {**nous_tree.schema, "config": {**nous_tree.schema["config"], "tekton": {"main": {"doc": "nothing"}}}}
+    with pytest.raises(SchemaError, match="neither"):
+        CoreModel(raw)

@@ -84,18 +84,6 @@ class CoreModel:
         """Entity → the facet that holds its instances."""
         return {name: spec["facet"] for name, spec in self._raw.get("entities", {}).items()}
 
-    def entity_path(self, name: str) -> str:
-        return self._raw["entities"][name]["path"]
-
-    def modules(self, facet: str) -> tuple[str, ...]:
-        return tuple(self._modules[facet])
-
-    def assets(self, facet: str) -> tuple[str, ...]:
-        return tuple(self._raw["config"].get(facet, {}).get(ASSETS, ()))
-
-    def persona_file(self) -> str:
-        return self._raw["persona"]["file"]
-
     def check_persona(self, facet: str, value: Any) -> Any:
         return self._schemas[facet].validate(self._persona[facet], value)
 

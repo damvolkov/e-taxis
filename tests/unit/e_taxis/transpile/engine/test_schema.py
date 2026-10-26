@@ -87,3 +87,34 @@ async def test_schema_leaves_descend_structs_and_star_maps(schema: Schema) -> No
     schema.declare("Server", schema.struct("Server", {"url": "url", "smoke": "{tool: str}"}))
     node = schema.parse("{servers: map<str, Server>, note: str}")
     assert schema.leaves(node) == {("servers", "*", "url"), ("servers", "*", "smoke", "tool"), ("note",)}
+
+
+@pytest.mark.parametrize(
+    "expr",
+    ["str;", ">", "{a: int b: str}", "str >"],
+    ids=["unreadable", "unexpected", "struct-separator", "trailing"],
+)
+async def test_schema_parse_refuses_malformed(schema: Schema, expr: str) -> None:
+    with pytest.raises(SchemaError):
+        schema.parse(expr)
+
+
+async def test_schema_field_enum_form_takes_its_values(schema: Schema) -> None:
+    row = schema.struct("Row", {"status": {"type": "enum", "values": ["ready", "pending"], "default": "ready"}})
+    assert schema.validate(row, {}).status == "ready"
+    with pytest.raises(SchemaError):
+        schema.validate(row, {"status": "gone"})
+
+
+async def test_schema_field_refuses_a_spec_without_type(schema: Schema) -> None:
+    with pytest.raises(SchemaError, match="type string or a mapping"):
+        schema.struct("Row", {"to": 3})
+
+
+async def test_schema_leaves_stop_at_a_recursive_reference(schema: Schema) -> None:
+    schema.declare("Tree", schema.parse("{name: str, child: Tree}"))
+    assert schema.leaves(schema.parse("Tree")) == {("name",), ("child",)}
+
+
+async def test_schema_leaves_of_an_envelope_is_one_leaf(schema: Schema) -> None:
+    assert schema.leaves(schema.parse("{body: {source: path}}")) == {("body",)}
