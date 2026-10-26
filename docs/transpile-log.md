@@ -99,3 +99,41 @@ Run it with `TAXIS_E2E_PATH=<dir of a stable opencode> uv run pytest tests/e2e -
 not the npm/GitHub stable channel the spec watches, which is at 1.19.4). 2.x drops `--pure` and `debug skill`, so the
 spec's trial cannot run there, and the spec's rows were never checked against 2.x: either pin the stable release on
 this machine, or move `specs/tekton/opencode.yaml` (channel, rows, trial) to 2.x.
+
+## 2026-10-26 · T2–T3 — total ownership, the plan, the landing through the journal
+
+**Done.** Each codec now reads live bytes back into the fragments the render compares (`split_*` / `read_*`:
+Markdown blocks, frontmatter keys + title + preload + body, dotted JSON keys and the unowned "strays").
+`engine/plan.py` holds a projection against the live tree, fragment by fragment: `missing`, `drift`, `stale` (an
+unowned key or block, or a file in a governed directory no row renders), `symlink`; the registry entry by entry;
+`land_plan` carries a target's foreign parts (marker regions, foreign keys) over the render. `LandService` plans and
+lands: atomic writes (a link becomes a real file), stale governed files removed, the registry synced through the
+spec's `apply.add`/`apply.remove` with HOME pinned and CLAUDE_CONFIG_DIR unset; every change is a journal effect
+(`taxis history undo`), then the landing is recorded (`transpile:<backend>`: commit, spec, digests) as the base of
+the three-way reverse. `taxis transpile run --target T --nous P [--home H]` plans; `--yes` lands; `--out` still exports.
+The report gained the row and the core paths of every finding, and a count per kind.
+
+**Evidence.** 516 unit tests, coverage 100 %, stable over three runs. e2e (`tests/e2e/test_land.py`, real files and
+Claude's real `claude mcp` in a sandboxed HOME): a landing, then an empty second plan (idempotence), then every effect
+undone newest first → no file of ours left, no registration. Plan (read-only) against the real trees:
+- `~/.claude`: 3 drift (two flow-gen-lifecycle references #84 fixed; settings.json key order only), 1 stale
+  (`hooks/cbm-session-reminder`, retired in #81), 1 missing (`e-gnosis` is no longer in the live registry).
+- `~/.config/opencode`: the same two references, `workflows/reverse-distill.md` (moved schemas), and **6 sections
+  of `AGENTS.md` no row renders** (see Open).
+
+**Decided alone.**
+- Nothing was landed on the real trees: changing the owner's live environment waits for the owner.
+- Live JSON is read with msgspec (key order kept); JSONC only when the file holds comments, and then its strays are
+  sorted — e-serde decodes JSONC in a key order that changes between processes (bug, see Open).
+- An empty or unreadable frontmatter reads as "no keys": every owned key then shows as drift instead of crashing.
+- `timeout`-style and positional-heavy signatures were made keyword-only (lint), no behaviour change.
+
+**Found and fixed in e-nous** (PR #86, merged): `skills/.trash` is Claude Code's own trash — the plan reported its
+9 files stale, and a landing would have pruned them. Declared foreign.
+
+**Open — the owner's decisions.**
+1. `~/.config/opencode/AGENTS.md` holds six `##` sections no row renders (Agent Rules, Tool Usage, Config
+   Management, File Structure, Communication Preferences, Error Handling — the text of `~/AGENTS.md`). v1 kept
+   undeclared headings; under total ownership v2 prunes them on landing. They need a home in the core (a slot, or a
+   foreign heading in the opencode spec) before the first landing.
+2. e-serde 0.5.1, second bug: JSONC decode does not keep key order (a different order per process). Worked around.

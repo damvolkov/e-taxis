@@ -12,6 +12,7 @@ tree: .claude
 govern: [skills, agents, commands, hooks, mcp, rules]
 foreign:
   - {path: skills/synced, why: "autolearn's synced skills: installed by e-taxis, curated by autolearn"}
+  - {path: skills/.trash, why: "Claude Code's own trash of removed skills: the harness's, never pruned"}
 
 upstream:
   version: 2.1.308                                              # npm @latest — read 2026-10-22

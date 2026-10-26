@@ -5,6 +5,7 @@ its parts. A block's parts are its non-empty values, stripped of surrounding new
 glue; a block with nothing in it is skipped. Blocks are joined by one blank line, with no trailing newline. A
 document above the target's `limit` is refused whole: the harness would truncate it, so it never ships."""
 
+import re
 from itertools import groupby
 from typing import TYPE_CHECKING, Any
 
@@ -48,3 +49,30 @@ def encode_markdown(path: str, target: Mapping[str, Any], placements: Sequence[P
             raise RenderError(msg)
         case _:
             return text.encode()
+
+
+def split_markdown(placements: Sequence[Placement]) -> dict[str, str]:
+    """The rendered blocks by fragment — exactly the text each one encodes to."""
+    return {
+        fragment: block_markdown(fragment, parts, members[0].glue)
+        for fragment, group in groupby(placements, key=lambda placement: placement.fragment)
+        for members in (list(group),)
+        if (parts := [text for member in members if (text := str(member.value).strip("\n"))])
+    }
+
+
+def read_markdown(text: str) -> dict[str, str]:
+    """A live document's blocks by fragment: its preamble (`h1`, `quote`, `para`), then every `## heading` section."""
+    preamble, *sections = re.split(r"(?m)^(?=## )", text)
+    chunks = [chunk for chunk in preamble.strip("\n").split(SEPARATOR) if chunk.strip()]
+    found = {
+        "h1": "\n\n".join(chunk for chunk in chunks[:1] if chunk.startswith("# ")),
+        "quote": SEPARATOR.join(chunk for chunk in chunks if chunk.startswith("> ")),
+        "para": SEPARATOR.join(
+            chunk
+            for index, chunk in enumerate(chunks)
+            if not chunk.startswith("> ") and not (index == 0 and chunk.startswith("# "))
+        ),
+    }
+    heads = {section.split("\n", 1)[0][3:].strip(): section.rstrip("\n") for section in sections}
+    return {**{key: value for key, value in found.items() if value}, **heads}
