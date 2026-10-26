@@ -214,3 +214,27 @@ skips the brain.
 and the MCP recipes write keys and registrations the claudecode spec now owns, and `doctor` cannot see it, because
 ownership now lives in the spec. Next step proposed: `doctor --nous PATH` holds each recipe's `owns` against the
 spec's non-foreign fragments.
+
+## 2026-10-26 · First live landing — the four harnesses on transpile v2
+
+**Done.** e-nous `743a071`, e-taxis `f12c0b2`, `taxis transpile run --yes` under `/home/damien`, one backend at a
+time; backup first (`~/.local/state/e-taxis/backup-2026-10-26/`: claude, opencode, hermes, openhuman tarballs).
+
+| backend | plan before | landed | replan | reverse |
+|---|---|---|---|---|
+| opencode | 3 drift · 6 stale | 9 changes | nothing | nothing |
+| hermes | 21 drift · 4 missing | first landing over a stock install | nothing | nothing |
+| openhuman | 1 drift (`cloud_providers`: full label) | 1 | nothing | nothing |
+| claudecode | 3 drift · 1 missing (`mcp-user#e-gnosis`) · 1 stale (`hooks/cbm-session-reminder`) | 5 | nothing | nothing |
+
+**Evidence.** `opencode debug config` reads the landed config; `hermes config show` reads `~/.hermes`; the OpenHuman
+`config.toml` parses; `claude mcp list` shows `e-gnosis` connected. Every landing is a `transpile run` entry in
+`taxis history` — `undo` reverts the last one.
+
+**Decided alone.** The six `AGENTS.md` sections in `~/.config/opencode` that no row renders (open point 1 of T5) were
+pruned: total ownership is the owner's default; the backup and undo hold them.
+
+**Lost.** Removing the T6 worktree deleted its gitignored `backup/e-nous/golden/hermes/.env` (a v1 render, never
+committed); the acceptance test derives the `.env` from the core, so nothing depends on it.
+
+**Open.** OpenHuman reads `config.toml` at start: the running container still holds the old label until restarted.
