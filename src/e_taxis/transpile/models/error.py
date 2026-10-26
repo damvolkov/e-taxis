@@ -28,3 +28,9 @@ class CheckError(TranspileError):
     """`transpile check` found blocking findings: the report is printed, then this carries the count."""
 
     exit_code: ClassVar[int] = 20
+
+
+class RenderError(TranspileError):
+    """A render that cannot hold: a missing required value, a lookup with no entry, a graph that does not close."""
+
+    exit_code: ClassVar[int] = 21

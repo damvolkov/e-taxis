@@ -141,7 +141,7 @@ include = ["src/", "tests/", "README.md"]
 ##### LINT #####
 [tool.ruff]
 line-length = 120
-extend-exclude = ["backup"]
+extend-exclude = ["backup", "tests/resources"]
 force-exclude = true
 target-version = "py314"
 src = ["src", "tests"]

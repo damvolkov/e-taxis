@@ -76,7 +76,17 @@ depends_on = []
 [[modules]]
 path = "e_taxis.transpile.engine"
 layer = "processors"
+depends_on = ["e_taxis.transpile.codecs"]
+
+[[modules]]
+path = "e_taxis.transpile.codecs"
+layer = "processors"
 depends_on = []
+
+[[modules]]
+path = "e_taxis.transpile.transforms"
+layer = "processors"
+depends_on = ["e_taxis.transpile.engine"]
 
 [[modules]]
 path = "e_taxis.transpile.adapters"

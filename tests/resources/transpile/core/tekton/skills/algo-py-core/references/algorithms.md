@@ -17,8 +17,6 @@ One card per algorithm. Pure-Python reference is ≤25 lines and iterative when 
 - Complexity: O(log n).
 ```python
 from bisect import bisect_left
-
-
 def first_ge(a: list[int], target: int) -> int:
     """Index of the first element ≥ target, len(a) if none."""
     return bisect_left(a, target)
@@ -32,8 +30,6 @@ def first_ge(a: list[int], target: int) -> int:
 - Complexity: O(n log k); memory O(k).
 ```python
 from heapq import nlargest
-
-
 def top_k(items: list[T], k: int, key) -> list[T]:
     """The k items with the highest key, largest first."""
     return nlargest(k, items, key=key)
@@ -62,8 +58,7 @@ def top_k(items: list[T], k: int, key) -> list[T]:
 - Complexity: O(n) build, O(1) per query.
 ```python
 from itertools import accumulate
-
-pre = [0, *accumulate(values)]  # pre[j] - pre[i] == sum(values[i:j])
+pre = [0, *accumulate(values)]      # pre[j] - pre[i] == sum(values[i:j])
 ```
 - Delegate to: `itertools.accumulate`; `numpy.cumsum` for mass; a Fenwick tree only if values mutate.
 - Traps: re-summing each query (O(nq)); off-by-one on the half-open range; using it when the array mutates often.
@@ -81,8 +76,6 @@ pre = [0, *accumulate(values)]  # pre[j] - pre[i] == sum(values[i:j])
 - Progression: memoize the recurrence (`functools.cache`) → tabulate bottom-up → reduce space to the rolling rows actually read.
 ```python
 from functools import cache
-
-
 @cache
 def ways(n: int) -> int:
     """Number of ways to climb n steps taking 1 or 2 — bounded key space."""

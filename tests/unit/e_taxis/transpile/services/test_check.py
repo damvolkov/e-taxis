@@ -48,6 +48,7 @@ MUTATIONS: list[tuple[str, Callable[[Any], None], ReportKind, str]] = [
     ("core/tekton/config/main.yaml", lambda m: m.update({"colour": "red"}), ReportKind.INVALID, "config/tekton/main"),
     (CC, lambda s: s["map"]["skill"].update({"rows": []}), ReportKind.INVALID, "skill"),
     (OC, lambda s: s.update({"harness": "ghost"}), ReportKind.UNDECLARED, "ghost"),
+    (CC, lambda s: s["map"]["config"]["rows"][1].pop("from"), ReportKind.INVALID, "#model"),
 ]
 
 
@@ -76,6 +77,7 @@ async def test_check_fixture_holds(nous_root: Path) -> None:
         "core-key",
         "ready-empty",
         "harness",
+        "no-source",
     ],
 )
 async def test_check_mutation_is_caught_as_its_kind(

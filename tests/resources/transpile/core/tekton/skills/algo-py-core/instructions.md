@@ -16,11 +16,10 @@ The base layer: pick the right builtin structure and the right paradigm, and kno
 from collections import Counter
 from heapq import nlargest
 
-
 def top_senders(events: list[Event], k: int = 10) -> list[tuple[str, int]]:
     """The k most frequent senders — one pass to count, a heap for the top-k."""
-    counts = Counter(e.sender for e in events)  # O(n), hashing
-    return nlargest(k, counts.items(), key=lambda kv: kv[1])  # O(n log k), not a full sort
+    counts = Counter(e.sender for e in events)          # O(n), hashing
+    return nlargest(k, counts.items(), key=lambda kv: kv[1])   # O(n log k), not a full sort
 ```
 
 `Counter` counts in one pass; `nlargest` keeps only a k-heap. A `sorted(...)[:k]` here would be O(n log n) and materialize the whole order. Every name is fixed by `references/lib.md`.

@@ -23,10 +23,12 @@ GitNous (core + specs at one ref) ─▶ CoreModel · SpecModel (compiled) ─�
 
 | Module | Layer | Holds |
 |---|---|---|
-| `transpile/models` | models | `NousTree` (one raw read), `Report` (findings + stamp), errors, `NousPort` |
-| `transpile/engine` | processors | `Schema` (grammar → types, leaves), `CoreModel`, `SpecModel`, `SpecLaw` — pure |
+| `transpile/models` | models | `NousTree` (one raw read), `Placement` (a value at a fragment, with its row and core paths), `Projection`, `Report`, errors, `NousPort` |
+| `transpile/engine` | processors | `Schema` (grammar → types, leaves), `CoreModel`, `SpecModel`, `SpecLaw`, `SpecRender` (rows → placements), `COMBINATORS`, `encode_projection` — pure |
+| `transpile/codecs` | processors | one encoder per target format |
+| `transpile/transforms` | processors | each backend's named transforms, one table per spec |
 | `transpile/adapters` | adapters | `GitNous`: `git archive` of `core/` + `specs/`, or the worktree; `{source}` envelopes resolved, confined |
-| `transpile/services` | services | `CheckService` |
+| `transpile/services` | services | `CheckService`, `RunService` |
 | `transpile/commands` | cli | `taxis transpile …` |
 
 ## 3. Commands
