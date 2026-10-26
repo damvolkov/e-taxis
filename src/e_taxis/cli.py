@@ -89,6 +89,11 @@ CARDS: tuple[CommandCard, ...] = (
         summary="Project a core for one backend; --out for a pure export.",
     ),
     CommandCard(
+        path="transpile reverse",
+        target="e_taxis.transpile.commands.transpile:reverse",
+        summary="Read the live tree back: who moved each fragment since the last landing.",
+    ),
+    CommandCard(
         path="transpile trial",
         target="e_taxis.transpile.commands.transpile:trial",
         summary="Raise the real harness fenced on the render; check what it loaded.",

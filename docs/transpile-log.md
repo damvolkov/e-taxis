@@ -137,3 +137,25 @@ undone newest first → no file of ours left, no registration. Plan (read-only) 
    undeclared headings; under total ownership v2 prunes them on landing. They need a home in the core (a slot, or a
    foreign heading in the opencode spec) before the first landing.
 2. e-serde 0.5.1, second bug: JSONC decode does not keep key order (a different order per process). Worked around.
+
+## 2026-10-26 · T4 — `transpile reverse`, three points per fragment
+
+**Done.** A landing now records a digest per rendered fragment (`fragments` in `transpile:<backend>`).
+`engine/reverse.py` reads each target back against the render and that base: live = render → settled; live = base →
+the core moved (`transpile run --yes` lands it); render = base → **the harness moved** (`harness` kind), with why it can
+or cannot fold back — absorbable into its core path when one invertible row owns the fragment on a target that
+`absorb`s; held when one block carries several slots, when the row transforms its value, or when the target does not
+absorb; "added by the harness" when no row renders it; all three apart → both moved. No landing recorded → plain drift.
+`taxis transpile reverse --target T --nous P [--home H]` reports; it writes nothing, the core included.
+
+**Evidence.** 524 unit tests, coverage 100 %: a fresh landing reads settled; seeded edits are each told apart (a
+single-slot section → absorbable into `honesty`; the two-slot `Voice` block → held; a new `## Mine` → added by the
+harness; `settings.json#effortLevel` → the target does not absorb; a core-only edit → the core moved; core and harness
+on one block → both moved; no base → drift; a deleted file → missing). Against the real trees (never landed by v2):
+every difference reads as drift without a base, as it should.
+
+**Decided alone.**
+- Report only, as agreed: writing absorbed values back into `core/` is the next step and needs the owner's go.
+- A harness edit inside a multi-slot block is held, not split: splitting by spans (v1's `Typeset.split`) is the
+  part of `--write` that decides which slot owns an edit, and it belongs with it.
+- No e2e for reverse: a real harness cannot be made to edit its files offline; the deterministic seeds above stand in.

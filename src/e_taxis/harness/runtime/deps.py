@@ -62,6 +62,7 @@ from e_taxis.transpile.adapters.fence import LandrunFence
 from e_taxis.transpile.models.ports import CapturePort
 from e_taxis.transpile.services.check import CheckService
 from e_taxis.transpile.services.land import LandService
+from e_taxis.transpile.services.reverse import ReverseService
 from e_taxis.transpile.services.run import RunService
 from e_taxis.transpile.services.trial import TrialService
 
@@ -200,6 +201,9 @@ class Deps:
         journal = await self.resolve(StoreJournal)
         return LandService(await self.resolve(RunService), await self.resolve(RunnerPort), journal, journal)
 
+    async def _resolve_reverse(self) -> ReverseService:
+        return ReverseService(await self.resolve(RunService), await self.resolve(StorePort))
+
     async def _resolve_capture(self) -> HttpCapture:
         return HttpCapture()
 
@@ -234,6 +238,7 @@ class Deps:
             RunService: _resolve_run,
             TrialService: _resolve_trial,
             LandService: _resolve_land,
+            ReverseService: _resolve_reverse,
             CapturePort: _resolve_capture,
             DoctorService: _resolve_doctor,
             RunnerPort: _resolve_runner,
