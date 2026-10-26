@@ -1,0 +1,41 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="the triumvirate: mind, archetypes, order">
+  <rect width="1024" height="1024" fill="#060c15"/>
+  <!-- the union: one triangle, three houses -->
+  <g stroke="#166b7e" stroke-width="26" fill="none">
+    <path d="M512 205 L185 775 L839 775 Z"/>
+  </g>
+  <!-- vertex medallions -->
+  <g fill="#060c15" stroke="#166b7e" stroke-width="26">
+    <circle cx="512" cy="205" r="132"/>
+    <circle cx="185" cy="775" r="132"/>
+    <circle cx="839" cy="775" r="132"/>
+  </g>
+  <!-- e-nous: the mind — a brain: two hemispheres, one fissure between them -->
+  <g fill="#166b7e">
+    <path d="M506 146 C488 138 468 146 464 162 C446 164 436 182 444 196 C434 208 438 228 452 234 C452 250 468 258 482 252 C490 258 500 258 506 252 Z"/>
+    <path d="M518 146 C536 138 556 146 560 162 C578 164 588 182 580 196 C590 208 586 228 572 234 C572 250 556 258 542 252 C534 258 524 258 518 252 Z"/>
+  </g>
+  <g stroke="#060c15" stroke-width="9" fill="none" stroke-linecap="round">
+    <path d="M472 176 q12 8 2 20"/>
+    <path d="M464 210 q12 8 4 18"/>
+    <path d="M552 176 q-12 8 -2 20"/>
+    <path d="M560 210 q-12 8 -4 18"/>
+  </g>
+  <!-- e-arkhetypo: the archetypes — a column, the ideal form -->
+  <g fill="#166b7e">
+    <path d="M185 703 L247 739 L123 739 Z"/>
+    <rect x="123" y="745" width="124" height="13"/>
+    <rect x="139" y="764" width="17" height="62"/>
+    <rect x="176" y="764" width="17" height="62"/>
+    <rect x="213" y="764" width="17" height="62"/>
+    <rect x="123" y="832" width="124" height="13"/>
+    <rect x="113" y="851" width="144" height="11"/>
+  </g>
+  <!-- e-taxis: the order — a bridge, one bank to the other -->
+  <g fill="#166b7e">
+    <rect x="769" y="741" width="140" height="15"/>
+    <rect x="775" y="756" width="15" height="72"/>
+    <rect x="888" y="756" width="15" height="72"/>
+  </g>
+  <path d="M783 824 Q839 742 895 824" stroke="#166b7e" stroke-width="15" fill="none"/>
+</svg>
