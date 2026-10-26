@@ -75,18 +75,6 @@ class UninstallError(CliError):
     exit_code: ClassVar[int] = 11
 
 
-class CoreError(CliError):
-    """The core cannot be read: no checkout, a ref git cannot archive, a manifest that fails its contract."""
-
-    exit_code: ClassVar[int] = 13
-
-
-class BrainError(CliError):
-    """The brain cannot be installed: no projection for the target, or a write failed — undo reaches what landed."""
-
-    exit_code: ClassVar[int] = 14
-
-
 class LogoWriteError(CliError):
     """A wordmark was refused: no name given, a name or color the font will not take, or an existing asset without --force."""
 

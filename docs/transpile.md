@@ -54,5 +54,5 @@ every spec's model version.
 | T2–T3 ✅ | total ownership, fragment plan, report, apply through the journal | e2e: idempotent, exact undo, no leak |
 | T4 ✅ | reverse: three-way per fragment | e2e: seeded harness edits found on their row |
 | T5 ✅ | hermes, openhuman: bindings, links, foreign tables and items | golden + nomos ghosts |
-| T6 | `taxis brain` and its adapter retired; `install` on transpile | install suite green |
+| T6 ✅ | `taxis brain` and its adapter retired; `install` on transpile | install suite green |
 | E1–E3 | evaluators: law + MCP → security → routing and effect | e2e in the sandbox |

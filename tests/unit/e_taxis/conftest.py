@@ -3,8 +3,6 @@
 Safety first: every test runs with HOME and CLAUDE_CONFIG_DIR inside its own temp dir, and every `taxis` run
 gets a runner and a downloader that touch nothing — the real ones are tested on their own, on harmless input."""
 
-import shutil
-import subprocess
 from types import MappingProxyType
 from typing import TYPE_CHECKING, ClassVar
 
@@ -202,22 +200,3 @@ def world_root(resources: Resources) -> Path:
 def dangling_root(resources: Resources) -> Path:
     """A catalog whose one entry requires an id no entry provides."""
     return resources.path / "dangling"
-
-
-@pytest.fixture
-def core_root(resources: Resources) -> Path:
-    """A fake e-nous checkout with a core: persona layers, one skill, agent and command, the config modules."""
-    return resources.path / "core"
-
-
-@pytest.fixture
-def core_repo(core_root: Path, tmp_path: Path) -> Path:
-    """The fake checkout as a git repository with the core committed at HEAD."""
-    repo = tmp_path / "nous"
-    shutil.copytree(core_root, repo)
-    git = (shutil.which("git") or "git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t")
-    ### fixed argv over the test's own temp tree: nothing here is input.
-    subprocess.run((*git[:3], "init", "-q"), check=True)  # noqa: S603
-    subprocess.run((*git, "add", "-A"), check=True)  # noqa: S603
-    subprocess.run((*git, "-c", "commit.gpgsign=false", "commit", "-qm", "core"), check=True)  # noqa: S603
-    return repo

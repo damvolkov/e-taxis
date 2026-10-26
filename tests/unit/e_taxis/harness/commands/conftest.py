@@ -1,6 +1,7 @@
 """tests/unit/e_taxis/commands: P1 commands never write, so a test files journal runs straight into the run's store."""
 
 import asyncio
+import shutil
 from typing import TYPE_CHECKING
 
 import pytest
@@ -11,6 +12,8 @@ from e_taxis.harness.runtime.journal import StoreJournal
 if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
+
+    from pytest_resources import Resources
 
     from e_taxis.harness.models.ports import UndoPort
 
@@ -45,3 +48,11 @@ def on_world(monkeypatch: pytest.MonkeyPatch, world_root: Path) -> Path:
     """Point every `taxis` run of the test at the writing fixture catalog."""
     monkeypatch.setenv("TAXIS_CATALOG", str(world_root))
     return world_root
+
+
+@pytest.fixture
+def brain_root(resources: Resources, tmp_path: Path) -> Path:
+    """The transpile fixture checkout (schemas, specs, a slice of core), copied per test: the brain half of install."""
+    root = tmp_path / "brain"
+    shutil.copytree(resources.path / "transpile", root)
+    return root

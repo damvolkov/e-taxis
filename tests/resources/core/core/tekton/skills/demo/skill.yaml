@@ -1,8 +1,0 @@
-name: demo
-description: >-
-  Demo: a skill for tests. Use when testing.
-metadata:
-  family: test
-instructions: {source: instructions.md}
-references:
-  - references/a.md

@@ -10,20 +10,19 @@ standalone, for anyone with Claude Code (`uvx e-taxis …`), from its own catalo
 
 ## 1. Boundary
 
-e-nous owns the **content**: `core/base`, `core/<facet>`. e-taxis owns everything **operational**: the content
-contract (`models/core.py` — every entity, its slots, where it lives), each harness's projection of it, the
-catalog, and the install. The e-nous transpiler migrates here harness by harness; a projection lands only when
-it renders byte for byte what the transpiler wrote (Claude Code: 202 files identical, settings and MCP equal,
-2026-10-15).
+e-nous owns the **content** and its contracts as data: `core/`, `core/schema.yaml`, `specs/`. e-taxis owns
+everything **operational**: the transpiler that reads them (`transpile/`, docs/transpile.md — no hand-written
+content model), the catalog, and the install.
 
-| | brain (`taxis brain`) | world (`taxis apply`) |
+| | brain (`taxis transpile run`) | world (`taxis apply`) |
 |---|---|---|
 | writes | what the harness **reads** | what the brain **needs to exist** |
 | order | first | second; `taxis install` runs both as one undoable run |
-| config keys | the keys its projection owns | only the keys **its** recipes declare (`owns`); never one the brain owns |
+| config keys | every key its spec does not declare foreign | only the keys **its** recipes declare (`owns`); never one the brain owns |
 
 Every key of every harness config file has exactly one owner. A recipe that merges into `settings.json` lists the keys
-it owns; a key the transpiler also claims is a catalog error, caught by `taxis doctor`.
+it owns; a key the transpiler also claims is a catalog error. `taxis doctor` does not check it yet: the spec, not a
+projection, now says what the brain owns (docs/transpile-log.md, T6).
 
 ## 2. Two inputs, one join
 
@@ -82,19 +81,10 @@ harness is new adapters and catalog rows; the core does not change.
 
 ## 6. The brain
 
-| core entity | where it lives in the core | Claude Code |
-|---|---|---|
-| persona | `core/base/persona.yaml` + `core/tekton/persona.yaml` (a slot lives in one layer) | `CLAUDE.md`, fixed blocks |
-| skill | `core/tekton/skills/<id>/skill.yaml` + body + `references/` | `skills/<id>/SKILL.md` + references |
-| agent | `core/tekton/agents/<id>/agent.yaml` + prompt | `agents/<id>.md`; denied tools → `disallowedTools` |
-| command | `core/tekton/commands/<id>/command.yaml` + template | `commands/<id>.md`; named arguments |
-| main · permissions · hooks | `core/tekton/config/*.yaml` | `settings.json` owned keys; `rules/instructions.md`; `hooks/*` |
-| mcp | `core/tekton/config/mcp.yaml` + `mcp/*` | user-scope registrations; `mcp/*` |
-
-The plan is three-way — render, live tree, the digests of the last install (`brain:<target>` in the store) — so an
-edit by hand is an `overwrite`, shown before it happens. Nothing is deleted: a governed folder's leftovers are
-`orphan`s. Every file, key and registration is a journal effect: undo restores bytes, prior key values, prior
-registrations, and the directories a run created.
+The transpiler: `docs/transpile.md`. Every row of a spec places core values at a target fragment; the plan holds
+render, live tree and the digests of the last landing (`transpile:<backend>` in the store); every file, removal,
+link and registration is a journal effect, so undo restores bytes, links, prior registrations, and the directories
+a run created.
 
 ## 7. Phases
 
@@ -107,7 +97,7 @@ registrations, and the directories a run created.
 | P5 | OpenCode and OpenHuman adapters | — |
 | P6 | the stack review workflow: scheduled, deterministic, reports + PR | — |
 
-Status (2026-10-15): P1, P2 and the Claude Code brain shipped. P2 writes the user and machine scopes; `env` is the `settings`
+Status (2026-10-26): P1, P2 and the transpiler shipped. P2 writes the user and machine scopes; `env` is the `settings`
 primitive's env merge under its own name; `compose` answers `NotSupportedYet` and the plan reports it, and
 every project-scope entry, as `deferred`. World effects (files placed, JSON keys with prior values, marked
 blocks, CLI registrations with their inverse) live in the journal entry, so `taxis history undo` reverts an

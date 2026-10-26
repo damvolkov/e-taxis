@@ -125,11 +125,6 @@ class SettingsPrimitive:
 
     ##### PUBLIC #####
 
-    async def read(self, file: Path) -> Document:
-        """The document as it stands; an empty one where the file is missing."""
-        doc, _ = await self._common_load(file)
-        return doc
-
     async def merge(self, file: Path, pairs: tuple[tuple[KeyPath, Any], ...]) -> tuple[JournalKey, ...]:
         """Each key set to its value, the file rewritten once and only if one moved; the effects that reverse it."""
         doc, missing = await self._common_load(file)

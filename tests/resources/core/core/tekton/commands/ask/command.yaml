@@ -1,6 +1,0 @@
-id: ask
-description: Ask about a topic.
-inputs:
-  topic: what to ask about
-  depth: how deep
-template: {source: template.md}
