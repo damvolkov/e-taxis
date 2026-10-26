@@ -28,6 +28,7 @@ class ReportKind(StrEnum):
     DRIFT = "drift"
     STALE = "stale"
     SYMLINK = "symlink"
+    HARNESS = "harness"
 
     @property
     def blocking(self) -> bool:

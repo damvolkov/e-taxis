@@ -76,16 +76,33 @@ def land_plan(
             return rendered
 
 
+def rendered_plan(fmt: str, placements: Sequence[Placement]) -> dict[str, Any]:
+    """The rendered fragments of one target, as `fragments_plan` compares them."""
+    match fmt:
+        case "md":
+            return split_markdown(placements)
+        case "md+fm":
+            return split_matter(placements)
+        case "json":
+            return split_structured(placements)
+        case _:
+            return {
+                "": b"".join(
+                    bytes(p.value) if isinstance(p.value, bytes) else str(p.value).encode() for p in placements
+                )
+            }
+
+
 def fragments_plan(
     fmt: str, placements: Sequence[Placement], data: bytes, foreign: Sequence[Mapping[str, Any]]
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Rendered and live fragments of one target, side by side; a format with no fragments compares whole."""
     match fmt:
         case "md":
-            return split_markdown(placements), read_markdown(owned_plan(data.decode(), foreign))
+            return rendered_plan(fmt, placements), read_markdown(owned_plan(data.decode(), foreign))
         case "md+fm":
             wanted = [placement.fragment for placement in placements]
-            return split_matter(placements), read_matter(data.decode(), wanted)
+            return rendered_plan(fmt, placements), read_matter(data.decode(), wanted)
         case "json":
             tree = read_json(data)
             owned = [placement.fragment for placement in placements]
@@ -95,13 +112,9 @@ def fragments_plan(
                 if not any(entry["kind"] == "key" and fnmatch(stray, entry["at"]) for entry in foreign)
             )
             live = {fragment: value for fragment in owned if (value := get_structured(tree, fragment)) is not MISSING}
-            return split_structured(placements), {**live, **{stray: get_structured(tree, stray) for stray in strays}}
+            return rendered_plan(fmt, placements), {**live, **{stray: get_structured(tree, stray) for stray in strays}}
         case _:
-            return {
-                "": b"".join(
-                    bytes(p.value) if isinstance(p.value, bytes) else str(p.value).encode() for p in placements
-                )
-            }, {"": data}
+            return rendered_plan(fmt, placements), {"": data}
 
 
 def target_plan(

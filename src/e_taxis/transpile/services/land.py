@@ -20,7 +20,8 @@ from e_taxis.adapters.disk import missing_dirs, read_file, remove_file, write_fi
 from e_taxis.harness.models.journal import JournalCommand, JournalFile
 from e_taxis.transpile.engine.encode import match_target
 from e_taxis.transpile.engine.model import SpecModel
-from e_taxis.transpile.engine.plan import governed_plan, land_plan, registry_plan, target_plan
+from e_taxis.transpile.engine.plan import governed_plan, land_plan, registry_plan, rendered_plan, target_plan
+from e_taxis.transpile.engine.reverse import digest_reverse
 from e_taxis.transpile.models.report import Report, ReportFinding, ReportKind
 from e_taxis.transpile.services.check import CheckService
 from e_taxis.transpile.services.run import RunService
@@ -229,6 +230,13 @@ class LandService:
             "commit": tree.commit,
             "spec": str(spec.get("spec", "")),
             "files": {path: hashlib.sha256(data).hexdigest() for path, data in landed.items()},
+            "fragments": {
+                f"{path}#{fragment}" if fragment else path: digest_reverse(value)
+                for path in landed
+                for fragment, value in rendered_plan(
+                    match_target(path, spec["targets"]).get("format", "file"), projection.placements[path]
+                ).items()
+            },
             "registry": {
                 f"{name}#{entry}": hashlib.sha256(msgspec.json.encode(value)).hexdigest()
                 for name, entries in projection.registry.items()

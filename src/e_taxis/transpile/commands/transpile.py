@@ -22,6 +22,7 @@ from e_taxis.transpile.models.ports import CapturePort
 from e_taxis.transpile.models.report import Report
 from e_taxis.transpile.services.check import CheckService
 from e_taxis.transpile.services.land import LandService
+from e_taxis.transpile.services.reverse import ReverseService
 from e_taxis.transpile.services.run import RunService
 from e_taxis.transpile.services.trial import TrialService
 
@@ -190,3 +191,33 @@ async def trial(
         case _:
             msg = f"{report.backend}: the phantom did not show everything the core renders"
             raise TrialError(msg)
+
+
+async def reverse(
+    *,
+    target: str,
+    nous: Path,
+    home: Path | None = None,
+    ref: str = "HEAD",
+    worktree: bool = False,
+    json: bool = False,
+    reader: Inject[ReverseService],
+    console: Inject[Console],
+) -> None:
+    """Read the live tree back toward the core: who moved each fragment since the last landing. Writes nothing.
+
+    Args:
+        target: the backend, by its spec's name.
+        nous: the e-nous checkout.
+        home: the HOME whose tree is read (default: yours).
+        ref: the git ref core and specs are read at, together.
+        worktree: read the checkout as it stands, uncommitted changes included.
+        json: the report as JSON.
+    """
+    where = Path(await anyio.Path(home or Path.home()).resolve())
+    report = await reader.run(GitNous(nous, None if worktree else ref), target, where)
+    match json:
+        case True:
+            console.out(msgspec.json.encode(report).decode(), highlight=False)
+        case _:
+            render_report(report, console)

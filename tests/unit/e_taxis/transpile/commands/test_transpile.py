@@ -130,3 +130,30 @@ def test_transpile_trial_reports_and_fails_when_not_held(
     code, out, _ = taxis("transpile", "trial", "--target", "claudecode", "--nous", str(nous_root), "--worktree")
     assert code == 0
     assert "· held" in out
+
+
+def test_transpile_reverse_reports_after_a_landing(taxis, nous_root: Path, tmp_path: Path) -> None:
+    home = tmp_path / "live"
+    taxis(
+        "transpile", "run", "--target", "opencode", "--nous", str(nous_root), "--worktree", "--home", str(home), "--yes"
+    )
+    agents = home / ".config/opencode/AGENTS.md"
+    agents.write_text(agents.read_text() + "\n\n## Mine\n\nmine")
+    code, out, _ = taxis(
+        "transpile", "reverse", "--target", "opencode", "--nous", str(nous_root), "--worktree", "--home", str(home)
+    )
+    assert code == 0
+    assert "1 harness" in out
+    code, out, _ = taxis(
+        "transpile",
+        "reverse",
+        "--target",
+        "opencode",
+        "--nous",
+        str(nous_root),
+        "--worktree",
+        "--home",
+        str(home),
+        "--json",
+    )
+    assert [finding["path"] for finding in msgspec.json.decode(out)["findings"]] == ["AGENTS.md#Mine"]
