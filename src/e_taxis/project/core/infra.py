@@ -113,12 +113,14 @@ def _trigger(specs: list[tuple[str, Feature]]) -> str:
 
 
 def _target(path: str) -> str:
-    """Where a library file lands: renovate stays in .github, the agent contract sits at the root, tools keep their folder."""
+    """Where a library file lands: renovate stays in .github, the agent contract sits at the root, CI-only tooling under .github/tools."""
     match path:
         case "renovate.json" | "renovate.repo.json":
             return ".github/renovate.json"
         case "qwen.md" | "qwen.repo.md":
             return "QWEN.md"
+        case _ if path.startswith("tools/"):
+            return f".github/{path}"
         case _:
             return path
 
