@@ -177,7 +177,8 @@ class DistillInventory:
 
     async def _common_defines(self, name: str) -> set[str]:
         """The files of system core that define `name` in the published tree (none: git grep exits 1)."""
-        pattern = rf"^(async\s+def|def|class)\s+{name}\b"
+        ### POSIX classes, not `\s`/`\b`: git grep -E runs the platform's regex, and BSD's (macOS) knows neither.
+        pattern = rf"^(async[[:space:]]+def|def|class)[[:space:]]+{name}([^[:alnum:]_]|$)"
         try:
             said = await self._common_git(
                 self._blueprint, "grep", "-l", "-E", pattern, self._ref, "--", "projects/python/core/src"
