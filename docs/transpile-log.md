@@ -159,3 +159,33 @@ every difference reads as drift without a base, as it should.
 - A harness edit inside a multi-slot block is held, not split: splitting by spans (v1's `Typeset.split`) is the
   part of `--write` that decides which slot owns an edit, and it belongs with it.
 - No e2e for reverse: a real harness cannot be made to edit its files offline; the deterministic seeds above stand in.
+
+## 2026-10-26 · T5 — the nomos backends: Hermes, OpenHuman
+
+**Done.** `transforms/hermes.py` (6) and `transforms/openhuman.py` (10), each table equal to its spec's contracts.
+Codecs for TOML, YAML and dotenv (encode and read). Ownership grows to every structured format: a wildcard foreign
+key carries every live key no row owns, in its order; a foreign `table` keeps the rows under it dormant until the
+harness creates it (an export is an empty tree, so dormant there too; the plan reports `dormant`); shared `items` merge
+our entries over their live twins and keep the harness's (`ours` decides which unrendered ones are stale); a dotenv
+lands our lines then every foreign line byte for byte, comments included. Bindings (`profile`) are read from the
+harness's own file under the live tree; a `link` target becomes a symlink, planned (missing / pointing elsewhere)
+and landed through the journal. The trial runs `setup`, applies `overlays` (`swap` resolves `@core.path` values
+wherever they sit, `set`, `extend`) and serves probes: a fenced server bound to a free port, polled ready, killed whole.
+
+**Evidence.** 542 unit tests, coverage 100 %. Golden: Hermes `SOUL.md`, `workspace/AGENTS.md`, `memories/USER.md`,
+`.env` and every OpenHuman persona document byte-identical to v1 (an acceptance test holds them). The two config
+files differ only by name: Hermes `agent.max_turns` (v1 wrote the string `none`; v2 omits the key — no cap) and empty
+`env`/`headers` of MCP entries omitted; OpenHuman `cloud_providers` carries the **full** local label — v1 wrote
+`"LLM local (slot :45100 — Strata"`, cut at its comma by the unquoted YAML fixed in e-nous #83, so the live
+OpenHuman config very likely holds the truncated label today. e2e: a **real Hermes**, fenced, with its providers
+bent to the fake model by the overlay, shows the persona 31/31. OpenHuman's binary lives in its container: its served
+probe is proven against fakes only.
+
+**Fixed on the way.**
+- The engine skipped a null before its `via`, so `{falsy: ""}` never stood in for it (Hermes `discord.allowed_channels`
+  vanished): an absent value skips, a present null runs its combinators; the first `via` step always runs.
+- `Placement` with a list value is unhashable: dormancy compares fragments.
+- e2e leak check watched `~/.claude.json`, which the live Claude session itself rewrites: only rendered files watched.
+
+**Found and fixed in e-nous** (PR #87, merged): the `jail_ro` contract promised `~` expanded; v1 and the live config
+keep toolchains as written (the app expands them).

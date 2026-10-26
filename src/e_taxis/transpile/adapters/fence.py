@@ -13,6 +13,7 @@ import os
 import shutil
 import signal
 import time
+from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Final
 
 import anyio
@@ -20,7 +21,7 @@ import anyio
 from e_taxis.transpile.models.trial import TrialRun
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import AsyncIterator, Mapping, Sequence
     from pathlib import Path
 
 ##### DEFAULTS #####
@@ -55,9 +56,15 @@ class LandrunFence:
     ##### PUBLIC #####
 
     def wrap(
-        self, argv: Sequence[str], *, writable: Sequence[Path], ports: Sequence[int], env: Mapping[str, str]
+        self,
+        argv: Sequence[str],
+        *,
+        writable: Sequence[Path],
+        ports: Sequence[int],
+        env: Mapping[str, str],
+        binds: Sequence[int] = (),
     ) -> list[str]:
-        """The argv to run fenced: read and execute `/`, write only `writable`, connect only to `ports`."""
+        """The argv to run fenced: read and execute `/`, write only `writable`, connect only to `ports`, listen on `binds`."""
         return [
             str(self._binary),
             "--best-effort",
@@ -66,12 +73,41 @@ class LandrunFence:
             "/",
             *(flag for path in (*map(str, writable), *DEVICES) for flag in ("--rw", path)),
             *(flag for port in ports for flag in ("--connect-tcp", str(port))),
+            *(flag for port in binds for flag in ("--bind-tcp", str(port))),
             "--",
             ENV,
             "-i",
             *(f"{name}={value}" for name, value in env.items()),
             *argv,
         ]
+
+    @asynccontextmanager
+    async def serve(
+        self,
+        argv: Sequence[str],
+        *,
+        env: Mapping[str, str],
+        cwd: Path,
+        writable: Sequence[Path],
+        ports: Sequence[int],
+        binds: Sequence[int],
+    ) -> AsyncIterator[None]:
+        """A fenced service kept up for the block, then killed with its whole group: no phantom outlives a probe."""
+        binary = shutil.which(argv[0], path=env.get("PATH")) or argv[0]
+        process = await asyncio.create_subprocess_exec(
+            *self.wrap([binary, *argv[1:]], writable=writable, ports=ports, env=env, binds=binds),
+            env={},
+            cwd=cwd,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        try:
+            yield
+        finally:
+            self._run_kill(process)
+            await process.wait()
 
     async def run(
         self,

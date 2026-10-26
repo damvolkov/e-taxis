@@ -5,6 +5,7 @@ placement no template declares is a file copied as it is: a reference beside its
 yields entries, never a file; a `link` target yields a symlink. Order is declaration order, per target."""
 
 import re
+from functools import reduce
 from typing import TYPE_CHECKING, Any
 
 from e_taxis.transpile.codecs.catalog import ENCODERS
@@ -32,7 +33,18 @@ def match_target(path: str, targets: Mapping[str, Mapping[str, Any]]) -> Mapping
     return found[0] if found else {"format": FILE}
 
 
-def encode_projection(backend: str, out: str, spec: Mapping[str, Any], placements: Sequence[Placement]) -> Projection:
+def bind_encode(text: str, bindings: Mapping[str, str]) -> str:
+    """A target template with its bindings (`{profile}`) filled."""
+    return reduce(lambda acc, item: acc.replace(f"{{{item[0]}}}", item[1]), bindings.items(), text)
+
+
+def encode_projection(
+    backend: str,
+    out: str,
+    spec: Mapping[str, Any],
+    placements: Sequence[Placement],
+    bindings: Mapping[str, str] | None = None,
+) -> Projection:
     order = list(dict.fromkeys(placement.target for placement in placements))
     grouped = {target: tuple(p for p in placements if p.target == target) for target in order}
     kinds = {path: match_target(path, spec["targets"]) for path in order}
@@ -57,5 +69,9 @@ def encode_projection(backend: str, out: str, spec: Mapping[str, Any], placement
             for path in order
             if kinds[path]["format"] == REGISTRY
         },
-        links={path: kinds[path]["to"] for path in order if kinds[path]["format"] == LINK},
+        links={
+            bind_encode(template, bindings or {}): bind_encode(target["to"], bindings or {})
+            for template, target in spec["targets"].items()
+            if target.get("format") == LINK
+        },
     )

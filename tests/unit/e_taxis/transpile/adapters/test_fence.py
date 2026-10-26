@@ -60,3 +60,17 @@ async def test_fence_canary(
     outside_path = tmp_path / "outside"
     assert await LandrunFence(Path("/x")).canary(tmp_path / "in", outside_path) is held
     assert not outside_path.exists()
+
+
+async def test_fence_serve_keeps_a_service_up_then_kills_its_group(landrun: Path, tmp_path: Path) -> None:
+    marker = tmp_path / "up"
+    fence = LandrunFence(landrun)
+    async with fence.serve(
+        ["sh", "-c", f"touch {marker}; sleep 30"], env=ENV, cwd=tmp_path, writable=[tmp_path], ports=[], binds=[9]
+    ):
+        for _ in range(50):
+            if marker.exists():
+                break
+            await asyncio.sleep(0.05)
+    assert marker.exists()
+    assert "--bind-tcp" in fence.wrap(["x"], writable=[], ports=[], env={}, binds=[9])

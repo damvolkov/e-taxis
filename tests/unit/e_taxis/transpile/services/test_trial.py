@@ -67,11 +67,9 @@ async def test_trial_refuses_when_the_fence_does_not_hold(trial: TrialService, f
     ("change", "match"),
     [
         (lambda s: s.pop("trial"), "no trial"),
-        (lambda s: s["trial"]["probes"][0].update({"serve": ["x"]}), "served"),
-        (lambda s: s["trial"].update({"setup": [["x"]]}), "overlays and setup"),
         (lambda s: s["trial"]["env"].update({"X": "${ghost}"}), "placeholder"),
     ],
-    ids=["no-trial", "served", "setup", "placeholder"],
+    ids=["no-trial", "placeholder"],
 )
 async def test_trial_refusals(
     trial: TrialService,

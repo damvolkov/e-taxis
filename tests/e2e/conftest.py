@@ -23,12 +23,14 @@ if TYPE_CHECKING:
 
 ##### DEFAULTS #####
 LANDRUN = Path("~/.local/bin/landrun").expanduser()
+### files the render owns under the real HOME; never a harness's runtime state (~/.claude.json changes by the minute
+### under any live Claude session on this machine).
 WATCHED = (
     ".claude/CLAUDE.md",
     ".claude/settings.json",
-    ".claude.json",
     ".config/opencode/AGENTS.md",
     ".config/opencode/opencode.jsonc",
+    ".hermes/SOUL.md",
 )
 
 

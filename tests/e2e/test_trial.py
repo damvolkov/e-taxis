@@ -1,4 +1,4 @@
-"""tests/e2e/trial: each tekton harness raised for real, fenced, on the fixture core — it must show all it was given."""
+"""tests/e2e/trial: each harness raised for real, fenced, on the fixture core — it must show all it was given."""
 
 import shutil
 from pathlib import Path
@@ -22,11 +22,11 @@ async def test_trial_fence_holds_on_this_kernel(tmp_path: Path) -> None:
     assert await fence.canary(tmp_path / "in", tmp_path.parent / f"{tmp_path.name}-outside")
 
 
-@pytest.mark.parametrize("backend", ["claudecode", "opencode"])
+@pytest.mark.parametrize("backend", ["claudecode", "opencode", "hermes"])
 async def test_trial_harness_shows_the_render(
     prover: TrialService, capture: HttpCapture, nous_root: Path, phantom_path: str, backend: str
 ) -> None:
-    binary = shutil.which("claude" if backend == "claudecode" else "opencode", path=phantom_path)
+    binary = shutil.which({"claudecode": "claude"}.get(backend, backend), path=phantom_path)
     version = (
         "" if binary is None else (await anyio.run_process([binary, "--version"], check=False)).stdout.decode().strip()
     )

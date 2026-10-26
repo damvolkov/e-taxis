@@ -108,3 +108,12 @@ async def test_render_a_row_without_source_or_a_null_shape_places_nothing(nous_t
         "map": {"config": {"kind": "config", "target": "settings.json", "rows": rows}},
     }
     assert [placement.fragment for placement in _render(nous_tree, spec, ctx).run()] == ["c"]
+
+
+async def test_render_each_over_an_empty_mapping_places_nothing(nous_tree: NousTree, ctx: RowContext) -> None:
+    rows = [{"value": {}, "to": "mcp-user#{name}", "each": "name"}, {"value": 1, "to": "#c"}]
+    spec = {
+        **nous_tree.specs["tekton/claudecode"],
+        "map": {"config": {"kind": "config", "target": "settings.json", "rows": rows}},
+    }
+    assert [placement.fragment for placement in _render(nous_tree, spec, ctx).run()] == ["c"]

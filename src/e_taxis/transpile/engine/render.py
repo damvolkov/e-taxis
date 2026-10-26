@@ -4,7 +4,8 @@ No backend is named here. A persona row reads a slot of the facet's layers, an i
 instance (sorted by id), a config row a dotted path of the facet's modules, `native.` or a constant. Its `via`
 runs left to right through the combinators and the backend's named transforms; `each` fans a mapping out into
 one placement per child. `to` binds `{id}`, `{name}` (the `each` variable), every binding and any `{a.b}` core path.
-A value that is absent (or becomes None) places nothing; a `required` row with an empty value refuses the render.
+An absent value places nothing; a present one — null included — runs its `via` (so `falsy` can stand in for it) and
+places nothing only when it ends as None. A `required` row with an empty value refuses the render.
 Pure: no I/O, the same inputs give the same placements."""
 
 import re
@@ -59,7 +60,12 @@ class SpecRender:
     def _run_via(self, value: Any, via: Any, ctx: RowContext) -> Any:
         """The value through each step in order; a step is a name or `{name: params}`."""
         steps = via if isinstance(via, list) else [via] if via is not None else []
-        return reduce(lambda acc, step: None if acc is None else self._run_step(acc, step, ctx), steps, value)
+        ### the first step always runs (a `falsy` stands in for a null); a later one stops once a step yields None.
+        return reduce(
+            lambda acc, indexed: None if acc is None and indexed[0] else self._run_step(acc, indexed[1], ctx),
+            enumerate(steps),
+            value,
+        )
 
     def _run_step(self, value: Any, step: Any, ctx: RowContext) -> Any:
         """One step: a combinator with its params, or a transform of the backend."""
@@ -110,11 +116,14 @@ class SpecRender:
         value = self._run_source(row, section["kind"], ctx)
         sources = (row["from"],) if row.get("from") else ()
         glue = row.get("glue", GLUE)
-        match (value is MISSING or value in EMPTY, row.get("required", False), row.get("each")):
-            case (True, True, _):
+        empty = value is MISSING or value in EMPTY
+        match (empty and row.get("required", False), value is MISSING, row.get("each")):
+            case (True, _, _):
                 msg = f"{self._spec['backend']} · {name}[{index}]: required `{row.get('from')}` is empty"
                 raise RenderError(msg)
-            case (True, _, _):
+            case (_, True, _):
+                return
+            case (_, _, str()) if not value:
                 return
             case (_, _, str() as variable):
                 yield from (

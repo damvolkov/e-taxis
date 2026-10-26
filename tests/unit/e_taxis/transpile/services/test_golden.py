@@ -47,3 +47,43 @@ async def test_golden_settings_keep_every_v1_key(nous_root: Path, tmp_path: Path
     assert [key for key in golden if key != "hooks"] == [key for key in rendered if key in golden and key != "hooks"]
     assert all(rendered[key] == golden[key] for key in ("model", "effortLevel", "tui", "permissions"))
     assert {"env", "enabledPlugins"} <= set(rendered)
+
+
+@pytest.mark.parametrize(
+    ("backend", "tree", "files"),
+    [
+        ("hermes", ".hermes", ["SOUL.md", "workspace/AGENTS.md", "memories/USER.md"]),
+        (
+            "openhuman",
+            ".config",
+            [
+                "memory/persona/SOUL.md",
+                "memory/persona/IDENTITY.md",
+                "memory/persona/ROLE.md",
+                "memory/persona/STYLE.md",
+                "memory/persona/PROFILE.md",
+            ],
+        ),
+    ],
+    ids=["hermes", "openhuman"],
+)
+async def test_golden_nomos_documents_match(
+    nous_root: Path, tmp_path: Path, golden_root: Path, backend: str, tree: str, files: list[str]
+) -> None:
+    live = tmp_path / "live" / tree
+    (live / "memory/openhuman").mkdir(parents=True)
+    (live / "memory/openhuman/active_user.toml").write_text('user_id = "6abd6edb6e176e3e56822476"\n')
+    projection = await RunService(CheckService()).run(GitNous(nous_root, None), backend, tmp_path / backend, live=live)
+    assert {path: projection.files[path] for path in files} == {
+        path: (golden_root / backend / path).read_bytes() for path in files
+    }
+
+
+async def test_golden_hermes_env_follows_the_core(nous_root: Path, tmp_path: Path, nous_tree) -> None:
+    """The golden's `.env` is not versioned (the repo ignores `.env`): its two lines are derived from the core instead."""
+    projection = await RunService(CheckService()).run(
+        GitNous(nous_root, None), "hermes", tmp_path / "hermes", live=tmp_path
+    )
+    channels, search = nous_tree.config["nomos"]["channels"], nous_tree.config["nomos"]["search"]
+    expected = f"DISCORD_ALLOWED_USERS={','.join(channels['discord']['users'])}\nSEARXNG_URL={search['engines']['searxng']['url']}\n"
+    assert projection.files[".env"] == expected.encode()

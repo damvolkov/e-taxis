@@ -29,6 +29,7 @@ class ReportKind(StrEnum):
     STALE = "stale"
     SYMLINK = "symlink"
     HARNESS = "harness"
+    DORMANT = "dormant"
 
     @property
     def blocking(self) -> bool:
