@@ -261,7 +261,7 @@ transforms:
   jail_ro:
     consumes: [permissions.vault.read, permissions.toolchains]
     binds: [out]
-    returns: "runtime.local_jail.extra_read_only — <out>/memory/<folder> per read folder, then each toolchain with ~ expanded"
+    returns: "runtime.local_jail.extra_read_only — <out>/memory/<folder> per read folder, then each toolchain as written (the app expands ~)"
   jail_rw:
     consumes: [permissions.vault.write]
     binds: [out]

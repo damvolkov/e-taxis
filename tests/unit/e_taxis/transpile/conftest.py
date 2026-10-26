@@ -93,15 +93,23 @@ class FakeFence:
         self.holds = True
         self.argvs: list[tuple[str, ...]] = []
         self.envs: list[dict[str, str]] = []
+        self.served: list[tuple[str, ...]] = []
+        self.codes: list[int] = []
 
     async def run(self, argv, *, env, cwd, writable, ports, limit) -> TrialRun:
         self.argvs.append(tuple(argv))
         self.envs.append(dict(env))
         self.capture.received.append(self.body)
-        return TrialRun(argv=tuple(argv), code=1, seconds=0.0, stdout=self.stdout)
+        code = self.codes.pop(0) if self.codes else 1
+        return TrialRun(argv=tuple(argv), code=code, seconds=0.0, stdout=self.stdout)
 
     async def canary(self, inside: Path, outside: Path) -> bool:
         return self.holds
+
+    @asynccontextmanager
+    async def serve(self, argv, *, env, cwd, writable, ports, binds) -> AsyncIterator[None]:
+        self.served.append(tuple(argv))
+        yield
 
 
 class ListRecorder:

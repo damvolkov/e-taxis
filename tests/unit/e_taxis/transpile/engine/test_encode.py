@@ -10,7 +10,7 @@ TARGETS = {
     "skills/{id}/SKILL.md": {"format": "md+fm"},
     "mcp-user": {"format": "registry"},
     "w/SOUL.md": {"format": "link", "to": "persona/SOUL.md"},
-    "x.toml": {"format": "toml"},
+    "x.ini": {"format": "ini"},
 }
 
 
@@ -37,5 +37,5 @@ async def test_encode_projection_splits_files_registry_and_links() -> None:
 
 
 async def test_encode_projection_refuses_a_format_without_encoder() -> None:
-    with pytest.raises(RenderError, match="toml"):
-        encode_projection("cc", "/out", {"targets": TARGETS}, [Placement("x.toml", "a", 1, "config", 0)])
+    with pytest.raises(RenderError, match="ini"):
+        encode_projection("cc", "/out", {"targets": TARGETS}, [Placement("x.ini", "a", 1, "config", 0)])

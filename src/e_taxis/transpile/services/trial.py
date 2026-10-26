@@ -10,7 +10,9 @@ outside the sandbox is written, and only the fake model's port can be reached.""
 import json
 import os
 import shutil
+import socket
 import tempfile
+from collections.abc import Mapping
 from functools import partial
 from pathlib import Path
 from string import Template
@@ -18,12 +20,14 @@ from typing import TYPE_CHECKING, Any
 
 import anyio
 
+from e_taxis.transpile.engine.plan import STRUCTURED
 from e_taxis.transpile.models.error import TranspileError
+from e_taxis.transpile.models.placement import Placement
 from e_taxis.transpile.models.trial import TrialReport, TrialRun, TrialSight
 from e_taxis.transpile.transforms.claudecode import reaches
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Iterator
 
     from e_taxis.transpile.models.nous import NousTree
     from e_taxis.transpile.models.ports import CapturePort, FencePort, NousPort
@@ -37,6 +41,56 @@ PROFILE: str = "ghost"
 TURN: str = "1"
 TIMEOUT: float = 120.0
 KEPT: int = 2000
+POLL: float = 0.25
+
+
+##### UTILITIES #####
+def values_trial(node: Any, path: list[str]) -> list[str]:
+    """Every string a core path names, `*` walking every key of a mapping."""
+    match (path, node):
+        case ([], str()):
+            return [node]
+        case ([], _):
+            return []
+        case (["*", *rest], Mapping()):
+            return [found for child in node.values() for found in values_trial(child, rest)]
+        case ([head, *rest], Mapping()) if head in node:
+            return values_trial(node[head], rest)
+        case _:
+            return []
+
+
+def swap_trial(node: Any, swaps: Mapping[str, str]) -> Any:
+    """`node` with every string equal to a swap key replaced, at any depth."""
+    match node:
+        case str() if node in swaps:
+            return swaps[node]
+        case Mapping():
+            return {key: swap_trial(value, swaps) for key, value in node.items()}
+        case list():
+            return [swap_trial(value, swaps) for value in node]
+        case _:
+            return node
+
+
+def bind_trial(node: Any, bindings: Mapping[str, str]) -> Any:
+    """Every `${name}` in every string of `node` bound; values that are not strings stay."""
+    match node:
+        case str():
+            return Template(node).safe_substitute(bindings)
+        case Mapping():
+            return {key: bind_trial(value, bindings) for key, value in node.items()}
+        case list():
+            return [bind_trial(value, bindings) for value in node]
+        case _:
+            return node
+
+
+def port_trial() -> int:
+    """A loopback port nothing listens on now: the one a served phantom binds."""
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return probe.getsockname()[1]
 
 
 ##### TYPES #####
@@ -117,21 +171,33 @@ class TrialService:
         capture: CapturePort,
     ) -> tuple[TrialRun, str]:
         """One probe fenced, and the text it showed: the captured requests, or its stdout."""
+        capture.clear()
+        argv = [self._run_bind(arg, bindings) for arg in probe["argv"]]
+        limit = float(probe.get("timeout") or TIMEOUT)
+        ports = [capture.port, int(bindings["port"])]
         match probe.get("serve"):
             case None:
-                pass
-            case _:
-                msg = f"probe `{probe['name']}` serves a process: served probes arrive with the nomos backends"
-                raise TranspileError(msg)
-        capture.clear()
-        run = await self._fence.run(
-            [self._run_bind(arg, bindings) for arg in probe["argv"]],
-            env=env,
-            cwd=Path(bindings["home"]),
-            writable=[root],
-            ports=[capture.port],
-            limit=float(probe.get("timeout") or TIMEOUT),
-        )
+                run = await self._fence.run(
+                    argv, env=env, cwd=Path(bindings["home"]), writable=[root], ports=ports, limit=limit
+                )
+            case serve:
+                served = [self._run_bind(arg, bindings) for arg in serve]
+                async with self._fence.serve(
+                    served,
+                    env=env,
+                    cwd=Path(bindings["home"]),
+                    writable=[root],
+                    ports=ports,
+                    binds=[int(bindings["port"])],
+                ):
+                    ready = [self._run_bind(arg, bindings) for arg in probe.get("ready") or ["true"]]
+                    await self._run_ready(
+                        ready, env=env, root=root, home=Path(bindings["home"]), ports=ports, left=limit
+                    )
+                    run = await self._fence.run(
+                        argv, env=env, cwd=Path(bindings["home"]), writable=[root], ports=ports, limit=limit
+                    )
+                    await self._run_settle(capture, float(probe.get("wait") or 0))
         shown = (
             "\n".join(self._run_text(body.decode(errors="replace")) for body in capture.bodies())
             if probe["kind"] == CAPTURE
@@ -141,20 +207,81 @@ class TrialService:
             argv=run.argv, code=run.code, seconds=run.seconds, stdout=run.stdout[-KEPT:], stderr=run.stderr
         ), shown
 
-    async def _run_plant(self, trial: Mapping[str, Any], bindings: Mapping[str, str]) -> None:
-        """The established install's state, then the setup commands; overlays arrive with the nomos backends."""
-        match trial.get("overlays") or trial.get("setup"):
-            case None | []:
-                pass
+    async def _run_ready(
+        self, argv: list[str], *, env: Mapping[str, str], root: Path, home: Path, ports: list[int], left: float
+    ) -> None:
+        """Poll a served probe's `ready` command until it succeeds, or the probe's limit runs out."""
+        done = await self._fence.run(argv, env=env, cwd=home, writable=[root], ports=ports, limit=10.0)
+        match (done.code == 0, left <= 0):
+            case (True, _) | (_, True):
+                return
             case _:
-                msg = "trial overlays and setup arrive with the nomos backends"
-                raise TranspileError(msg)
+                await anyio.sleep(POLL)
+                await self._run_ready(argv, env=env, root=root, home=home, ports=ports, left=left - POLL - done.seconds)
+
+    async def _run_settle(self, capture: CapturePort, left: float) -> None:
+        """Wait for the served harness to reach the fake model, up to `left` seconds."""
+        match bool(capture.bodies()) or left <= 0:
+            case True:
+                return
+            case _:
+                await anyio.sleep(POLL)
+                await self._run_settle(capture, left - POLL)
+
+    async def _run_plant(
+        self,
+        tree: NousTree,
+        spec: Mapping[str, Any],
+        *,
+        bindings: Mapping[str, str],
+        env: Mapping[str, str],
+        root: Path,
+        capture: CapturePort,
+    ) -> None:
+        """An established install's state, the setup commands, then every overlay bending the render to the fake model."""
+        trial = spec["trial"]
         _ = [
             await self._run_write(
                 Path(self._run_bind(state["path"], bindings)), self._run_bind(state["text"], bindings)
             )
             for state in trial.get("state", [])
         ]
+        _ = [
+            await self._fence.run(
+                [self._run_bind(arg, bindings) for arg in argv],
+                env=env,
+                cwd=Path(bindings["home"]),
+                writable=[root],
+                ports=[capture.port],
+                limit=TIMEOUT,
+            )
+            for argv in trial.get("setup", [])
+        ]
+        _ = [await self._run_overlay(tree, spec, overlay, bindings) for overlay in trial.get("overlays", [])]
+
+    async def _run_overlay(
+        self, tree: NousTree, spec: Mapping[str, Any], overlay: Mapping[str, Any], bindings: Mapping[str, str]
+    ) -> None:
+        """One file bent to the fake model: core values swapped wherever they sit, keys set, lists extended."""
+        path = anyio.Path(self._run_bind(overlay["path"], bindings))
+        read, encode = STRUCTURED[overlay["format"]]
+        data = read(await path.read_bytes()) if await path.is_file() else {}
+        config = tree.config.get(spec["harness"], {})
+        bind = partial(bind_trial, bindings=bindings)
+        swaps = {
+            old: bind(new)
+            for key, new in (overlay.get("swap") or {}).items()
+            for old in (values_trial(config, key[1:].split(".")) if key.startswith("@") else [key])
+        }
+        swapped = swap_trial(data, swaps)
+        extended = {
+            key: [*(swapped.get(key) or []), *bind(items)] for key, items in (overlay.get("extend") or {}).items()
+        }
+        placements = [
+            *(Placement("", key, value, "trial", -1) for key, value in {**swapped, **extended}.items()),
+            *(Placement("", key, bind(value), "trial", -1) for key, value in (overlay.get("set") or {}).items()),
+        ]
+        await path.write_bytes(encode("", {}, placements))
 
     @staticmethod
     async def _run_write(path: Path, text: str) -> None:
@@ -166,7 +293,9 @@ class TrialService:
     ) -> TrialReport:
         trial = spec["trial"]
         home = root / "home"
-        projection = await self._runner.run(nous, spec["backend"], home / spec["tree"])
+        projection = await self._runner.run(
+            nous, spec["backend"], home / spec["tree"], dict.fromkeys(spec.get("bindings", {}), PROFILE)
+        )
         async with capture.serve():
             bindings = {
                 "home": str(home),
@@ -176,9 +305,10 @@ class TrialService:
                 "profile": PROFILE,
                 "turn": TURN,
                 "mcp": self._run_servers(tree, spec),
+                "port": str(port_trial()),
             }
             env = {name: self._run_bind(value, bindings) for name, value in trial.get("env", {}).items()}
-            await self._run_plant(trial, bindings)
+            await self._run_plant(tree, spec, bindings=bindings, env=env, root=root, capture=capture)
             results = [
                 await self._run_probe(probe, bindings=bindings, env=env, root=root, capture=capture)
                 for probe in trial["probes"]

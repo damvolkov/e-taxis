@@ -5,14 +5,18 @@ or this backend stop the run. Then the spec's rows render against the facet's pe
 placements are encoded per target, and — with `out` — every file lands under it (a pure export: never a live
 tree; the live path, with ownership and the journal, is `transpile run --yes`)."""
 
+import tomllib
+from dataclasses import replace
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any
 
 import anyio
+import msgspec
 
 from e_taxis.transpile.engine.context import RowContext
-from e_taxis.transpile.engine.encode import encode_projection
+from e_taxis.transpile.engine.encode import encode_projection, match_target
 from e_taxis.transpile.engine.model import CoreModel
+from e_taxis.transpile.engine.plan import land_plan
 from e_taxis.transpile.engine.render import CONFIG, SpecRender
 from e_taxis.transpile.models.error import CheckError, RenderError
 from e_taxis.transpile.models.report import CORE
@@ -49,7 +53,28 @@ class RunService:
                 raise RenderError(msg)
 
     @staticmethod
-    def _run_project(tree: NousTree, spec: Mapping[str, Any], out: str) -> Projection:
+    async def _run_binding(name: str, read: str, root: Path) -> tuple[str, str]:
+        """One binding read from the harness's own file under `root`: `<file>#<key>`, TOML or JSON."""
+        file, _, key = read.partition("#")
+        path = anyio.Path(root / file)
+        match await path.is_file():
+            case False:
+                msg = f"binding `{name}`: {root / file} is not there — the harness has not created it yet"
+                raise RenderError(msg)
+            case _:
+                data = await path.read_bytes()
+        tree = tomllib.loads(data.decode()) if file.endswith(".toml") else msgspec.json.decode(data)
+        return (name, str(tree[key]))
+
+    @classmethod
+    async def bindings(cls, spec: Mapping[str, Any], root: Path) -> dict[str, str]:
+        """Every binding the spec declares, read from the harness under `root`."""
+        return dict(
+            [await cls._run_binding(name, binding["read"], root) for name, binding in spec.get("bindings", {}).items()]
+        )
+
+    @staticmethod
+    def _run_project(tree: NousTree, spec: Mapping[str, Any], out: str, bindings: Mapping[str, str]) -> Projection:
         core = CoreModel(tree.schema)
         facet = spec["harness"]
         slots = {
@@ -62,7 +87,9 @@ class RunService:
             },
             CONFIG: f"core/{facet}/config",
         }
-        ctx = RowContext(config=tree.config.get(facet, {}), native=spec.get("native", {}), bindings={"out": out})
+        ctx = RowContext(
+            config=tree.config.get(facet, {}), native=spec.get("native", {}), bindings={"out": out, **bindings}
+        )
         transforms = CATALOG.get(spec["backend"], {})
         placements = SpecRender(
             spec,
@@ -73,7 +100,7 @@ class RunService:
             folders=folders,
             blobs=tree.blobs,
         ).run()
-        return encode_projection(spec["backend"], out, spec, placements)
+        return encode_projection(spec["backend"], out, spec, placements, ctx.bindings)
 
     @staticmethod
     async def _run_file(target: anyio.Path, data: bytes) -> None:
@@ -88,8 +115,17 @@ class RunService:
 
     ##### PUBLIC #####
 
-    async def project(self, nous: NousPort, backend: str, out: Path) -> tuple[NousTree, Projection]:
-        """The checked checkout and its projection for `backend`, `{out}` bound to `out`. Writes nothing."""
+    async def project(
+        self,
+        nous: NousPort,
+        backend: str,
+        out: Path,
+        bindings: Mapping[str, str] | None = None,
+        *,
+        live: Path | None = None,
+    ) -> tuple[NousTree, Projection]:
+        """The checked checkout and its projection for `backend`, `{out}` bound to `out`; the spec's bindings are
+        given, or read from the harness's tree (`live`, by default `out` itself). Writes nothing."""
         report = await self._checker.run(nous)
         blocking = [finding for finding in report.blocking if finding.backend in (CORE, backend)]
         match blocking:
@@ -99,10 +135,29 @@ class RunService:
                 msg = f"{len(blocking)} blocking finding(s) for {backend}: run `taxis transpile check` first"
                 raise CheckError(msg)
         tree = await nous.load()
-        return (tree, self._run_project(tree, self.spec(tree, backend), str(out)))
+        spec = self.spec(tree, backend)
+        bound = await self.bindings(spec, live or out) if bindings is None else bindings
+        return (tree, self._run_project(tree, spec, str(out), bound))
 
-    async def run(self, nous: NousPort, backend: str, out: Path) -> Projection:
-        """The projection of `backend` into `out`, written there: a pure export, never a live tree."""
-        _, projection = await self.project(nous, backend, out)
-        await self._run_write(projection, out)
-        return projection
+    async def run(
+        self,
+        nous: NousPort,
+        backend: str,
+        out: Path,
+        bindings: Mapping[str, str] | None = None,
+        *,
+        live: Path | None = None,
+    ) -> Projection:
+        """The projection of `backend` into `out`, written there: a pure export, never a live tree. Bindings are
+        given, or read from the harness's live tree (`live`), never from `out`."""
+        tree, projection = await self.project(nous, backend, out, bindings, live=live)
+        spec = self.spec(tree, backend)
+        exported = {
+            path: land_plan(
+                target.get("format", "file"), data, None, target.get("foreign", []), projection.placements[path]
+            )
+            for path, data in projection.files.items()
+            for target in (match_target(path, spec["targets"]),)
+        }
+        await self._run_write(replace(projection, files=exported), out)
+        return replace(projection, files=exported)

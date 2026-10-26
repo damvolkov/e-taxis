@@ -35,6 +35,17 @@ class FencePort(Protocol):
 
     async def canary(self, inside: Path, outside: Path) -> bool: ...
 
+    def serve(
+        self,
+        argv: Sequence[str],
+        *,
+        env: Mapping[str, str],
+        cwd: Path,
+        writable: Sequence[Path],
+        ports: Sequence[int],
+        binds: Sequence[int],
+    ) -> AbstractAsyncContextManager[None]: ...
+
 
 @runtime_checkable
 class CapturePort(Protocol):

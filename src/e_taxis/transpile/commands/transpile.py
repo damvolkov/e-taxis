@@ -115,7 +115,9 @@ async def run(
     source = GitNous(nous, None if worktree else ref)
     match (out, yes):
         case (Path() as directory, _):
-            projection = await runner.run(source, target, Path(await anyio.Path(directory).resolve()))
+            tree = RunService.spec(await source.load(), target)["tree"]
+            live = Path(await anyio.Path(home or Path.home()).resolve()) / tree
+            projection = await runner.run(source, target, Path(await anyio.Path(directory).resolve()), live=live)
             summary = {
                 "backend": projection.backend,
                 "out": projection.out,

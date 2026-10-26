@@ -1,5 +1,6 @@
-"""codecs.structured: dotted fragments nested back into one document — JSON today, indented, keys in row order."""
+"""codecs.structured: dotted fragments nested back into one document — JSON (indented), TOML, YAML; keys in row order."""
 
+import tomllib
 from collections.abc import Mapping
 from functools import reduce
 from typing import TYPE_CHECKING, Any
@@ -70,3 +71,21 @@ def strays_structured(tree: Mapping[str, Any], owned: Sequence[str], prefix: str
             else [path]
         )
     ]
+
+
+def encode_toml(_: str, __: Mapping[str, Any], placements: Sequence[Placement]) -> bytes:
+    return eserde.dumps(nest_structured(placements), format=eserde.Format.TOML)
+
+
+def encode_yaml(_: str, __: Mapping[str, Any], placements: Sequence[Placement]) -> bytes:
+    return eserde.dumps(nest_structured(placements), format=eserde.Format.YAML)
+
+
+def read_toml(data: bytes) -> dict[str, Any]:
+    found = tomllib.loads(data.decode()) if data.strip() else {}
+    return dict(found)
+
+
+def read_yaml(data: bytes) -> dict[str, Any]:
+    found = eserde.loads(data, format=eserde.Format.YAML) if data.strip() else {}
+    return found if isinstance(found, dict) else {}

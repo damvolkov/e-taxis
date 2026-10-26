@@ -87,3 +87,23 @@ async def test_land_registry_absent_file_reads_empty(nous_root: Path, tmp_path: 
 async def test_land_remove_of_a_vanished_file_is_quiet(tmp_path: Path, runner, store, recorder) -> None:
     await _lander(runner, store, recorder)._land_remove(tmp_path / "gone")
     assert recorder.effects == []
+
+
+async def test_land_openhuman_links_and_settles(nous_root: Path, tmp_path: Path, runner, store, recorder) -> None:
+    home = tmp_path / "h"
+    tree = home / ".config"
+    (tree / "memory/openhuman").mkdir(parents=True)
+    (tree / "memory/openhuman/active_user.toml").write_text('user_id = "u1"\n')
+    lander = _lander(runner, store, recorder)
+    report = await lander.apply(GitNous(nous_root, None), "openhuman", home)
+    link = tree / "memory/openhuman/users/u1/workspace/SOUL.md"
+    assert any(finding.path.endswith("workspace/SOUL.md") for finding in report.findings)
+    assert link.is_symlink()
+    assert link.resolve() == (tree / "memory/persona/SOUL.md").resolve()
+    assert (await lander.plan(GitNous(nous_root, None), "openhuman", home)).findings == ()
+    link.unlink()
+    link.write_text("a file")
+    again = await lander.plan(GitNous(nous_root, None), "openhuman", home)
+    assert [(finding.kind, finding.detail.startswith("should link")) for finding in again.findings] == [
+        (ReportKind.DRIFT, True)
+    ]

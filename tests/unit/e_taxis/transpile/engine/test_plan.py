@@ -29,7 +29,7 @@ async def test_plan_land_carries_foreign_parts() -> None:
     )
     landed = land_plan("json", b"{}", b'{"keep_me": 1, "drop": 2, "a": 0}', JSON_KEYS, [_at("a", 5)])
     assert msgspec.json.decode(landed) == {"a": 5, "keep_me": 1}
-    assert land_plan("json", b"R", None, JSON_KEYS, []) == b"R"
+    assert land_plan("json", b"R", None, JSON_KEYS, []) == b"{}\n"
     assert land_plan("text", b"R", b"L", JSON_KEYS, []) == b"R"
     assert land_plan("md", b"R", b"L", [], []) == b"R"
 

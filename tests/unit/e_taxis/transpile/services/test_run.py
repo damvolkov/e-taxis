@@ -33,3 +33,24 @@ async def test_run_refuses_a_checkout_its_law_refuses(
 async def test_run_refuses_an_unknown_backend(nous_root: Path, tmp_path: Path) -> None:
     with pytest.raises(RenderError, match="no spec"):
         await RunService(CheckService()).run(GitNous(nous_root, None), "ghost", tmp_path / "out")
+
+
+async def test_run_bindings_read_the_harness(nous_root: Path, tmp_path: Path) -> None:
+    live = tmp_path / "live"
+    (live / "memory/openhuman").mkdir(parents=True)
+    (live / "memory/openhuman/active_user.toml").write_text('user_id = "u1"\n')
+    projection = await RunService(CheckService()).run(
+        GitNous(nous_root, None), "openhuman", tmp_path / "out", live=live
+    )
+    assert "memory/openhuman/users/u1/config.toml" in projection.files
+    assert projection.links["memory/openhuman/users/u1/workspace/SOUL.md"] == "memory/persona/SOUL.md"
+    json_spec = {"bindings": {"who": {"read": "w.json#name"}}}
+    (live / "w.json").write_text('{"name": "n"}')
+    assert await RunService.bindings(json_spec, live) == {"who": "n"}
+
+
+async def test_run_binding_without_its_file_refuses(nous_root: Path, tmp_path: Path) -> None:
+    with pytest.raises(RenderError, match="binding `profile`"):
+        await RunService(CheckService()).run(
+            GitNous(nous_root, None), "openhuman", tmp_path / "out", live=tmp_path / "nothing"
+        )

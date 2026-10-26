@@ -134,12 +134,54 @@ class LandService:
             for name in projection.registry
             for finding in registry_plan(backend, name, projection.placements[name], registry[name])
         ]
-        findings = (*(finding for _, (_, _, found) in planned for finding in found), *stale, *registry_findings)
+        links = [
+            finding
+            for path, to in projection.links.items()
+            for finding in await self._plan_link(backend, path, tree / to, tree / path, projection)
+        ]
+        findings = (*(finding for _, (_, _, found) in planned for finding in found), *links, *stale, *registry_findings)
         report = Report(stamp=CheckService.stamp(spec_tree, SpecModel(spec_tree.base).version), findings=findings)
         landed = {path: data for path, (data, _, _) in planned}
         writes = {path: landed[path] for path, (_, _, found) in planned if found}
         removals = [finding.path for finding in stale]
         return report, landed, writes, removals, registry, projection, spec_tree, spec
+
+    @staticmethod
+    async def _plan_link(backend: str, path: str, to: Path, link: Path, projection: Projection) -> list[ReportFinding]:
+        """A link target: missing, or a link elsewhere / a real file in its place (drift)."""
+        where = projection.placements[path][0].origin if projection.placements.get(path) else "—"
+        live = anyio.Path(link)
+        match (await live.is_symlink(), await live.exists()):
+            case (True, _) if str(await live.readlink()) == str(to):
+                return []
+            case (False, False):
+                return [
+                    ReportFinding(
+                        kind=ReportKind.MISSING, backend=backend, where=where, path=path, detail=f"a link to {to}"
+                    )
+                ]
+            case _:
+                return [
+                    ReportFinding(
+                        kind=ReportKind.DRIFT, backend=backend, where=where, path=path, detail=f"should link to {to}"
+                    )
+                ]
+
+    async def _land_link(self, link: Path, to: Path) -> None:
+        """The link made, whatever stood there recorded first so undo puts it back."""
+        found = None if await anyio.Path(link).is_symlink() else await read_file(link)
+        created = await missing_dirs(link)
+        await anyio.Path(link).parent.mkdir(parents=True, exist_ok=True)
+        await anyio.Path(link).unlink(missing_ok=True)
+        await anyio.Path(link).symlink_to(to)
+        self._recorder.record(
+            JournalFile(
+                path=str(link),
+                before=None if found is None else found[0],
+                mode=None if found is None else found[1],
+                created=created,
+            )
+        )
 
     async def _land_write(self, path: Path, data: bytes) -> None:
         found = await read_file(path)
@@ -225,6 +267,8 @@ class LandService:
         root = home / spec["tree"]
         _ = [await self._land_write(root / path, data) for path, data in writes.items()]
         _ = [await self._land_remove(root / path) for path in removals]
+        moved = {finding.path for finding in report.findings}
+        _ = [await self._land_link(root / path, root / to) for path, to in projection.links.items() if path in moved]
         await self._land_registry(home, spec, projection, live)
         record = {
             "commit": tree.commit,
