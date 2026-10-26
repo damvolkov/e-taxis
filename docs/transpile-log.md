@@ -67,3 +67,35 @@ reverse-distill.md` (schemas moved beside the workflow), two flow-gen-lifecycle 
 **Mistakes, corrected.** `ruff format` over `tests/` rewrote code fences inside the fixture's Markdown (the house
 law: ruff never formats Markdown). The golden acceptance test caught it; the fixture was resynced from e-nous and
 `tests/resources` is now excluded from ruff.
+
+## 2026-10-26 · S1 — the sandbox: fence, fake model, phantom harnesses
+
+**Done.** `adapters/fence.py` (`LandrunFence`): every trial process under Landlock — read and execute `/`, write
+only the sandbox root, TCP only to the fake model's port, `env -i` so nothing is inherited, the whole process group
+killed at its limit; `canary` proves the fence holds (a write inside lands, one outside is refused) before any
+harness runs. `adapters/capture.py` (`HttpCapture`): a fake model endpoint on a kernel-chosen loopback port that
+keeps every request body and answers a final 400. `services/trial.py` (`TrialService`): a fresh sandbox, the core
+projected into `<home>/<tree>`, the spec's `trial` state planted, every probe run fenced; evidence is derived from
+the render (every non-empty persona text, every instance id) and checked, whitespace folded, in what the harness sent
+or printed. `taxis transpile trial --target T --nous P` exits 22 when the phantom did not show everything.
+
+**Evidence.** 497 unit tests (fakes for fence and capture; a stand-in landrun runs the real adapter in CI), coverage
+100 %. Real, fenced, on the full e-nous: Claude Code 2.1.310 shows persona 22/22, skills 31/31, agents 14/14; OpenCode
+1.19.4 persona 22/22, skills 31/31, agents 14/14, commands 7/7. `tests/e2e` (marked slow, never in CI) runs the canary
+and both harnesses on the fixture and fingerprints the live files under the real HOME around the session: no leak.
+Run it with `TAXIS_E2E_PATH=<dir of a stable opencode> uv run pytest tests/e2e -m slow --no-cov`.
+
+**Decided alone.**
+- The trial lives in `src/` (adapter + service + command), not only in tests: the evaluators (MCP loading, routing)
+  need the same sandbox.
+- `timeout` parameters are named `limit` (the async lint's rule); served probes, overlays and setup refuse until the
+  nomos backends need them (T5).
+- The Makefile is materialized from arkhetypo: no `e2e` target added here; the command is documented above.
+
+**Found and fixed in e-nous** (PR #85, merged): the opencode trial never reached its model — the render's
+`enabled_providers` hid the ghost provider (`ProviderModelNotFoundError`). Upstream re-read: 1.19.4.
+
+**Open — the owner's decision.** The OpenCode on this machine is **2.0.28, a prerelease line** (`~/.opencode/bin`,
+not the npm/GitHub stable channel the spec watches, which is at 1.19.4). 2.x drops `--pure` and `debug skill`, so the
+spec's trial cannot run there, and the spec's rows were never checked against 2.x: either pin the stable release on
+this machine, or move `specs/tekton/opencode.yaml` (channel, rows, trial) to 2.x.

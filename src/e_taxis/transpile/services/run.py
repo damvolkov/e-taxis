@@ -39,7 +39,7 @@ class RunService:
     ##### PRIVATE METHODS #####
 
     @staticmethod
-    def _run_spec(tree: NousTree, backend: str) -> Mapping[str, Any]:
+    def spec(tree: NousTree, backend: str) -> Mapping[str, Any]:
         found = [spec for key, spec in tree.specs.items() if key.rpartition("/")[2] == backend]
         match found:
             case [spec]:
@@ -99,6 +99,6 @@ class RunService:
                 msg = f"{len(blocking)} blocking finding(s) for {backend}: run `taxis transpile check` first"
                 raise CheckError(msg)
         tree = await nous.load()
-        projection = self._run_project(tree, self._run_spec(tree, backend), str(out))
+        projection = self._run_project(tree, self.spec(tree, backend), str(out))
         await self._run_write(projection, out)
         return projection

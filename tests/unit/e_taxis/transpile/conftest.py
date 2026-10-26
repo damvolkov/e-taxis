@@ -5,6 +5,7 @@ instance of each entity, copied from e-nous: the law must find nothing blocking 
 file of the copy in place, so a test states only the mutation it makes."""
 
 import shutil
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -18,11 +19,12 @@ from e_taxis.transpile.engine.context import RowContext
 from e_taxis.transpile.engine.model import CoreModel, SpecModel
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import AsyncIterator, Callable
 
     from pytest_resources import Resources
 
     from e_taxis.transpile.models.nous import NousTree
+from e_taxis.transpile.models.trial import TrialRun
 
 
 @pytest.fixture
@@ -52,6 +54,70 @@ def edit(nous_root: Path) -> Callable[[str, Callable[[Any], None]], None]:
         path.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True))
 
     return apply
+
+
+class FakeCapture:
+    """CapturePort in memory: a test (or the fake fence) appends the bodies a harness would have sent."""
+
+    def __init__(self) -> None:
+        self.received: list[bytes] = []
+        self.served = 0
+
+    @property
+    def url(self) -> str:
+        return "http://127.0.0.1:1"
+
+    @property
+    def port(self) -> int:
+        return 1
+
+    def bodies(self) -> tuple[bytes, ...]:
+        return tuple(self.received)
+
+    def clear(self) -> None:
+        self.received.clear()
+
+    @asynccontextmanager
+    async def serve(self) -> AsyncIterator[FakeCapture]:
+        self.served += 1
+        yield self
+
+
+class FakeFence:
+    """FencePort that raises no harness: each run 'sends' `body` to the capture and prints `stdout`; `holds` is the canary."""
+
+    def __init__(self, capture: FakeCapture) -> None:
+        self.capture = capture
+        self.body = b""
+        self.stdout = ""
+        self.holds = True
+        self.argvs: list[tuple[str, ...]] = []
+        self.envs: list[dict[str, str]] = []
+
+    async def run(self, argv, *, env, cwd, writable, ports, limit) -> TrialRun:
+        self.argvs.append(tuple(argv))
+        self.envs.append(dict(env))
+        self.capture.received.append(self.body)
+        return TrialRun(argv=tuple(argv), code=1, seconds=0.0, stdout=self.stdout)
+
+    async def canary(self, inside: Path, outside: Path) -> bool:
+        return self.holds
+
+
+@pytest.fixture
+def capture() -> FakeCapture:
+    return FakeCapture()
+
+
+@pytest.fixture
+def fence(capture: FakeCapture) -> FakeFence:
+    return FakeFence(capture)
+
+
+@pytest.fixture
+def landrun(resources: Resources) -> Path:
+    """A stand-in landrun: drops the fence flags and runs the command, so the fence adapter runs in CI."""
+    return resources.path / "landrun" / "landrun"
 
 
 @pytest.fixture

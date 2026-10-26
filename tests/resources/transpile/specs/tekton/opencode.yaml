@@ -14,9 +14,9 @@ foreign:
   - {path: skills/opencode-skill-creator, why: "shipped by the opencode-skill-creator plugin, which keeps it current"}
 
 upstream:
-  version: 1.19.3                                               # npm @latest — read 2026-10-22
+  version: 1.19.4                                               # npm @latest — read 2026-10-26 (GitHub latest agrees)
   channel: https://registry.npmjs.org/opencode-ai/latest
-  read: "2026-10-22"
+  read: "2026-10-26"
   verified: {version: null, date: "2026-10-02"}                 # checked that day without recording a version: the next re-check pins it
 
 sources:
@@ -216,7 +216,7 @@ trial:
     XDG_CACHE_HOME: ${home}/.cache
     OPENCODE_DISABLE_CLAUDE_CODE: "1"
     OPENCODE_DISABLE_AUTOUPDATE: "1"
-    OPENCODE_CONFIG_CONTENT: '{"provider":{"ghost":{"npm":"@ai-sdk/openai-compatible","name":"ghost","options":{"baseURL":"${llm}/v1","apiKey":"ghost"},"models":{"x":{"name":"x"}}}},"model":"ghost/x","small_model":"ghost/x","mcp":${mcp}}'
+    OPENCODE_CONFIG_CONTENT: '{"enabled_providers":["ghost"],"provider":{"ghost":{"npm":"@ai-sdk/openai-compatible","name":"ghost","options":{"baseURL":"${llm}/v1","apiKey":"ghost"},"models":{"x":{"name":"x"}}}},"model":"ghost/x","small_model":"ghost/x","mcp":${mcp}}'
   probes:
     - {name: session, kind: capture, argv: [opencode, run, --pure, ghost]}
     - {name: config,  kind: command, argv: [opencode, debug, config, --pure]}
@@ -226,4 +226,4 @@ trial:
     skill: [session, skills]
     agent: [config]                     # primary agents never reach the prompt: the resolved config holds them all
     command: [config]
-  notes: "Inline config (OPENCODE_CONFIG_CONTENT) layers a ghost provider above the global one: the rendered tree is never edited. --pure on every probe: without it OpenCode installs the tree's plugins from npm and, offline, hangs retrying. The session fails with 400 on purpose (a 500 is retried with backoff). ${mcp} switches the tree's MCP servers off: offline they would hold the session until their timeout."
+  notes: "Inline config (OPENCODE_CONFIG_CONTENT) layers a ghost provider above the global one, and enables it: the render's enabled_providers would otherwise hide it (ProviderModelNotFoundError); the rendered tree is never edited. Proven on 1.19.4, 2026-10-26 (taxis transpile trial). The 2.x prerelease line drops --pure and `debug skill`: this trial does not run there. --pure on every probe: without it OpenCode installs the tree's plugins from npm and, offline, hangs retrying. The session fails with 400 on purpose (a 500 is retried with backoff). ${mcp} switches the tree's MCP servers off: offline they would hold the session until their timeout."

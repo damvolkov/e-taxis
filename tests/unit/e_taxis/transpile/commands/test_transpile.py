@@ -1,12 +1,23 @@
 """tests/unit/e_taxis/transpile/commands/transpile: `taxis transpile check` — clean exits 0, a break exits 20, JSON parses."""
 
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
+import anyio
 import msgspec
+
+from e_taxis.harness.runtime.deps import Deps
+from e_taxis.transpile.adapters.nous import GitNous
+from e_taxis.transpile.models.ports import CapturePort
+from e_taxis.transpile.services.check import CheckService
+from e_taxis.transpile.services.run import RunService
+from e_taxis.transpile.services.trial import TrialService
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
+
+    import pytest
 
 
 def test_transpile_check_clean_checkout_exits_zero(taxis, nous_root: Path) -> None:
@@ -67,3 +78,32 @@ def test_transpile_run_without_out_is_refused(taxis, nous_root: Path) -> None:
     code, _, err = taxis("transpile", "run", "--target", "claudecode", "--nous", str(nous_root), "--worktree")
     assert code == 17
     assert "--out" in err
+
+
+def test_transpile_trial_reports_and_fails_when_not_held(
+    taxis, nous_root: Path, fence, capture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_trial(deps: Deps) -> TrialService:
+        return TrialService(RunService(CheckService()), fence, path="/usr/bin")
+
+    async def fake_capture(deps: Deps) -> CapturePort:
+        return capture
+
+    monkeypatch.setattr(
+        Deps, "PROVIDERS", MappingProxyType({**Deps.PROVIDERS, TrialService: fake_trial, CapturePort: fake_capture})
+    )
+    code, out, err = taxis("transpile", "trial", "--target", "claudecode", "--nous", str(nous_root), "--worktree")
+    assert code == 22
+    assert "NOT held" in out
+    assert "did not show" in err
+    code, out, _ = taxis(
+        "transpile", "trial", "--target", "claudecode", "--nous", str(nous_root), "--worktree", "--json"
+    )
+    assert code == 22
+    assert msgspec.json.decode(out)["backend"] == "claudecode"
+    tree = anyio.run(GitNous(nous_root, None).load)
+    slots = [*tree.persona["base"]["slots"].values(), *tree.persona["tekton"]["slots"].values()]
+    fence.body = msgspec.json.encode([*slots, *tree.entities["skill"], *tree.entities["agent"]])
+    code, out, _ = taxis("transpile", "trial", "--target", "claudecode", "--nous", str(nous_root), "--worktree")
+    assert code == 0
+    assert "· held" in out

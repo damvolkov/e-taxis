@@ -27,8 +27,8 @@ GitNous (core + specs at one ref) ─▶ CoreModel · SpecModel (compiled) ─�
 | `transpile/engine` | processors | `Schema` (grammar → types, leaves), `CoreModel`, `SpecModel`, `SpecLaw`, `SpecRender` (rows → placements), `COMBINATORS`, `encode_projection` — pure |
 | `transpile/codecs` | processors | one encoder per target format |
 | `transpile/transforms` | processors | each backend's named transforms, one table per spec |
-| `transpile/adapters` | adapters | `GitNous`: `git archive` of `core/` + `specs/`, or the worktree; `{source}` envelopes resolved, confined |
-| `transpile/services` | services | `CheckService`, `RunService` |
+| `transpile/adapters` | adapters | `GitNous`: `git archive` of `core/` + `specs/`, or the worktree; `{source}` envelopes resolved, confined · `LandrunFence` · `HttpCapture` (fake model) |
+| `transpile/services` | services | `CheckService`, `RunService`, `TrialService` |
 | `transpile/commands` | cli | `taxis transpile …` |
 
 ## 3. Commands
@@ -37,6 +37,7 @@ GitNous (core + specs at one ref) ─▶ CoreModel · SpecModel (compiled) ─�
 taxis transpile check   --nous PATH [--ref REF | --worktree] [--json]          # schema + every spec's law
 taxis transpile run     --target T|all --nous PATH [--ref …] [--out DIR] [--yes] [--json]   # T1–T3
 taxis transpile reverse --target T|all --nous PATH [--ref …] [--json]                       # T4
+taxis transpile trial   --target T --nous PATH [--ref …] [--json]          # the real harness, fenced, on the render
 ```
 
 `check` exits 20 on any blocking finding. Kinds are `specs/base.yaml · report.kinds`; `signal` (upstream moved
