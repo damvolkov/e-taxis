@@ -238,3 +238,17 @@ pruned: total ownership is the owner's default; the backup and undo hold them.
 committed); the acceptance test derives the `.env` from the core, so nothing depends on it.
 
 **Open.** OpenHuman reads `config.toml` at start: the running container still holds the old label until restarted.
+
+## 2026-10-27 · Markdown sections only outside code fences
+
+**Done.** `codecs.markdown.read_markdown` cut a live document on every `## ` line, fenced or not: a persona slot that
+shows a Markdown example (`## x` inside a ```` ``` ```` fence) was read back as a stray section, which total ownership
+prunes — the landing stopped being idempotent. Sections, and the preamble's paragraphs, are now cut only on lines
+outside a fence: ```` ``` ```` or `~~~`, any indent, closed by a bare run of its kind at least as long.
+
+**Evidence.** Red first: a document with a fenced `## inside` and a real `## outside` (backtick, tilde, four-backtick
+fences) read a stray section; a fenced `# not h1` / `> not a quote` in the preamble split the paragraph into a quote.
+Green after, with a round trip render → read → the same fragments.
+
+**Decided alone.** Any indent opens a fence, not CommonMark's three spaces: a fence nested in a list item is still a
+fence. Rejected: a Markdown parser dependency for one splitter.

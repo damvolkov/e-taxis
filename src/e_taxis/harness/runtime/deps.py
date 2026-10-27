@@ -63,7 +63,7 @@ from e_taxis.transpile.services.land import LandService
 from e_taxis.transpile.services.reverse import ReverseService
 from e_taxis.transpile.services.run import RunService
 from e_taxis.transpile.services.trial import TrialService
-from e_taxis.workflow.adapters.agent import OpencodeAgent
+from e_taxis.workflow.adapters.agent import ClaudeAgent, ModeAgent, OpencodeAgent
 from e_taxis.workflow.adapters.command import ShellCommand
 from e_taxis.workflow.adapters.evals import NousEvals
 from e_taxis.workflow.adapters.ledger import JsonlLedger
@@ -236,18 +236,26 @@ class Deps:
         human = sys.stdin.isatty() and not settings.taxis_headless
         return ShellCommand({**os.environ, **({MANDATE: "1"} if human else {})})
 
-    async def _resolve_agent(self) -> OpencodeAgent:
-        """Agents driven from the live OpenCode tree; a read-only one fenced by the trial's own landrun."""
-        settings = await self.resolve(TaxisSettings)
-        landrun = settings.taxis_landrun.expanduser()
-        return OpencodeAgent(
-            await self.resolve(CommandPort),
+    async def _resolve_agent(self) -> ModeAgent:
+        """Agents routed by their live OpenCode mode: a subagent to Claude Code (`~/.claude`), the rest to OpenCode;
+        a read-only one fenced by the trial's own landrun."""
+        settings, (_, claude) = await self.resolve(TaxisSettings), await self._common_homes()
+        command, landrun = await self.resolve(CommandPort), settings.taxis_landrun.expanduser()
+        writable = tuple(path.expanduser() for path in settings.taxis_workflow_writable)
+        opencode = OpencodeAgent(
+            command,
             LandrunFence(landrun),
             config=settings.taxis_workflow_opencode.expanduser(),
             landrun=landrun,
-            writable=tuple(path.expanduser() for path in settings.taxis_workflow_writable),
+            writable=writable,
             environ=os.environ,
             model=settings.taxis_workflow_model,
+        )
+        return ModeAgent(
+            opencode,
+            ClaudeAgent(
+                command, LandrunFence(landrun), config=claude, landrun=landrun, writable=writable, environ=os.environ
+            ),
         )
 
     async def _resolve_workflow(self) -> WorkflowRun:

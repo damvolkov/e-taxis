@@ -24,7 +24,7 @@ from e_taxis.transpile.adapters.nous import GitNous
 from e_taxis.transpile.models.trial import TrialReport, TrialSight
 from e_taxis.transpile.services.check import CheckService
 from e_taxis.transpile.services.run import RunService
-from e_taxis.workflow.adapters.agent import OpencodeAgent
+from e_taxis.workflow.adapters.agent import ClaudeAgent, ModeAgent, OpencodeAgent
 from e_taxis.workflow.adapters.command import ShellCommand
 from e_taxis.workflow.adapters.evals import NousEvals
 from e_taxis.workflow.adapters.ledger import JsonlLedger
@@ -312,6 +312,37 @@ def opencode_agent(fake_command: FakeCommand, fence: FakeFence, opencode_tree: P
         environ={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path)},
         model="local/m",
     )
+
+
+@pytest.fixture
+def claude_tree(tmp_path: Path) -> Path:
+    """A live Claude Code tree: `scout` denies the shell and the web and reaches two MCP servers (one by name, one
+    inline); `builder` names its tools as Claude's comma string."""
+    root = tmp_path / "claude"
+    (root / "agents").mkdir(parents=True)
+    (root / "agents" / "scout.md").write_text(
+        "---\nname: scout\nmaxTurns: 20\nmcpServers:\n- graph\n- inline:\n    command: x\n"
+        "disallowedTools:\n- Bash\n- WebFetch\n---\nbody\n"
+    )
+    (root / "agents" / "builder.md").write_text("---\nname: builder\ntools: Read, Edit, Bash\n---\nbody\n")
+    return root
+
+
+@pytest.fixture
+def claude_agent(fake_command: FakeCommand, fence: FakeFence, claude_tree: Path, tmp_path: Path) -> ClaudeAgent:
+    return ClaudeAgent(
+        fake_command,
+        fence,
+        config=claude_tree,
+        landrun=Path("/opt/landrun"),
+        writable=(tmp_path / "cache",),
+        environ={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path)},
+    )
+
+
+@pytest.fixture
+def mode_agent(opencode_agent: OpencodeAgent, claude_agent: ClaudeAgent) -> ModeAgent:
+    return ModeAgent(opencode_agent, claude_agent)
 
 
 @pytest.fixture

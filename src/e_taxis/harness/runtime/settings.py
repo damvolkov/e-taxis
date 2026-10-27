@@ -22,7 +22,8 @@ TIMEOUT: float = 10.0
 DOWNLOAD: float = 300.0
 ### the Landlock CLI a trial fences its phantoms with: pinned and checksum-verified where it is installed.
 LANDRUN: Path = Path("~/.local/bin/landrun")
-### where a read-only agent session may write: OpenCode's own cache, data and state — never a repo, never a config.
+### where a read-only agent session may write: the drivers' (OpenCode's, Claude Code's) own cache, data and state —
+### never a repo, never a config.
 WRITABLE: tuple[Path, ...] = (Path("~/.cache"), Path("~/.local/share"), Path("~/.local/state"))
 ### the heaviest grade an enhancement adopts without a human, per target (e-nous ops `promote:`); `none` adopts nothing.
 PROMOTE: dict[str, str] = {
@@ -47,8 +48,9 @@ class TaxisSettings(BaseSettings):
 
     TAXIS_WORKFLOW_REPORTS: where runs live, relative to the e-nous checkout; _CONCURRENCY bounds the steps in
     flight, _TIMEOUT each step (seconds), _LOCK_WAIT how long a run waits for another; _OPENCODE is the live tree
-    agents are driven from, _MODEL the model they run on (empty: the tree's), _WRITABLE what a read-only session may
-    write. TAXIS_DISTILL_BLUEPRINT is the e-arkhetypo checkout read at _REF; _GRAPH the code-graph CLI, _CACHE its
+    agents are driven from (a subagent there is driven from Claude Code's tree, CLAUDE_CONFIG_DIR), _MODEL the model
+    OpenCode runs them on (empty: the tree's), _WRITABLE what a read-only session may write.
+    TAXIS_DISTILL_BLUEPRINT is the e-arkhetypo checkout read at _REF; _GRAPH the code-graph CLI, _CACHE its
     snapshot cache; _SCOPE the e-nous folders doctrine lives in; _CANDIDATES each miner's cap; _WORKFLOW the
     workflow whose node ports name the miners, the judge and the adversary.
 

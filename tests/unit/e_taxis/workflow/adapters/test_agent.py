@@ -1,4 +1,5 @@
-"""tests/unit/e_taxis/workflow/adapters/agent: driving OpenCode headless — every ask a deny, read-only a fence.
+"""tests/unit/e_taxis/workflow/adapters/agent: driving OpenCode or Claude Code headless — every ask a deny, read-only
+a fence, a subagent routed to Claude Code.
 
 Defect 6 of the legacy driver: read-only was only `edit: deny` injected into OpenCode's config, and OpenCode 2 keeps
 the agent's `shell: allow` — a read-only session wrote into the repo with a shell command. Read-only is now a
@@ -14,7 +15,7 @@ import msgspec
 import pytest
 
 from e_taxis.transpile.adapters.fence import LandrunFence
-from e_taxis.workflow.adapters.agent import OpencodeAgent
+from e_taxis.workflow.adapters.agent import ClaudeAgent, ModeAgent, OpencodeAgent
 from e_taxis.workflow.adapters.command import ShellCommand
 from e_taxis.workflow.models.error import AgentError
 from e_taxis.workflow.models.run import Reply
@@ -24,6 +25,8 @@ if TYPE_CHECKING:
 
 LANDRUN = Path("~/.local/bin/landrun").expanduser()
 STREAM = '{"part": {"type": "text", "text": "done"}}\n'
+USAGE = '{{"inputTokens": {i}, "outputTokens": {o}, "cacheReadInputTokens": {r}, "cacheCreationInputTokens": {w}}}'
+RESULT = '{{"type": "result", "subtype": "success", "is_error": false, "result": "done", "modelUsage": {{{models}}}}}'
 
 
 @pytest.mark.parametrize(
@@ -141,24 +144,147 @@ async def test_agent_drive_without_a_global_config(
 @pytest.mark.slow
 @pytest.mark.skipif(not LANDRUN.is_file(), reason="landrun is not installed")
 @pytest.mark.parametrize(("readonly", "lands"), [(True, False), (False, True)], ids=["readonly", "writable"])
+@pytest.mark.parametrize(
+    ("kind", "agent"), [(OpencodeAgent, "builder"), (ClaudeAgent, "scout")], ids=["opencode", "claude"]
+)
 async def test_agent_readonly_session_cannot_write_the_checkout(
-    resources: Resources, opencode_tree: Path, tmp_path: Path, readonly: bool, lands: bool
+    resources: Resources,
+    opencode_tree: Path,
+    claude_tree: Path,
+    tmp_path: Path,
+    readonly: bool,
+    lands: bool,
+    kind: type[OpencodeAgent | ClaudeAgent],
+    agent: str,
 ) -> None:
-    """A stand-in `opencode` writes into its cwd with a plain shell redirect — what `edit: deny` never stopped."""
+    """A stand-in CLI writes into its cwd with a plain shell redirect — what `edit: deny` never stopped."""
     bin_dir, checkout = tmp_path / "bin", tmp_path / "checkout"
     bin_dir.mkdir()
     checkout.mkdir()
-    shutil.copy(resources.path / "workflow" / "opencode", bin_dir / "opencode")
-    (bin_dir / "opencode").chmod(0o755)
+    name = "claude" if kind is ClaudeAgent else "opencode"
+    shutil.copy(resources.path / "workflow" / name, bin_dir / name)
+    (bin_dir / name).chmod(0o755)
     environ = {"PATH": f"{bin_dir}:/usr/bin:/bin", "HOME": str(tmp_path)}
-    driver = OpencodeAgent(
+    driver = kind(
         ShellCommand(environ),
         LandrunFence(LANDRUN),
-        config=opencode_tree,
+        config=claude_tree if kind is ClaudeAgent else opencode_tree,
         landrun=LANDRUN,
         writable=(tmp_path / "cache",),
         environ=environ,
     )
-    reply = await driver.drive("builder", "write", cwd=checkout, limit=30.0, readonly=readonly)
+    reply = await driver.drive(agent, "write", cwd=checkout, limit=30.0, readonly=readonly)
     assert reply.text == "done"
     assert (checkout / "written-by-agent").exists() is lands
+
+
+async def test_agent_claude_read_sums_every_model() -> None:
+    models = f'"opus": {USAGE.format(i=2, o=40, r=19424, w=12470)}, "haiku": {USAGE.format(i=1176, o=18, r=0, w=0)}'
+    assert ClaudeAgent.read(RESULT.format(models=models)) == Reply(
+        text="done", tokens=2 + 40 + 12470 + 1176 + 18, cached=19424
+    )
+
+
+async def test_agent_claude_read_refuses_an_error_result() -> None:
+    raw = '{"type": "result", "subtype": "error_max_turns", "is_error": true, "result": null, "modelUsage": {}}'
+    with pytest.raises(AgentError, match="error_max_turns"):
+        ClaudeAgent.read(raw)
+
+
+@pytest.mark.parametrize(
+    ("agent", "readonly", "allowed", "denied"),
+    [
+        ("scout", False, "Read,Grep,Glob,Edit,Write,NotebookEdit,WebSearch,mcp__graph,mcp__inline", ()),
+        (
+            "scout",
+            True,
+            "Read,Grep,Glob,WebSearch,mcp__graph,mcp__inline",
+            ("--disallowedTools", "Edit,Write,NotebookEdit"),
+        ),
+        ("builder", False, "Read,Edit,Bash", ()),
+    ],
+    ids=["writable", "readonly", "declared"],
+)
+async def test_agent_claude_drive_grants_what_the_definition_allows(
+    claude_agent: ClaudeAgent,
+    fake_command,
+    tmp_path: Path,
+    agent: str,
+    readonly: bool,
+    allowed: str,
+    denied: tuple[str, ...],
+) -> None:
+    fake_command.answers[("/opt/landrun",)] = fake_command.answers[("claude",)] = RESULT.format(models="")
+    reply = await claude_agent.drive(agent, "-do it", cwd=tmp_path, limit=5.0, readonly=readonly, steps=3)
+    argv, env = fake_command.calls[0]
+    assert argv[argv.index("claude") :] == (
+        "claude",
+        "-p",
+        "--agent",
+        agent,
+        "--output-format",
+        "json",
+        "--permission-mode",
+        "dontAsk",
+        "--no-session-persistence",
+        "--max-turns",
+        "3",
+        "--allowedTools",
+        allowed,
+        *denied,
+        "--",
+        "-do it",
+    )
+    assert "--dangerously-skip-permissions" not in argv
+    assert (env["PWD"], env["OPS_GLOBAL__HEADLESS"]) == (str(tmp_path), "1")
+    assert reply == Reply(text="done")
+
+
+async def test_agent_claude_drive_readonly_runs_inside_the_fence(
+    claude_agent: ClaudeAgent, fake_command, tmp_path: Path
+) -> None:
+    fake_command.answers[("/opt/landrun",)] = RESULT.format(models="")
+    await claude_agent.drive("scout", "look", cwd=tmp_path, limit=5.0, readonly=True)
+    argv, env = fake_command.calls[0]
+    fence, _, inside = " ".join(argv).partition(" -- ")
+    assert argv[:5] == ("/opt/landrun", "--best-effort", "--ignore-missing", "--rox", "/")
+    assert f"--rw {tmp_path / 'cache'} --rw {env['TMPDIR']} --rw /dev/null" in fence
+    assert "--env PATH" in fence
+    assert inside.startswith("claude -p --agent scout")
+    assert "--max-turns" not in inside
+
+
+async def test_agent_claude_drive_readonly_refuses_an_unproven_fence(
+    claude_agent: ClaudeAgent, fake_command, fence, tmp_path: Path
+) -> None:
+    fence.holds = False
+    with pytest.raises(AgentError, match="read-only fence does not hold"):
+        await claude_agent.drive("scout", "look", cwd=tmp_path, limit=5.0, readonly=True)
+    assert fake_command.calls == []
+
+
+async def test_agent_claude_drive_refuses_an_absent_agent(
+    claude_agent: ClaudeAgent, fake_command, tmp_path: Path
+) -> None:
+    with pytest.raises(AgentError, match="is not in"):
+        await claude_agent.drive("ghost", "x", cwd=tmp_path, limit=5.0)
+    assert fake_command.calls == []
+
+
+@pytest.mark.parametrize(("agent", "driver"), [("scout", "claude"), ("builder", "opencode")], ids=["subagent", "all"])
+async def test_agent_mode_routes_by_the_live_mode(
+    mode_agent: ModeAgent, fake_command, tmp_path: Path, agent: str, driver: str
+) -> None:
+    fake_command.answers[("claude",)] = RESULT.format(models="")
+    fake_command.answers[("opencode",)] = STREAM
+    reply = await mode_agent.drive(agent, "x", cwd=tmp_path, limit=5.0)
+    assert (fake_command.calls[0][0][0], reply.text) == (driver, "done")
+
+
+async def test_agent_mode_reads_a_missing_mode_as_all(
+    mode_agent: ModeAgent, opencode_tree: Path, fake_command, tmp_path: Path
+) -> None:
+    (opencode_tree / "agents" / "builder.md").write_text("---\npermission: {}\n---\nbody\n")
+    fake_command.answers[("opencode",)] = STREAM
+    await mode_agent.drive("builder", "x", cwd=tmp_path, limit=5.0)
+    assert fake_command.calls[0][0][0] == "opencode"
