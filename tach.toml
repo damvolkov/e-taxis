@@ -114,6 +114,12 @@ path = "e_taxis.workflow.distill"
 layer = "services"
 depends_on = []
 
+### the planes' nodes render and check through the transpiler's own services (v2), never a second render.
+[[modules]]
+path = "e_taxis.workflow.plane"
+layer = "services"
+depends_on = ["e_taxis.transpile.services", "e_taxis.workflow.distill"]
+
 [[modules]]
 path = "e_taxis.workflow.engine"
 layer = "processors"
@@ -127,7 +133,7 @@ depends_on = []
 [[modules]]
 path = "e_taxis.workflow.models"
 layer = "models"
-depends_on = ["e_taxis.harness.models"]
+depends_on = ["e_taxis.harness.models", "e_taxis.transpile.models"]
 
 [[modules]]
 path = "e_taxis.harness.models"

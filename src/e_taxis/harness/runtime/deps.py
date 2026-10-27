@@ -65,9 +65,33 @@ from e_taxis.transpile.services.run import RunService
 from e_taxis.transpile.services.trial import TrialService
 from e_taxis.workflow.adapters.agent import OpencodeAgent
 from e_taxis.workflow.adapters.command import ShellCommand
+from e_taxis.workflow.adapters.evals import NousEvals
 from e_taxis.workflow.adapters.ledger import JsonlLedger
 from e_taxis.workflow.adapters.lock import FlockLock
-from e_taxis.workflow.models.ports import AgentPort, CommandPort
+from e_taxis.workflow.adapters.sandbox import GitSandbox
+from e_taxis.workflow.adapters.scanner import SkillspectorScanner
+from e_taxis.workflow.models.ports import AgentPort, CommandPort, PlaneNodePort, SandboxPort
+from e_taxis.workflow.plane.brief import PlaneBrief
+from e_taxis.workflow.plane.candidate import PlaneCandidate
+from e_taxis.workflow.plane.decide import PlaneDecide
+from e_taxis.workflow.plane.grade import PlaneGrade
+from e_taxis.workflow.plane.intake import PlaneIntake
+from e_taxis.workflow.plane.integrate import PlaneIntegrate
+from e_taxis.workflow.plane.law import PlaneLaw
+from e_taxis.workflow.plane.loading import PlaneLoading
+from e_taxis.workflow.plane.manual import PlaneManual
+from e_taxis.workflow.plane.needs import PlaneNeeds
+from e_taxis.workflow.plane.patch import PlanePatch
+from e_taxis.workflow.plane.queries import PlaneQueries
+from e_taxis.workflow.plane.render import PlaneRender
+from e_taxis.workflow.plane.sandbox import PlaneSandbox
+from e_taxis.workflow.plane.security import PlaneSecurity
+from e_taxis.workflow.plane.signals import PlaneSignals
+from e_taxis.workflow.plane.snapshot import PlaneSnapshot
+from e_taxis.workflow.plane.speckeeper import PlaneSpeckeeper
+from e_taxis.workflow.plane.tasks import PlaneTasks
+from e_taxis.workflow.services.plane import PlaneRun
+from e_taxis.workflow.services.promote import PlanePromote
 from e_taxis.workflow.services.run import WorkflowRun
 
 T = TypeVar("T")
@@ -75,6 +99,9 @@ T = TypeVar("T")
 Inject = Annotated[T, Parameter(parse=False)]
 
 type Builder = Callable[[Deps], Awaitable[object]]
+
+### the variable a terminal-started taxis hands its children: the human's mandate (TaxisSettings.taxis_human).
+MANDATE: str = "TAXIS_HUMAN"
 
 
 ##### TYPES #####
@@ -203,7 +230,11 @@ class Deps:
         )
 
     async def _resolve_command(self) -> ShellCommand:
-        return ShellCommand(os.environ)
+        """Children inherit the environment; from a terminal, outside an agent's session, the human's mandate too
+        (`TAXIS_HUMAN`): a workflow you start may run the human commands its steps name."""
+        settings = await self.resolve(TaxisSettings)
+        human = sys.stdin.isatty() and not settings.taxis_headless
+        return ShellCommand({**os.environ, **({MANDATE: "1"} if human else {})})
 
     async def _resolve_agent(self) -> OpencodeAgent:
         """Agents driven from the live OpenCode tree; a read-only one fenced by the trial's own landrun."""
@@ -234,6 +265,63 @@ class Deps:
             limit=settings.taxis_workflow_timeout,
             reports=settings.taxis_workflow_reports,
         )
+
+    async def _resolve_sandbox(self) -> GitSandbox:
+        return GitSandbox(await self.resolve(CommandPort))
+
+    async def _common_nodes(self) -> Mapping[str, PlaneNodePort]:
+        """Every plane node by the `use` a graph names it with: the planes' one table use → node."""
+        settings, command = await self.resolve(TaxisSettings), await self.resolve(CommandPort)
+        sandbox, evals, agent = await self.resolve(SandboxPort), NousEvals(), await self.resolve(AgentPort)
+        render = PlaneRender(await self.resolve(RunService), Path.home())
+        return MappingProxyType(
+            {
+                "snapshot": PlaneSnapshot(command, sandbox),
+                "render": render,
+                "law": PlaneLaw(await self.resolve(CheckService)),
+                "security": PlaneSecurity(
+                    SkillspectorScanner(command, settings.taxis_eval_scan_timeout), settings.taxis_eval_scan_fail
+                ),
+                "queries": PlaneQueries(evals),
+                "tasks": PlaneTasks(evals),
+                "needs": PlaneNeeds(),
+                "signals": PlaneSignals(await self.resolve(CheckService)),
+                "loading": PlaneLoading(await self.resolve(TrialService), await self.resolve(CapturePort)),
+                "sandbox": PlaneSandbox(sandbox),
+                "intake": PlaneIntake(JsonlLedger.open),
+                "manual": PlaneManual(sandbox),
+                "brief": PlaneBrief(),
+                "integrate": PlaneIntegrate(agent, sandbox, settings.taxis_eval_agent_timeout),
+                "speckeeper": PlaneSpeckeeper(agent, sandbox, JsonlLedger.open, settings.taxis_eval_agent_timeout),
+                "candidate": PlaneCandidate(render, sandbox),
+                "grade": PlaneGrade(render, sandbox),
+                "decide": PlaneDecide(settings.taxis_eval_promote),
+                "patch": PlanePatch(sandbox),
+            }
+        )
+
+    async def _common_lock(self) -> FlockLock:
+        """The checkout's run lock: waited for, re-entered with the token a parent run handed down."""
+        settings = await self.resolve(TaxisSettings)
+        return FlockLock(
+            settings.taxis_workflow_lock_wait, settings.taxis_lock, say=lambda line: sys.stderr.write(f"{line}\n")
+        )
+
+    async def _resolve_plane(self) -> PlaneRun:
+        """Plane runs share the workflows' reports root and lock: a nested run re-enters its parent's."""
+        settings = await self.resolve(TaxisSettings)
+        return PlaneRun(
+            await self._common_nodes(),
+            await self.resolve(SandboxPort),
+            await self._common_lock(),
+            JsonlLedger.open,
+            concurrency=settings.taxis_eval_concurrency,
+            reports=settings.taxis_workflow_reports,
+            backend=settings.taxis_eval_backend,
+        )
+
+    async def _resolve_promote(self) -> PlanePromote:
+        return PlanePromote(await self.resolve(PlaneRun), await self.resolve(SandboxPort), await self._common_lock())
 
     ############################################################
 
@@ -266,6 +354,9 @@ class Deps:
             CommandPort: _resolve_command,
             AgentPort: _resolve_agent,
             WorkflowRun: _resolve_workflow,
+            SandboxPort: _resolve_sandbox,
+            PlaneRun: _resolve_plane,
+            PlanePromote: _resolve_promote,
         }
     )
 

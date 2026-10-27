@@ -10,7 +10,10 @@ edit: this scope stands alone on the same `BaseSettings` layers, and `Deps` buil
 from importlib.resources import files
 from pathlib import Path
 
+from pydantic import AliasChoices, Field
+
 from e_taxis.core.settings.base import BaseSettings
+from e_taxis.workflow.models.plane import Cadence
 
 ##### DEFAULTS #####
 ### the catalog ships inside the harness branch: `files` finds it in a checkout and in an installed wheel alike.
@@ -21,6 +24,17 @@ DOWNLOAD: float = 300.0
 LANDRUN: Path = Path("~/.local/bin/landrun")
 ### where a read-only agent session may write: OpenCode's own cache, data and state — never a repo, never a config.
 WRITABLE: tuple[Path, ...] = (Path("~/.cache"), Path("~/.local/share"), Path("~/.local/state"))
+### the heaviest grade an enhancement adopts without a human, per target (e-nous ops `promote:`); `none` adopts nothing.
+PROMOTE: dict[str, str] = {
+    "skill": "none",
+    "agent": "cosmetic",
+    "command": "cosmetic",
+    "workflow": "none",
+    "tool": "none",
+    "persona": "none",
+    "config": "none",
+    "spec": "deepening",
+}
 
 
 class TaxisSettings(BaseSettings):
@@ -36,7 +50,15 @@ class TaxisSettings(BaseSettings):
     agents are driven from, _MODEL the model they run on (empty: the tree's), _WRITABLE what a read-only session may
     write. TAXIS_DISTILL_BLUEPRINT is the e-arkhetypo checkout read at _REF; _GRAPH the code-graph CLI, _CACHE its
     snapshot cache; _SCOPE the e-nous folders doctrine lives in; _CANDIDATES each miner's cap; _WORKFLOW the
-    workflow whose node ports name the miners, the judge and the adversary."""
+    workflow whose node ports name the miners, the judge and the adversary.
+
+    The planes (`taxis eval`, `taxis enhance`) keep their runs beside the workflows' (TAXIS_WORKFLOW_REPORTS) and
+    under the same lock: TAXIS_EVAL_BACKEND is the render they measure, _CONCURRENCY the node runs in flight,
+    _CADENCE a run's default, _SCAN_TIMEOUT one SkillSpector scan, _SCAN_FAIL the lowest severity that turns the
+    security gate red, _AGENT_TIMEOUT one proposer session, _PROMOTE the heaviest grade each target adopts without a
+    human. TAXIS_HUMAN is the mandate a terminal-started `taxis` hands its children (a human command run by a
+    workflow step it started); TAXIS_HEADLESS (or e-nous's OPS_GLOBAL__HEADLESS) marks a session an agent drives —
+    no human command runs there, mandate or not."""
 
     taxis_catalog: Path = CATALOG
     taxis_timeout: float = TIMEOUT
@@ -60,3 +82,12 @@ class TaxisSettings(BaseSettings):
     taxis_distill_cache: Path = Path("~/.cache/reverse-distill")
     taxis_distill_scope: tuple[str, ...] = ("core", "specs/tekton")
     taxis_distill_candidates: int = 12
+    taxis_eval_backend: str = "opencode"
+    taxis_eval_concurrency: int = 4
+    taxis_eval_cadence: Cadence = Cadence.MANUAL
+    taxis_eval_scan_timeout: float = 300.0
+    taxis_eval_scan_fail: str = "HIGH"
+    taxis_eval_agent_timeout: float = 900.0
+    taxis_eval_promote: dict[str, str] = PROMOTE
+    taxis_human: bool = False
+    taxis_headless: bool = Field(default=False, validation_alias=AliasChoices("TAXIS_HEADLESS", "OPS_GLOBAL__HEADLESS"))

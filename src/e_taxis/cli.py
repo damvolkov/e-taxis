@@ -24,6 +24,11 @@ typo fails the gate, never a user.
     taxis workflow run ID --nous PATH [name=value ...]                  # a corpus workflow, end to end
     taxis workflow list --nous PATH · check [ID ...] --nous PATH
     taxis distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas --nous PATH --rundir DIR …
+    taxis eval run TARGET [IDS ...] --nous PATH [--cadence C] [--candidate RUN]   # the evaluator, read-only
+    taxis eval graph [TARGET] · eval needs TARGET --nous PATH [--run R] [--owner O]
+    taxis enhance run TARGET [IDS ...] --nous PATH (--from R | --directive D | --manual) [--cadence C]
+    taxis enhance graph [TARGET] · enhance promote [RUN] --nous PATH [--ids ...] [--all-verdicts] [--yes]
+    taxis reports show [RUN] --nous PATH [--json]
     taxis logo NAMES [--out DIR] [--prefix P] [--background HEX] [--foreground HEX] [--force]
     taxis repo resolve URL REF                     # the commit a branch, tag or sha names
     taxis repo tree    URL REF [PATH]              # every file the remote holds at REF
@@ -51,6 +56,13 @@ GROUPS: tuple[CommandGroup, ...] = (
     CommandGroup(
         path="distill", help="reverse-distill's deterministic steps, one per workflow node: --nous, --rundir."
     ),
+    CommandGroup(
+        path="eval", help="The evaluator: measure a corpus target, read-only; every subject ends in its needs."
+    ),
+    CommandGroup(
+        path="enhance", help="The enhancer: act on a reason in a sandbox; verdicts, patches, a human promotes."
+    ),
+    CommandGroup(path="reports", help="Evaluation and enhancement runs, rebuilt from their ledgers."),
 )
 
 CARDS: tuple[CommandCard, ...] = (
@@ -167,6 +179,41 @@ CARDS: tuple[CommandCard, ...] = (
         path="distill schemas",
         target="e_taxis.workflow.commands.distill:schemas",
         summary="Write (or --check) every port's JSON Schema.",
+    ),
+    CommandCard(
+        path="eval run",
+        target="e_taxis.workflow.commands.eval:run",
+        summary="Measure a target's subjects; exits 24 only when a node broke.",
+    ),
+    CommandCard(
+        path="eval graph",
+        target="e_taxis.workflow.commands.eval:graph",
+        summary="Print and prove the evaluator's graphs.",
+    ),
+    CommandCard(
+        path="eval needs",
+        target="e_taxis.workflow.commands.eval:needs",
+        summary="An evaluation's open needs; exits 1 while any is open.",
+    ),
+    CommandCard(
+        path="enhance run",
+        target="e_taxis.workflow.commands.enhance:run",
+        summary="Enhance on a reason, in a sandbox; verdicts and patches.",
+    ),
+    CommandCard(
+        path="enhance graph",
+        target="e_taxis.workflow.commands.enhance:graph",
+        summary="Print and prove the enhancer's graphs.",
+    ),
+    CommandCard(
+        path="enhance promote",
+        target="e_taxis.workflow.commands.enhance:promote",
+        summary="Apply an enhancement's patches to the checkout; a human command.",
+    ),
+    CommandCard(
+        path="reports show",
+        target="e_taxis.workflow.commands.reports:show",
+        summary="A plane run's report, rebuilt from its ledger.",
     ),
     CommandCard(path="logo", target="e_taxis.ops.logo:logo", summary="Deterministic family wordmarks into assets/."),
     CommandCard(path="repo resolve", target="e_taxis.ops.repo:resolve", summary="The commit a ref names on a remote."),

@@ -1,0 +1,28 @@
+{
+  "skill": {"name": "algo-py-core"},
+  "risk_assessment": {"score": 42, "severity": "HIGH"},
+  "issues": [
+    {
+      "id": "E1",
+      "severity": "HIGH",
+      "location": {"file": "SKILL.md", "start_line": 9},
+      "finding": "exfiltration",
+      "pattern": "curl",
+      "code_snippet": "curl x",
+      "match_fingerprint": "abcdef0123456789"
+    },
+    {
+      "id": "E1",
+      "severity": "HIGH",
+      "location": {"file": "SKILL.md", "start_line": 9},
+      "finding": "duplicate of the same place"
+    },
+    {
+      "id": "R2",
+      "severity": "LOW",
+      "location": {"file": "references/lib.md", "start_line": 3},
+      "code_snippet": "x"
+    },
+    {"id": "N3"}
+  ]
+}
