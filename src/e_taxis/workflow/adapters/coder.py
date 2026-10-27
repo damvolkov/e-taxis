@@ -75,8 +75,9 @@ def references_coder(values: Iterable[Any]) -> frozenset[str]:
 
 
 async def link_coder(link: anyio.Path, source: Path | anyio.Path) -> None:
+    """`link` → `source`, absolute: a relative target resolves from the link's own folder, never the caller's cwd."""
     await link.unlink(missing_ok=True)
-    await link.symlink_to(source)
+    await link.symlink_to(await anyio.Path(source).absolute())
 
 
 ##### TYPES #####

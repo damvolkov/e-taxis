@@ -162,3 +162,19 @@ async def test_activation_real_probe_routes_one_skill(
     assert isinstance(outcome.metrics, ActivationMetrics)
     assert (outcome.status, outcome.metrics.unmeasured, outcome.metrics.passed) == (Status.OK, 0, 2)
     assert outcome.tokens > 0
+
+
+async def test_activation_drops_the_borrowed_credentials(
+    plane_nodes: dict[str, Any],
+    plane_nous: Path,
+    plane_state: Callable[..., Any],
+    plane_context: Callable[..., Any],
+    coder,
+) -> None:
+    coder.loads[HITS] = frozenset({SKILL})
+    state = await plane_state(NODE, subjects=(SKILL,), nous=str(plane_nous))
+    home = state.paths.node("activation", SKILL) / "home"
+    home.mkdir(parents=True, exist_ok=True)
+    (home / ".credentials.json").write_text("{}")
+    await plane_nodes["activation"].run(plane_context(state, "activation", SKILL))
+    assert not (home / ".credentials.json").exists()

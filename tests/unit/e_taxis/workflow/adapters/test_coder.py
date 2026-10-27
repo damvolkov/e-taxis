@@ -2,16 +2,13 @@
 loaded, the references any tool named, its text, every billed token — and pointed at a sandbox around the render,
 never the live tree."""
 
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import msgspec
 import pytest
 
 from e_taxis.workflow.adapters.coder import ClaudeCoder, OpencodeCoder
 from e_taxis.workflow.models.case import ProbeMode, ProbeResult
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 OPENCODE = "\n".join(
     msgspec.json.encode(event).decode()
@@ -116,3 +113,25 @@ async def test_coder_claude_probe(fake_command, tmp_path: Path) -> None:
     await ClaudeCoder(fake_command, tmp_path).probe("-sort it", ProbeMode.NAVIGATION, env={}, limit=9.0)
     ((argv, _),) = fake_command.calls
     assert (argv[0], argv[-2:], argv[argv.index("--max-turns") + 1]) == ("claude", ("--", "-sort it"), "8")
+
+
+async def test_coder_claude_sandbox_links_resolve_from_a_relative_render(
+    tmp_path: Path, fake_command, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    real, root = tmp_path / "home" / ".claude", tmp_path / "run" / "home"
+    real.mkdir(parents=True)
+    (tmp_path / "run" / "flat" / "skills").mkdir(parents=True)
+    await ClaudeCoder(fake_command, real).sandbox(Path("run/flat"), root)
+    assert (root / "skills").is_dir()
+
+
+async def test_coder_opencode_sandbox_links_resolve_from_a_relative_render(
+    tmp_path: Path, fake_command, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    real, root = tmp_path / "xdg", tmp_path / "run" / "home"
+    real.mkdir()
+    (tmp_path / "run" / "flat" / "skills").mkdir(parents=True)
+    await OpencodeCoder(fake_command, real).sandbox(Path("run/flat"), root)
+    assert (root / "opencode" / "skills").is_dir()
