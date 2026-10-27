@@ -222,6 +222,18 @@ and measured no routing and no effect, and the enhancer adopted a skill edit wit
 runner, their metrics and tests). The cadence is v1's: all three are due at `weekly` (and `manual`, which runs
 everything) — **not** `nightly`, in v1 or here: a nightly run still measures nothing heuristic, by design.
 
+**(2026-10-27) `--only`.** A weekly run pays every measure of every subject; `taxis eval run … --only activation`
+runs just the measures named (`semantic`, `activation`, `effect`) and leaves the rest `idle` ("not selected by
+--only"); the free gates (`render`, `law`, `queries`, `tasks`, `needs`…) always run, since the measures read them. A
+name that is not a measure of the target's graph is refused. Measured on the house corpus, `activation` on Claude
+Code costs ~5.8 M tokens per skill (cache reads included) — the reason a single measure must be runnable alone.
+`--resume` was rejected for this: node reuse keys on HEAD, so an uncommitted edit would reuse a stale render, and
+keying on the working tree reruns everything anyway.
+
+**(2026-10-27) Probe sandboxes link absolutely** (#20): with a relative `--nous`, the sandbox's `skills` link was
+relative to the cwd and broken from the link's own folder, so no session could load a skill — every skill read
+recall 0/11 on both coders. The activation node also unlinks the borrowed `.credentials.json` when its probes end.
+
 | node | does | cadence | cost |
 |---|---|---|---|
 | `semantic` | `security` with SkillSpector's LLM stage on (semantic analyzers + the meta-analyzer that drops the static stage's false positives), on `TAXIS_EVAL_SEMANTIC_TIER` (`builder`) through the provider's `openai_url`; same placing in core/ and accepted findings; findings become `security` needs | weekly | the scanner's LLM calls per skill (it reports no token count) |

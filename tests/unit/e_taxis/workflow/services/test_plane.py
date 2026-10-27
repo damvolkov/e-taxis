@@ -63,6 +63,25 @@ async def test_plane_evaluate_weekly_measures_the_heuristics(
     assert len(echo.systems) == 4
 
 
+async def test_plane_evaluate_only_runs_the_named_measures(
+    plane_run: PlaneRun, plane_nous: Path, scanner, echo
+) -> None:
+    report = await plane_run.evaluate(plane_nous, Target.SKILL, (SKILL,), Cadence.WEEKLY, only=("semantic",))
+    found = statuses(report)
+    assert (found["semantic"], found["activation"], found["effect"], found["law"]) == (
+        Status.OK,
+        Status.IDLE,
+        Status.IDLE,
+        Status.OK,
+    )
+    assert echo.systems == []
+
+
+async def test_plane_evaluate_refuses_an_unknown_measure(plane_run: PlaneRun, plane_nous: Path) -> None:
+    with pytest.raises(PlaneError, match="--only names no measure of skill: law"):
+        await plane_run.evaluate(plane_nous, Target.SKILL, (SKILL,), Cadence.WEEKLY, only=("law",))
+
+
 async def test_plane_evaluate_refuses_an_unknown_subject(plane_run: PlaneRun, plane_nous: Path) -> None:
     with pytest.raises(PlaneError, match="unknown subject"):
         await plane_run.evaluate(plane_nous, Target.SKILL, ("nope",), Cadence.COMMIT)
