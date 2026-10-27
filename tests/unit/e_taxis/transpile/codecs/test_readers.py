@@ -2,7 +2,7 @@
 
 import pytest
 
-from e_taxis.transpile.codecs.markdown import read_markdown, split_markdown
+from e_taxis.transpile.codecs.markdown import encode_markdown, read_markdown, split_markdown
 from e_taxis.transpile.codecs.matter import read_matter, split_matter
 from e_taxis.transpile.codecs.structured import MISSING, get_structured, read_json, strays_structured
 from e_taxis.transpile.models.placement import Placement
@@ -26,6 +26,32 @@ async def test_readers_markdown_round_trips_its_blocks() -> None:
 
 async def test_readers_markdown_extra_section_and_no_preamble() -> None:
     assert read_markdown("## A\n\nx\n\n## B\n\ny\n") == {"A": "## A\n\nx", "B": "## B\n\ny"}
+
+
+@pytest.mark.parametrize("fence", ["```", "~~~", "````"], ids=["backtick", "tilde", "long"])
+async def test_readers_markdown_heading_inside_fence_is_body(fence: str) -> None:
+    section = f"## Example\n\n{fence}md\n## inside\n\n> not a quote\n{fence}"
+    assert read_markdown(f"# D\n\n{section}\n\n## outside\n\ny\n") == {
+        "h1": "# D",
+        "Example": section,
+        "outside": "## outside\n\ny",
+    }
+
+
+async def test_readers_markdown_fenced_preamble_is_para() -> None:
+    para = "lead\n\n```\n# not h1\n\n> not a quote\n```"
+    assert read_markdown(f"# D\n\n{para}\n\n## A\n\nx") == {"h1": "# D", "para": para, "A": "## A\n\nx"}
+
+
+async def test_readers_markdown_fenced_round_trip() -> None:
+    placements = [
+        _at("h1", "D"),
+        _at("para", "lead\n\n~~~\n# not h1\n~~~"),
+        _at("Voice", "```md\n## x\n\n## y\n```"),
+        _at("Voice", "after"),
+        _at("Tail", "z"),
+    ]
+    assert read_markdown(encode_markdown("t", {}, placements).decode()) == split_markdown(placements)
 
 
 async def test_readers_matter_reads_front_title_preload_body() -> None:
