@@ -172,7 +172,7 @@ class PlaneManifest(Struct, frozen=True, kw_only=True):
 @dataclass(frozen=True, slots=True)
 class PlanePaths:
     """Every place a run writes, all of it under its folder — flat under the reports root, as the workflows that read
-    `.reports/<run>/patches/` expect; the run id (`<UTC>-<plane>-<target>-<sha7>`) already names plane and target.
+    `.reports/<run>/patches/` expect; the run id (`<UTC ms>-<plane>-<target>-<sha7>`) already names plane and target.
 
         <nous>/.reports/<run>/
           run.json · ledger.jsonl · report.md · report.json
@@ -212,8 +212,12 @@ class PlanePaths:
     def candidate(self, subject: str) -> Path:
         return self.root / "flat" / "candidate" / subject
 
+    @property
+    def trees(self) -> Path:
+        return self.root / "trees"
+
     def tree(self, subject: str) -> Path:
-        return self.root / "trees" / subject
+        return self.trees / subject
 
     def node(self, node: str, subject: str) -> Path:
         return self.root / "nodes" / node / (subject or "_corpus")

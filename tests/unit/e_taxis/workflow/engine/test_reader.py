@@ -5,8 +5,9 @@ from typing import TYPE_CHECKING
 import pytest
 
 from e_taxis.transpile.adapters.nous import GitNous
-from e_taxis.workflow.engine.reader import WorkflowReader
-from e_taxis.workflow.models.error import WorkflowError
+from e_taxis.workflow.engine.reader import PlaneReader, WorkflowReader
+from e_taxis.workflow.models.error import PlaneError, WorkflowError
+from e_taxis.workflow.models.plane import NodeCard, NodeUse, Plane, PlaneDecl, Role, Target
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -73,3 +74,34 @@ async def test_reader_bind_refuses_undeclared_and_defaults_the_rest(reader: Work
     with pytest.raises(WorkflowError, match="undeclared parameter"):
         reader.bind(decl, {"nope": "x"})
     assert reader.bind(decl, {"value": "v"}) == {"value": "v", "apply": ""}
+
+
+##### PLANES #####
+CARD = NodeCard(role=Role.GATE, summary="g")
+
+
+@pytest.mark.parametrize(
+    ("nodes", "problem"),
+    [
+        ((NodeUse(use="ghost"),), "no node 'ghost'"),
+        ((NodeUse(use="a"), NodeUse(use="a")), "duplicate id a"),
+        ((NodeUse(use="a", depends=("z",)),), "a depends on unknown z"),
+        ((NodeUse(use="a", depends=("b",)), NodeUse(use="b", depends=("a",))), "cycle"),
+    ],
+    ids=["unknown-node", "duplicate", "unknown-dependency", "cycle"],
+)
+async def test_reader_plane_refuses_an_unwired_graph(nodes: tuple[NodeUse, ...], problem: str) -> None:
+    graphs = {Plane.EVALUATOR: {Target.SKILL: PlaneDecl(summary="s", nodes=nodes)}}
+    with pytest.raises(PlaneError, match=problem):
+        PlaneReader({"a": CARD, "b": CARD}, graphs).read(Plane.EVALUATOR, Target.SKILL)
+
+
+async def test_reader_plane_refuses_a_target_without_graph() -> None:
+    with pytest.raises(PlaneError, match="no evaluator graph for skill"):
+        PlaneReader({}, {Plane.EVALUATOR: {}}).read(Plane.EVALUATOR, Target.SKILL)
+
+
+async def test_reader_plane_describes_one_target() -> None:
+    graphs = {Plane.ENHANCER: {Target.TOOL: PlaneDecl(summary="t", nodes=(NodeUse(use="a", id="x"),))}}
+    described = PlaneReader({"a": CARD}, graphs).describe(Plane.ENHANCER, Target.TOOL)
+    assert described == "## enhancer/tool — t\n  x                   gate     deterministic  subject  always"

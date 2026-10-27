@@ -150,7 +150,7 @@ class AgentLaw:
             ),
             *(("permission.skill must default deny (role scope)",) if not full and grants.get("*") != "deny" else ()),
             *(
-                (f"skill grant ≠ scope: only-granted {granted - scope}, only-scoped {scope - granted}",)
+                (f"skill grant ≠ scope: only-granted {sorted(granted - scope)}, only-scoped {sorted(scope - granted)}",)
                 if not full and granted != scope
                 else ()
             ),

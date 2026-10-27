@@ -21,6 +21,10 @@ from e_taxis.harness.services.verify import VerifyService
 from e_taxis.transpile.adapters.capture import HttpCapture
 from e_taxis.transpile.models.ports import CapturePort
 from e_taxis.transpile.services.trial import TrialService
+from e_taxis.workflow.models.plane import Plane
+from e_taxis.workflow.models.ports import CommandPort
+from e_taxis.workflow.services.plane import PlaneRun
+from e_taxis.workflow.services.promote import PlanePromote
 
 
 def _state() -> State:
@@ -74,3 +78,28 @@ async def test_deps_real_runner_and_downloader_outside_the_sandbox() -> None:
         deps = Deps(stack, _state())
         assert isinstance(await Deps._resolve_runner(deps), ProcessRunner)
         assert isinstance(await Deps._resolve_downloader(deps), WreqDownloader)
+
+
+async def test_deps_binds_the_planes() -> None:
+    async with AsyncExitStack() as stack:
+        deps = Deps(stack, _state())
+        runner = await deps.resolve(PlaneRun)
+        assert "## evaluator/skill" in runner.describe(Plane.EVALUATOR)
+        assert isinstance(await deps.resolve(PlanePromote), PlanePromote)
+
+
+@pytest.mark.parametrize(
+    ("terminal", "headless", "expected"),
+    [(True, "", "1"), (False, "", ""), (True, "1", "")],
+    ids=["terminal", "pipe", "agent-session"],
+)
+async def test_deps_command_hands_the_human_mandate(
+    monkeypatch: pytest.MonkeyPatch, terminal: bool, headless: str, expected: str
+) -> None:
+    monkeypatch.delenv("TAXIS_HUMAN", raising=False)
+    monkeypatch.setenv("TAXIS_HEADLESS", headless or "0")
+    monkeypatch.setattr("sys.stdin.isatty", lambda: terminal)
+    async with AsyncExitStack() as stack:
+        command = await Deps(stack, _state()).resolve(CommandPort)
+        said = await command.run("sh", "-c", 'printf %s "$TAXIS_HUMAN"', limit=10.0)
+    assert said == expected

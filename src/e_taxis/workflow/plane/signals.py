@@ -24,7 +24,9 @@ class PlaneSignals:
 
     __slots__ = ("_checker",)
 
-    card: ClassVar[NodeCard] = NodeCard(role=Role.MEASURE, summary="the drift signals the v2 check states for a backend")
+    card: ClassVar[NodeCard] = NodeCard(
+        role=Role.MEASURE, summary="the drift signals the v2 check states for a backend"
+    )
 
     def __init__(self, checker: CheckService) -> None:
         self._checker = checker

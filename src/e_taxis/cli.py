@@ -56,8 +56,12 @@ GROUPS: tuple[CommandGroup, ...] = (
     CommandGroup(
         path="distill", help="reverse-distill's deterministic steps, one per workflow node: --nous, --rundir."
     ),
-    CommandGroup(path="eval", help="The evaluator: measure a corpus target, read-only; every subject ends in its needs."),
-    CommandGroup(path="enhance", help="The enhancer: act on a reason in a sandbox; verdicts, patches, a human promotes."),
+    CommandGroup(
+        path="eval", help="The evaluator: measure a corpus target, read-only; every subject ends in its needs."
+    ),
+    CommandGroup(
+        path="enhance", help="The enhancer: act on a reason in a sandbox; verdicts, patches, a human promotes."
+    ),
     CommandGroup(path="reports", help="Evaluation and enhancement runs, rebuilt from their ledgers."),
 )
 

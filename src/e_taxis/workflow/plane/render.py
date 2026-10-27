@@ -42,22 +42,31 @@ class PlaneRender:
         self._runner = runner
         self._home = home
 
+    ##### PRIVATE METHODS #####
+
+    async def _common_bindings(self, tree: NousTree, backend: str) -> dict[str, str]:
+        """The spec's bindings read from the live tree, `{out}` bound to that live tree: every render of one core
+        is byte-identical wherever it is written, so a base and a candidate differ only where the core does."""
+        live = self._home / RunService.spec(tree, backend)["tree"]
+        return await RunService.bindings(RunService.spec(tree, backend), live) | {"out": str(live)}
+
+    ############################################################
+
     ##### PUBLIC #####
 
     async def plan(self, source: Path, backend: str, out: Path) -> tuple[NousTree, Projection]:
-        """`source` projected for `backend` with `{out}` bound to `out`: the tree it read and the projection. Writes
-        nothing."""
+        """`source` projected for `backend`, bound as `project` binds it: the tree it read and the projection.
+        Writes nothing."""
         nous = GitNous(source, None)
         tree = await nous.load()
-        return await self._runner.project(nous, backend, out, live=self._home / RunService.spec(tree, backend)["tree"])
+        return await self._runner.project(nous, backend, out, await self._common_bindings(tree, backend))
 
     async def project(self, source: Path, backend: str, out: Path) -> tuple[NousTree, Projection]:
         """`source` exported for `backend` into a fresh `out`: the tree it read and the projection it wrote."""
         await anyio.to_thread.run_sync(lambda: shutil.rmtree(out, ignore_errors=True))
         nous = GitNous(source, None)
         tree = await nous.load()
-        live = self._home / RunService.spec(tree, backend)["tree"]
-        return tree, await self._runner.run(nous, backend, out, live=live)
+        return tree, await self._runner.run(nous, backend, out, await self._common_bindings(tree, backend))
 
     async def run(self, context: PlaneContext) -> Outcome:
         state = context.state

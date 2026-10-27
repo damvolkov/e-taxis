@@ -88,7 +88,8 @@ class PlaneRun:
         base = await self._sandbox.head(root)
         now = dt.datetime.now(dt.UTC)
         return PlaneManifest(
-            run_id=f"{now:%Y%m%dT%H%M%SZ}-{plane}-{target}-{base[:7]}",
+            ### milliseconds: two runs in one second (a loop, a test) must never share a folder and its ledger.
+            run_id=f"{now:%Y%m%dT%H%M%S}{now.microsecond // 1000:03d}Z-{plane}-{target}-{base[:7]}",
             plane=plane,
             target=target,
             subjects=subjects,
@@ -117,14 +118,14 @@ class PlaneRun:
                 state = PlaneState(manifest=manifest, paths=paths, ledger=ledger)
                 runs = await SubjectExecutor(self._nodes, self._concurrency, notify).run(state)
             finally:
-                _ = keep or await self._sandbox.close(paths.sandbox)
+                _ = keep or [await self._sandbox.close(path) for path in (paths.sandbox, paths.trees)]
         report = PlaneReport(manifest=manifest, runs=runs, folder=str(paths.root))
         await anyio.Path(paths.report).write_text(report.markdown)
         return report
 
     @staticmethod
     def _folder_match(name: str, plane: Plane | None, target: Target | None) -> bool:
-        """Whether a run id (`<UTC>-<plane>-<target>-<sha7>`) is of `plane` and `target`, either left open."""
+        """Whether a run id (`<UTC ms>-<plane>-<target>-<sha7>`) is of `plane` and `target`, either left open."""
         _, ran, measured, _ = (*name.split("-", 3), "", "", "")[:4]
         return (plane is None or ran == plane) and (target is None or measured == target)
 

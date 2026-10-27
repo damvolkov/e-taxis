@@ -1,0 +1,5 @@
+parts:
+  skillspector:
+    kind: tool
+    link: https://github.com/NVIDIA/SkillSpector
+    pin: v2.12.0

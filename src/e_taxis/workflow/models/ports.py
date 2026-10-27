@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
+from e_taxis.transpile.models.ports import CapturePort, NousPort
+from e_taxis.transpile.models.trial import TrialReport
 from e_taxis.workflow.models.case import QuerySet, TaskSet
 from e_taxis.workflow.models.graph import StepSpec
 from e_taxis.workflow.models.plane import NodeCard, NodeSpec, PlaneManifest, PlanePaths
@@ -130,6 +132,13 @@ class ScannerPort(Protocol):
     """A security scan of one rendered folder, with the scanner at the install source `source` names."""
 
     async def scan(self, folder: Path, source: str) -> ScanResult: ...
+
+
+@runtime_checkable
+class TrialPort(Protocol):
+    """The real harness raised fenced on a render of `nous`, asked what reached its fake model (`TrialService`)."""
+
+    async def run(self, nous: NousPort, backend: str, capture: CapturePort) -> TrialReport: ...
 
 
 @runtime_checkable

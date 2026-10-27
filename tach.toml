@@ -118,7 +118,7 @@ depends_on = []
 [[modules]]
 path = "e_taxis.workflow.plane"
 layer = "services"
-depends_on = ["e_taxis.transpile.services"]
+depends_on = ["e_taxis.transpile.services", "e_taxis.workflow.distill"]
 
 [[modules]]
 path = "e_taxis.workflow.engine"
@@ -133,7 +133,7 @@ depends_on = []
 [[modules]]
 path = "e_taxis.workflow.models"
 layer = "models"
-depends_on = ["e_taxis.harness.models"]
+depends_on = ["e_taxis.harness.models", "e_taxis.transpile.models"]
 
 [[modules]]
 path = "e_taxis.harness.models"

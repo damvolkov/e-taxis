@@ -19,11 +19,17 @@ import msgspec
 import pytest
 
 from e_taxis.harness.runtime.deps import Deps
+from e_taxis.transpile.adapters.capture import HttpCapture
 from e_taxis.transpile.adapters.nous import GitNous
+from e_taxis.transpile.models.trial import TrialReport, TrialSight
+from e_taxis.transpile.services.check import CheckService
+from e_taxis.transpile.services.run import RunService
 from e_taxis.workflow.adapters.agent import OpencodeAgent
 from e_taxis.workflow.adapters.command import ShellCommand
+from e_taxis.workflow.adapters.evals import NousEvals
 from e_taxis.workflow.adapters.ledger import JsonlLedger
 from e_taxis.workflow.adapters.lock import FlockLock
+from e_taxis.workflow.adapters.sandbox import GitSandbox
 from e_taxis.workflow.distill.grade import DistillGrade
 from e_taxis.workflow.distill.matrix import VersionMatrix
 from e_taxis.workflow.engine.reader import WorkflowReader
@@ -31,9 +37,33 @@ from e_taxis.workflow.models.distill import Candidate, Change, HarnessPart, Harn
 from e_taxis.workflow.models.entity import Entity
 from e_taxis.workflow.models.error import AgentError, CommandError
 from e_taxis.workflow.models.graph import GraphSpec, StepSpec
-from e_taxis.workflow.models.ports import AgentPort, NodeContext, RunState
+from e_taxis.workflow.models.plane import Cadence, NodeCard, NodeSpec, Plane, PlaneGraph, PlaneManifest, PlanePaths
+from e_taxis.workflow.models.plane import Target as PlaneTarget
+from e_taxis.workflow.models.ports import AgentPort, NodeContext, PlaneContext, PlaneState, RunState
 from e_taxis.workflow.models.run import NodeRun, Outcome, Reply, RunManifest, RunPaths, Status
+from e_taxis.workflow.models.security import ScanResult
 from e_taxis.workflow.models.workflow import Workflow
+from e_taxis.workflow.plane.brief import PlaneBrief
+from e_taxis.workflow.plane.candidate import PlaneCandidate
+from e_taxis.workflow.plane.decide import PlaneDecide
+from e_taxis.workflow.plane.grade import PlaneGrade
+from e_taxis.workflow.plane.intake import PlaneIntake
+from e_taxis.workflow.plane.integrate import PlaneIntegrate
+from e_taxis.workflow.plane.law import PlaneLaw
+from e_taxis.workflow.plane.loading import PlaneLoading
+from e_taxis.workflow.plane.manual import PlaneManual
+from e_taxis.workflow.plane.needs import PlaneNeeds
+from e_taxis.workflow.plane.patch import PlanePatch
+from e_taxis.workflow.plane.queries import PlaneQueries
+from e_taxis.workflow.plane.render import PlaneRender
+from e_taxis.workflow.plane.sandbox import PlaneSandbox
+from e_taxis.workflow.plane.security import PlaneSecurity
+from e_taxis.workflow.plane.signals import PlaneSignals
+from e_taxis.workflow.plane.snapshot import PlaneSnapshot
+from e_taxis.workflow.plane.speckeeper import PlaneSpeckeeper
+from e_taxis.workflow.plane.tasks import PlaneTasks
+from e_taxis.workflow.services.plane import PlaneRun
+from e_taxis.workflow.services.promote import PlanePromote
 from e_taxis.workflow.services.run import WorkflowRun
 from e_taxis.workflow.services.step import WorkflowStep
 
@@ -43,15 +73,18 @@ if TYPE_CHECKING:
     from pytest_resources import Resources
 
     from e_taxis.transpile.models.nous import NousTree
+    from e_taxis.workflow.models.metrics import Finding
 
 
 class FakeAgent:
-    """AgentPort that drives nothing: every session is recorded; an agent in `failing` raises AgentError."""
+    """AgentPort that drives nothing: every session is recorded; an agent in `failing` raises AgentError; `effect`,
+    when set, is what the session does to its working directory."""
 
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []
         self.failing: set[str] = set()
         self.answer = "the agent's answer"
+        self.effect: Callable[[Path], object] | None = None
 
     async def drive(
         self, agent: str, prompt: str, *, cwd: Path, limit: float, readonly: bool = False, steps: int = 0
@@ -60,6 +93,7 @@ class FakeAgent:
         if agent in self.failing:
             msg = f"agent {agent!r} refused"
             raise AgentError(msg)
+        _ = self.effect and self.effect(cwd)
         return Reply(text=self.answer, tokens=7, cached=3)
 
 
@@ -524,3 +558,207 @@ def answer(rundir: Path) -> Callable[[str, Any], None]:
         out.write_text(f"Thinking…\n```json\n{msgspec.json.encode(value).decode()}\n```\n")
 
     return write
+
+
+##### PLANE #####
+class FakeScanner:
+    """ScannerPort that scans nothing: every call recorded; it answers `findings` with score 7."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[Path, str]] = []
+        self.findings: list[Finding] = []
+
+    async def scan(self, folder: Path, source: str) -> ScanResult:
+        self.calls.append((folder, source))
+        return ScanResult(scanner=f"fake@{source.rpartition('@')[2]}", score=7, findings=tuple(self.findings))
+
+
+class FakeTrial:
+    """TrialService stand-in: answers `report`, records the backend it was asked for."""
+
+    def __init__(self) -> None:
+        self.backends: list[str] = []
+        self.report = TrialReport(
+            backend="claudecode",
+            runs=(),
+            sights=(TrialSight(entity="skill", probes=("capture",), expected=2, missing=("algo-py-core",)),),
+            captured=1,
+        )
+
+    async def run(self, nous: Any, backend: str, capture: Any) -> TrialReport:
+        self.backends.append(backend)
+        return self.report
+
+
+@pytest.fixture
+def scanner() -> FakeScanner:
+    return FakeScanner()
+
+
+@pytest.fixture
+def trial() -> FakeTrial:
+    return FakeTrial()
+
+
+@pytest.fixture
+async def plane_nous(resources: Resources, tmp_path: Path, git, commit) -> Path:
+    """The mini e-nous as a git checkout the planes can read: the transpiler's fixture, plus the stack that pins the
+    scanner, the versioning matrix and the evaluator's ledgers at their new home (`core/tekton/evals/`)."""
+    root = tmp_path / "plane"
+    shutil.copytree(resources.path / "transpile", root)
+    plane = resources.path / "plane"
+    (root / "core" / "common").mkdir(parents=True)
+    (root / "core" / "versioning").mkdir(parents=True)
+    shutil.copy(plane / "stack.yaml", root / "core" / "common" / "stack.yaml")
+    shutil.copy(resources.path / "workflow" / "matrix.yaml", root / "core" / "versioning" / "matrix.yaml")
+    shutil.copytree(plane / "evals", root / "core" / "tekton" / "evals")
+    (root / ".gitignore").write_text(".reports/\n")
+    await git(root, "init", "-q", "-b", "main")
+    await commit(root, "nous")
+    return root
+
+
+@pytest.fixture
+def sandbox(command: ShellCommand) -> GitSandbox:
+    return GitSandbox(command)
+
+
+@pytest.fixture
+def plane_nodes(
+    scanner: FakeScanner,
+    agent: FakeAgent,
+    sandbox: GitSandbox,
+    trial: FakeTrial,
+    command: ShellCommand,
+    tmp_path: Path,
+) -> dict[str, Any]:
+    """Every plane node, real but for the scanner, the agent and the trial; HOME is a temp dir."""
+    checker = CheckService()
+    render = PlaneRender(RunService(checker), tmp_path / "home")
+    evals = NousEvals()
+    return {
+        "snapshot": PlaneSnapshot(command, sandbox),
+        "render": render,
+        "law": PlaneLaw(checker),
+        "security": PlaneSecurity(scanner, "HIGH"),
+        "queries": PlaneQueries(evals),
+        "tasks": PlaneTasks(evals),
+        "needs": PlaneNeeds(),
+        "signals": PlaneSignals(checker),
+        "loading": PlaneLoading(trial, HttpCapture()),
+        "sandbox": PlaneSandbox(sandbox),
+        "intake": PlaneIntake(JsonlLedger.open),
+        "manual": PlaneManual(sandbox),
+        "brief": PlaneBrief(),
+        "integrate": PlaneIntegrate(agent, sandbox, 30.0),
+        "speckeeper": PlaneSpeckeeper(agent, sandbox, JsonlLedger.open, 30.0),
+        "candidate": PlaneCandidate(render, sandbox),
+        "grade": PlaneGrade(render, sandbox),
+        "decide": PlaneDecide({"skill": "deepening", "agent": "none"}),
+        "patch": PlanePatch(sandbox),
+    }
+
+
+@pytest.fixture
+def plane_run(plane_nodes: dict[str, Any], sandbox: GitSandbox, lock: FlockLock) -> PlaneRun:
+    return PlaneRun(
+        plane_nodes, sandbox, lock, JsonlLedger.open, concurrency=4, reports=Path(".reports"), backend="claudecode"
+    )
+
+
+@pytest.fixture
+def plane_deps(monkeypatch: pytest.MonkeyPatch, plane_run: PlaneRun, sandbox: GitSandbox, lock: FlockLock) -> PlaneRun:
+    """Every `taxis` run gets the test plane (fake scanner, agent and trial) in place of the real one."""
+
+    async def runs(deps: Deps) -> PlaneRun:
+        return plane_run
+
+    async def promotes(deps: Deps) -> PlanePromote:
+        return PlanePromote(plane_run, sandbox, lock)
+
+    monkeypatch.setattr(Deps, "PROVIDERS", MappingProxyType({**Deps.PROVIDERS, PlaneRun: runs, PlanePromote: promotes}))
+    return plane_run
+
+
+class ScriptedPlaneNode:
+    """PlaneNodePort answering a status per (node, subject); `boom` raises; `seen` records every call."""
+
+    def __init__(self, statuses: dict[tuple[str, str], Status], card: NodeCard) -> None:
+        self.statuses = statuses
+        self.card = card
+        self.seen: list[tuple[str, str]] = []
+
+    async def run(self, context: PlaneContext) -> Outcome:
+        self.seen.append((context.spec.id, context.subject))
+        if context.spec.id == "boom":
+            msg = "kaput"
+            raise RuntimeError(msg)
+        return Outcome(status=self.statuses.get((context.spec.id, context.subject), Status.OK))
+
+
+@pytest.fixture
+def plane_state(tmp_path: Path) -> Callable[..., Any]:
+    """A plane run state over `nodes` and `subjects`, with its own folder and ledger; manifest fields overridable."""
+
+    async def build(*nodes: NodeSpec, subjects: tuple[str, ...] = ("s1", "s2"), **manifest: Any) -> PlaneState:
+        root = tmp_path / "plane-run"
+        fields: dict[str, Any] = {
+            "run_id": "20261027T000000Z-evaluator-skill-abc1234",
+            "plane": Plane.EVALUATOR,
+            "target": PlaneTarget.SKILL,
+            "subjects": subjects,
+            "cadence": Cadence.COMMIT,
+            "nous": str(tmp_path),
+            "tree": str(tmp_path),
+            "base_sha": "abc1234def",
+            "backend": "claudecode",
+            "started": dt.datetime(2026, 10, 27, tzinfo=dt.UTC),
+            "graph": PlaneGraph(plane=Plane.EVALUATOR, target=PlaneTarget.SKILL, summary="s", nodes=nodes),
+            "places": {subject: f"core/tekton/skills/{subject}" for subject in subjects},
+        }
+        state = PlaneManifest(**(fields | manifest))
+        return PlaneState(manifest=state, paths=PlanePaths(root), ledger=await JsonlLedger.open(root / "ledger.jsonl"))
+
+    return build
+
+
+@pytest.fixture
+def plane_record() -> Callable[..., Any]:
+    """Append a node run to a plane state's ledger, as the executor would."""
+
+    async def append(state: PlaneState, node: str, subject: str, outcome: Outcome) -> None:
+        stamp = state.manifest.started
+        await state.ledger.append(
+            NodeRun(
+                run_id=state.manifest.run_id,
+                node=node,
+                subject=subject,
+                status=outcome.status,
+                started=stamp,
+                ended=stamp,
+                input_hash="",
+                output_hash="",
+                metrics=outcome.metrics,
+                reason=outcome.reason,
+            )
+        )
+
+    return append
+
+
+@pytest.fixture
+def plane_context() -> Callable[..., PlaneContext]:
+    """A node's context in a plane state: its spec found by id, params overridable."""
+
+    def build(state: PlaneState, node: str, subject: str = "s1", **params: str) -> PlaneContext:
+        spec = state.manifest.graph[node]
+        return PlaneContext(
+            state=state, spec=msgspec.structs.replace(spec, params={**spec.params, **params}), subject=subject
+        )
+
+    return build
+
+
+@pytest.fixture
+def scripted_plane() -> type[ScriptedPlaneNode]:
+    return ScriptedPlaneNode

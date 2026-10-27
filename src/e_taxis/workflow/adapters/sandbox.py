@@ -9,6 +9,7 @@ path may be a folder (an entity) or a file (a spec): `overlay` copies either, de
 
 import hashlib
 import shutil
+from contextlib import suppress
 from typing import TYPE_CHECKING
 
 import anyio
@@ -117,6 +118,10 @@ class GitSandbox:
     async def apply(self, repo: Path, patch: Path, *, check: bool = False, reverse: bool = False) -> bool:
         """A run's patch applied to `repo` with a three-way merge; `check` only asks whether it would."""
         flags = (*(("--check",) if check else ("--3way",)), *(("--reverse",) if reverse else ()))
+        ### a stat-dirty index ("does not match index") refuses --3way though the bytes match: refresh it first;
+        ### it exits 1 when a file truly differs, which the apply then judges.
+        with suppress(CommandError):
+            await self._common_git(repo, "update-index", "-q", "--refresh")
         try:
             await self._common_git(repo, "apply", *flags, str(patch))
         except CommandError:
