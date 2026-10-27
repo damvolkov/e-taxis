@@ -7,8 +7,13 @@ its base (`sandbox`), acts only on a reason (`intake`), lets its proposers write
 `integrate`; `speckeeper` for a spec), renders each subject's candidate, verifies it, weighs it (`grade`), concludes
 (`decide`) and cuts the patch `enhance promote` applies.
 
-Ported from e-nous `ops/{evaluator,enhancer}/graphs/*.md` without the weekly heuristics (`activation`, `effect`,
-`semantic`, `skillopt`) and the v1-only nodes (`replication`, the MCP probes): docs/workflow.md §9 names each."""
+A skill carries the weekly heuristic measures too: the evaluator's `semantic` (the scan's LLM stage), `activation`
+(routing over the base render) and `effect` (`value`: no skill against the skill); the enhancer measures routing on
+its base render while the proposers write (`activation_base`), then verifies the candidate's (`activation_candidate`,
+read against the base) and its `effect` (`delta`: the skill against the candidate).
+
+Ported from e-nous `ops/{evaluator,enhancer}/graphs/*.md` without the SkillOpt proposer (`skillopt`) and the v1-only
+nodes (`replication`, the MCP probes): docs/workflow.md §9 names each."""
 
 from collections.abc import Mapping
 from types import MappingProxyType
@@ -31,10 +36,10 @@ def evaluate_kind(*gates: NodeUse) -> PlaneDecl:
     )
 
 
-def enhance_kind(*gates: NodeUse) -> PlaneDecl:
-    """An entity kind's enhancement: one writer folds the reasons into the sandbox, the candidate is verified,
-    weighed, decided, and its patch cut."""
-    ids = tuple(gate.key for gate in gates)
+def enhance_kind(*gates: NodeUse, measures: tuple[NodeUse, ...] = ()) -> PlaneDecl:
+    """An entity kind's enhancement: one writer folds the reasons into the sandbox — `measures` read the base
+    meanwhile — the candidate is verified, weighed, decided, and its patch cut."""
+    ids, read = tuple(gate.key for gate in gates), tuple(measure.key for measure in measures)
     return PlaneDecl(
         summary="an entity, enhanced on its needs or your directive: one writer, verified, weighed, decided",
         nodes=(
@@ -43,6 +48,7 @@ def enhance_kind(*gates: NodeUse) -> PlaneDecl:
             NodeUse(use="render", depends=("sandbox",), params={"tree": "sandbox"}),
             NodeUse(use="intake", depends=("render",)),
             NodeUse(use="manual", depends=("intake",)),
+            *measures,
             NodeUse(use="brief", depends=("intake",)),
             NodeUse(use="integrate", depends=("manual", "brief"), params={"sources": "brief"}),
             NodeUse(use="candidate", depends=("integrate", "manual")),
@@ -50,7 +56,7 @@ def enhance_kind(*gates: NodeUse) -> PlaneDecl:
             NodeUse(use="grade", depends=("candidate",)),
             NodeUse(
                 use="decide",
-                depends=("candidate", "grade", "intake", "manual", "brief", "integrate", *ids),
+                depends=("candidate", "grade", "intake", "manual", "brief", "integrate", *read, *ids),
                 params={"gates": ",".join(("candidate", "integrate", *ids, "grade")), "proposers": "manual,integrate"},
             ),
             NodeUse(use="patch", depends=("decide",)),
@@ -60,6 +66,8 @@ def enhance_kind(*gates: NodeUse) -> PlaneDecl:
 
 ##### GRAPHS #####
 LAW: Final[NodeUse] = NodeUse(use="law", depends=("render",), params={"tree": "base"})
+QUERIES: Final[NodeUse] = NodeUse(use="queries", depends=("render",))
+TASKS: Final[NodeUse] = NodeUse(use="tasks", depends=("render",))
 LAW_CANDIDATE: Final[NodeUse] = NodeUse(
     use="law", id="law_candidate", depends=("candidate",), params={"tree": "candidate"}
 )
@@ -71,8 +79,11 @@ GRAPHS: Final[Mapping[Plane, Mapping[Target, PlaneDecl]]] = MappingProxyType(
                 Target.SKILL: evaluate_kind(
                     LAW,
                     NodeUse(use="security", depends=("render",), params={"tree": "base"}),
-                    NodeUse(use="queries", depends=("render",)),
-                    NodeUse(use="tasks", depends=("render",)),
+                    NodeUse(use="semantic", depends=("render",), params={"tree": "base"}),
+                    QUERIES,
+                    TASKS,
+                    NodeUse(use="activation", depends=("queries",), params={"tree": "base"}),
+                    NodeUse(use="effect", depends=("tasks",), params={"mode": "value"}),
                 ),
                 Target.AGENT: evaluate_kind(LAW),
                 Target.COMMAND: evaluate_kind(LAW),
@@ -102,6 +113,23 @@ GRAPHS: Final[Mapping[Plane, Mapping[Target, PlaneDecl]]] = MappingProxyType(
                     LAW_CANDIDATE,
                     NodeUse(
                         use="security", id="security_candidate", depends=("candidate",), params={"tree": "candidate"}
+                    ),
+                    NodeUse(
+                        use="activation",
+                        id="activation_candidate",
+                        depends=("candidate", "activation_base"),
+                        params={"tree": "candidate"},
+                    ),
+                    NodeUse(use="effect", depends=("candidate", "tasks"), params={"mode": "delta"}),
+                    measures=(
+                        QUERIES,
+                        TASKS,
+                        NodeUse(
+                            use="activation",
+                            id="activation_base",
+                            depends=("queries", "intake"),
+                            params={"tree": "base"},
+                        ),
                     ),
                 ),
                 Target.AGENT: enhance_kind(LAW_CANDIDATE),

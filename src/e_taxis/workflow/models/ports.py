@@ -1,5 +1,6 @@
 """models.ports: what the workflow engine asks of the world — run a command, drive an agent, keep a ledger, run a step;
-and for the planes, a git sandbox, a scanner, the evaluator's ledgers, and a node over one subject.
+and for the planes, a git sandbox, a scanner, the evaluator's ledgers, a house tier's endpoint, a bare completion,
+a coder under measurement, and a node over one subject.
 
 The context is part of the contract: a run's resources (manifest, paths, ledger) are fixed when it starts; the
 evidence lives only in the ledger, append-only and typed. A step reads upstream evidence through its context."""
@@ -12,7 +13,8 @@ from typing import Protocol, runtime_checkable
 
 from e_taxis.transpile.models.ports import CapturePort, NousPort
 from e_taxis.transpile.models.trial import TrialReport
-from e_taxis.workflow.models.case import QuerySet, TaskSet
+from e_taxis.workflow.models.case import ProbeMode, ProbeResult, QuerySet, TaskSet
+from e_taxis.workflow.models.endpoint import Endpoint
 from e_taxis.workflow.models.graph import StepSpec
 from e_taxis.workflow.models.plane import NodeCard, NodeSpec, PlaneManifest, PlanePaths
 from e_taxis.workflow.models.run import NodeRun, Outcome, Reply, RunManifest, RunPaths
@@ -129,9 +131,35 @@ class SandboxPort(Protocol):
 
 @runtime_checkable
 class ScannerPort(Protocol):
-    """A security scan of one rendered folder, with the scanner at the install source `source` names."""
+    """A security scan of one rendered folder, with the scanner at the install source `source` names; with `llm`,
+    its LLM stage on that endpoint too."""
 
-    async def scan(self, folder: Path, source: str) -> ScanResult: ...
+    async def scan(self, folder: Path, source: str, llm: Endpoint | None = None) -> ScanResult: ...
+
+
+@runtime_checkable
+class ProviderPort(Protocol):
+    """A house tier resolved, from an e-nous checkout's `core/tekton/config/models.yaml`, to the endpoint serving it."""
+
+    async def endpoint(self, nous: Path, tier: str) -> Endpoint: ...
+
+
+@runtime_checkable
+class RunnerPort(Protocol):
+    """One bare completion — no harness, no skills, no tools: the only context is `system`."""
+
+    async def complete(self, endpoint: Endpoint, prompt: str, *, system: str = "") -> Reply: ...
+
+
+@runtime_checkable
+class CoderPort(Protocol):
+    """A coder under measurement, driven through its own CLI: `sandbox` builds, under `root`, a config home whose
+    corpus is the render `flat` and answers the environment pointing the coder at it; `probe` runs one prompt in a
+    clean session there and reports what it loaded and opened. A refused or timed-out session raises CommandError."""
+
+    async def sandbox(self, flat: Path, root: Path) -> Mapping[str, str]: ...
+
+    async def probe(self, prompt: str, mode: ProbeMode, *, env: Mapping[str, str], limit: float) -> ProbeResult: ...
 
 
 @runtime_checkable

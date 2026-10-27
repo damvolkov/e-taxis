@@ -22,7 +22,8 @@ TIMEOUT: float = 10.0
 DOWNLOAD: float = 300.0
 ### the Landlock CLI a trial fences its phantoms with: pinned and checksum-verified where it is installed.
 LANDRUN: Path = Path("~/.local/bin/landrun")
-### where a read-only agent session may write: OpenCode's own cache, data and state — never a repo, never a config.
+### where a read-only agent session may write: the drivers' (OpenCode's, Claude Code's) own cache, data and state —
+### never a repo, never a config.
 WRITABLE: tuple[Path, ...] = (Path("~/.cache"), Path("~/.local/share"), Path("~/.local/state"))
 ### the heaviest grade an enhancement adopts without a human, per target (e-nous ops `promote:`); `none` adopts nothing.
 PROMOTE: dict[str, str] = {
@@ -47,8 +48,9 @@ class TaxisSettings(BaseSettings):
 
     TAXIS_WORKFLOW_REPORTS: where runs live, relative to the e-nous checkout; _CONCURRENCY bounds the steps in
     flight, _TIMEOUT each step (seconds), _LOCK_WAIT how long a run waits for another; _OPENCODE is the live tree
-    agents are driven from, _MODEL the model they run on (empty: the tree's), _WRITABLE what a read-only session may
-    write. TAXIS_DISTILL_BLUEPRINT is the e-arkhetypo checkout read at _REF; _GRAPH the code-graph CLI, _CACHE its
+    agents are driven from (a subagent there is driven from Claude Code's tree, CLAUDE_CONFIG_DIR), _MODEL the model
+    OpenCode runs them on (empty: the tree's), _WRITABLE what a read-only session may write.
+    TAXIS_DISTILL_BLUEPRINT is the e-arkhetypo checkout read at _REF; _GRAPH the code-graph CLI, _CACHE its
     snapshot cache; _SCOPE the e-nous folders doctrine lives in; _CANDIDATES each miner's cap; _WORKFLOW the
     workflow whose node ports name the miners, the judge and the adversary.
 
@@ -56,8 +58,13 @@ class TaxisSettings(BaseSettings):
     under the same lock: TAXIS_EVAL_BACKEND is the render they measure, _CONCURRENCY the node runs in flight,
     _CADENCE a run's default, _SCAN_TIMEOUT one SkillSpector scan, _SCAN_FAIL the lowest severity that turns the
     security gate red, _AGENT_TIMEOUT one proposer session, _PROMOTE the heaviest grade each target adopts without a
-    human. TAXIS_HUMAN is the mandate a terminal-started `taxis` hands its children (a human command run by a
-    workflow step it started); TAXIS_HEADLESS (or e-nous's OPS_GLOBAL__HEADLESS) marks a session an agent drives —
+    human. The heuristic measures (weekly): _TIER the house tier the effect A/B's bare completions run on, _TOKENS
+    their answer cap, _RUNNER_TIMEOUT one completion; _SEMANTIC_TIER the tier SkillSpector's LLM stage runs on;
+    _PROBE_RUNS the sessions per routing case, _PROBE_CONCURRENCY those in flight, _PROBE_TIMEOUT one session;
+    _EFFECT_SEEDS the answers per task and arm, _EFFECT_SPLIT the held-out split the A/B reads.
+
+    TAXIS_HUMAN is the mandate a terminal-started `taxis` hands its children (a human command run by a workflow step
+    it started); TAXIS_HEADLESS (or e-nous's OPS_GLOBAL__HEADLESS) marks a session an agent drives —
     no human command runs there, mandate or not."""
 
     taxis_catalog: Path = CATALOG
@@ -89,5 +96,14 @@ class TaxisSettings(BaseSettings):
     taxis_eval_scan_fail: str = "HIGH"
     taxis_eval_agent_timeout: float = 900.0
     taxis_eval_promote: dict[str, str] = PROMOTE
+    taxis_eval_tier: str = "scout"
+    taxis_eval_semantic_tier: str = "builder"
+    taxis_eval_tokens: int = 8192
+    taxis_eval_runner_timeout: float = 300.0
+    taxis_eval_probe_runs: int = 3
+    taxis_eval_probe_concurrency: int = 6
+    taxis_eval_probe_timeout: float = 180.0
+    taxis_eval_effect_seeds: int = 5
+    taxis_eval_effect_split: str = "test"
     taxis_human: bool = False
     taxis_headless: bool = Field(default=False, validation_alias=AliasChoices("TAXIS_HEADLESS", "OPS_GLOBAL__HEADLESS"))

@@ -18,7 +18,7 @@ GitNous (the checkout as it stands) ─▶ WorkflowReader (typed Workflow, stati
 |---|---|---|
 | `workflow/models` | models | `Workflow` (+ `problems()`, `writers()`), `GraphSpec`/`StepSpec`, `NodeRun`/`RunManifest`/`RunReport`, metrics, the distill chain (`models/distill.py`), errors, ports |
 | `workflow/engine` | processors | `WorkflowReader` (tree → graph), `ParamBind` (parameters as quoted variable references), `DagExecutor` — no I/O of their own |
-| `workflow/adapters` | adapters | `ShellCommand` (argv, stdout to a file, live stderr, timeout), `JsonlLedger`, `FlockLock`, `OpencodeAgent` (headless, fenced when read-only) |
+| `workflow/adapters` | adapters | `ShellCommand` (argv, stdout to a file, live stderr, timeout), `JsonlLedger`, `FlockLock`, `ModeAgent` → `OpencodeAgent` · `ClaudeAgent` (headless, fenced when read-only); for the measures (§9) `HouseProvider`, `AnthropicRunner`, `OpencodeCoder` · `ClaudeCoder` |
 | `workflow/services` | services | `WorkflowStep` (the one node kind), `WorkflowRun` (end to end) |
 | `workflow/distill` | services | reverse-distill: `DistillScope`, `DistillGraph`, `DistillDrift`, `DistillInventory`, `VersionMatrix`, `DistillGrade`, `DistillReport`, `DistillStore` |
 | `workflow/commands` | cli | `taxis workflow …`, `taxis distill …` |
@@ -55,7 +55,8 @@ cannot be read or bound · `24` a run with a failed or broken step · `25` a dis
 
 Settings (`TaxisSettings`, environment): `TAXIS_WORKFLOW_REPORTS` (`.reports`, relative to the checkout),
 `_CONCURRENCY` (4), `_TIMEOUT` (1800 s per step), `_LOCK_WAIT` (600 s), `_OPENCODE` (`~/.config/opencode`, the live
-tree agents are driven from), `_MODEL`, `_WRITABLE` (what a read-only session may write); `TAXIS_DISTILL_BLUEPRINT`
+tree agents are driven from; its subagents are driven from Claude Code's tree, `CLAUDE_CONFIG_DIR` or `~/.claude`),
+`_MODEL` (OpenCode's only), `_WRITABLE` (what a read-only session may write, either driver); `TAXIS_DISTILL_BLUEPRINT`
 (`~/workspaces/damien/e-arkhetypo`), `_REF` (`origin/main`), `_GRAPH` (`codebase-memory-mcp`), `_CACHE`, `_SCOPE`
 (`core`, `specs/tekton`), `_CANDIDATES` (12), `_WORKFLOW` (`reverse-distill`); `TAXIS_LOCK` (the token a parent run
 hands its steps).
@@ -73,7 +74,8 @@ hands its steps).
 Every step sees `{{run}}`, `{{rundir}}`, `{{nous}}` and, in a loop, `{{iteration}}`, besides the declared
 parameters. A `run:` step is `bash -lc` in the checkout; exit 3 is "nothing to do" (`skip`, and every step after it
 skips — zero tokens). An agent step drives the live tree's agent (the lead, `orchestrator`, when no `actor`), told
-the run's id, folder and every ancestor's output. `when:` idles a step; a `loop:` is unrolled into `max` copies and
+the run's id, folder and every ancestor's output — through OpenCode, or through Claude Code when the OpenCode tree
+marks the agent `mode: subagent` (§4). `when:` idles a step; a `loop:` is unrolled into `max` copies and
 every copy after an ending `until` check (closed, or the same open set twice) idles.
 
 ## 4. Read-only agent steps
@@ -97,6 +99,43 @@ weaken, so the fence's canary runs before every read-only session; a fence that 
 standalone OpenCode server boots under the fence (`opencode api --standalone GET /api/location`), and a write into
 the checkout is refused (`Permission denied`). The `edit: deny` injection stays as defence in depth.
 
+### Subagents through Claude Code
+
+`opencode run --agent` on a `mode: subagent` agent falls back to the default agent, so `OpencodeAgent` refuses it —
+and reverse-distill's agent steps (`researcher`, `scout-codegraph`, `auditor-verdict`, `verifier-adversary`) are all
+subagents. Claude Code runs a subagent headless as the session's agent. `ModeAgent` reads the agent's live OpenCode
+mode and hands it to a driver through a frozen table: `subagent` → `ClaudeAgent`, `primary`/`all` (or no `mode:`)
+→ `OpencodeAgent`. The argv, from the definition in `~/.claude/agents/<id>.md`:
+
+```
+claude -p --agent <id> --output-format json --permission-mode dontAsk --no-session-persistence
+       [--max-turns <steps>] --allowedTools <grants> [--disallowedTools Edit,Write,NotebookEdit] -- <prompt>
+```
+
+Claude Code 2.1.311, measured on this machine (2026-10-27):
+
+- `--agent <agent>` "Agent for the current session"; `-p/--print` "Print response and exit"; `--output-format`
+  choices "text", "json" (single result), "stream-json" (`claude --help`). The json result carries `result`,
+  `is_error`, `subtype` and `modelUsage` per model (`inputTokens`, `outputTokens`, `cacheCreationInputTokens`,
+  `cacheReadInputTokens`, `costUSD`); its `costUSD` sum equals `total_cost_usd`. `Reply.tokens` is input + output +
+  cache writes, `Reply.cached` the cache reads, summed over every model. `Reply` carries no cost: the dollars stay in
+  the CLI's own record.
+- `--agent` applies the definition's own `disallowedTools`: `auditor-verdict` (Bash disallowed), granted
+  `--allowedTools Bash`, answered that it had no Bash tool. The grants cannot loosen a definition.
+- `--permission-mode` choices include `dontAsk`: what is not pre-approved is denied, never asked — the headless
+  equivalent of OpenCode's ask → deny. `--dangerously-skip-permissions` is never passed. Grants are the
+  definition's `tools`, or, when it names none, every approvable built-in it does not disallow (`Read`, `Grep`,
+  `Glob`, `Bash`, `Edit`, `Write`, `NotebookEdit`, `WebFetch`, `WebSearch`), plus `mcp__<server>` for each of its
+  `mcpServers`. Read-only drops the file writers from the grants and passes them to `--disallowedTools`.
+- `--max-turns <turns>` is hidden from `--help` but present ("Maximum number of agentic turns in non-interactive
+  mode ... (only works with --print)", in the 2.1.311 binary); over the limit the result is `is_error: true`,
+  `subtype: error_max_turns`, exit 1. A step's `steps` maps to it.
+- `--allowedTools <tools...>` is variadic: `--` ends the options so the prompt, even one starting with `-`, stays
+  the prompt (verified with a prompt beginning `--flag-looking`).
+- Under the same Landlock fence (writable: `TAXIS_WORKFLOW_WRITABLE` and a private `TMPDIR`) a `claude -p` session
+  runs and answers, and its Bash tool's `echo x > <checkout>/pwn.txt` fails with `Permission denied`. The canary
+  runs before every read-only Claude session too. The step's timeout bounds the process as it does OpenCode's.
+
 ## 5. Defects fixed
 
 Each one has a test that was run against the legacy behaviour first and failed, then passed with the fix.
@@ -111,6 +150,7 @@ Each one has a test that was run against the legacy behaviour first and failed, 
 | 6 | read-only not enforced on OpenCode 2 | §4: a Landlock fence around the session, canary-checked; config injection kept |
 | 7 | (emaintenance, W2) `evaluate` runs after a skipped `promote` and evaluates the old entity | recorded, not fixed: `promote` is `when: publish=true`; an idle step is green, so `evaluate` runs on the unpromoted tree. W2 should make `evaluate` read the sandbox candidate when `promote` idled, or idle with it |
 | 8 | the run lock refused a second run outright | the lock is waited for (`TAXIS_WORKFLOW_LOCK_WAIT`, polling), the holder named once on stderr; only a lock held past the wait fails (75) |
+| 9 | (2026-10-27) a `mode: subagent` agent cannot be driven headless by OpenCode: reverse-distill's agent steps failed | §4: routed to Claude Code (`ClaudeAgent`), fenced alike |
 
 Found on the way and fixed, each with its test:
 
@@ -134,6 +174,16 @@ Found on the way and fixed, each with its test:
 - **`replaces` declared by the miner, validated by grep** — the term is the miner's claim, the grep its proof.
   Rejected: deriving terms from the sketch (a model's prose is no deterministic input).
 - **One node kind injected whole** — rejected: a registry for one entry.
+- **(2026-10-27) Driver by the agent's live mode, not `TAXIS_WORKFLOW_DRIVER`** — evidence: one reverse-distill
+  run mixes the lead (`orchestrator`, `mode: primary`) with four subagents; a single driver per run either cannot run the
+  subagents (OpenCode) or moves every primary step onto Claude Code's models and bill. The mode is already the
+  fact that decides drivability, so `ModeAgent` keys a frozen table on it. Rejected: the setting (one contract per
+  run for a per-agent fact); if/elif in the step (the table is open to a third driver as a row); making the
+  subagents `mode: all` in e-nous (changes how the interactive harness delegates to them).
+- **(2026-10-27) Grants from the definition, `dontAsk`, never skip** — evidence §4. Rejected:
+  `--dangerously-skip-permissions` (no gate at all); `acceptEdits` (still asks for the rest, which `-p` cannot answer).
+- **(2026-10-27) The model is the definition's** — `TAXIS_WORKFLOW_MODEL` names OpenCode models
+  (`provider/model`); Claude Code would reject them. Rejected: a second model setting nobody asked for.
 
 ## 7. W2
 
@@ -156,13 +206,42 @@ e-taxis does not edit e-nous. The edits e-nous must take:
 3. **Miner instructions** — `mine-harness` and `mine-blueprint` must fill `replaces` for every candidate whose
    relation is `contradicts` (the term the core states today), and keep candidate ids to letters, digits, `.`, `_`,
    `-`.
-4. **Agents driven headless must be drivable** — the live tree marks `researcher`, `scout-codegraph`,
-   `auditor-verdict` and `verifier-adversary` `mode: subagent`; `opencode run --agent` on a subagent falls back to
-   the default agent, so the driver refuses them and reverse-distill's five agent steps fail until those agents are
-   `mode: all` (or the workflow names drivable ones).
-5. **emaintenance / converge `run:` lines** — `uv run op …` stays until W2 ports `enhance` and `eval`; then the same
+4. **emaintenance / converge `run:` lines** — `uv run op …` stays until W2 ports `enhance` and `eval`; then the same
    rewrite to `taxis … --nous {{nous}}`.
-6. **Eval ledgers** — `ops/evaluator/ledgers/` is brain data, not tooling: move it to `core/tekton/evals/<entity>/`
+5. **Eval ledgers** — `ops/evaluator/ledgers/` is brain data, not tooling: move it to `core/tekton/evals/<entity>/`
    (queries and tasks per subject) before W2 reads it from `--nous`.
-7. **Retire `ops/`** — once W1 and W2 run from e-taxis, `feat/restore-ops-workflows` is discarded and e-nous keeps
+6. **Retire `ops/`** — once W1 and W2 run from e-taxis, `feat/restore-ops-workflows` is discarded and e-nous keeps
    no `ops/`.
+
+## 9. Heuristic measures
+
+**(2026-10-27) W2 had omitted them.** PR #17 ported the planes without `semantic`, `activation` and `effect`: `taxis
+eval graph skill` listed snapshot, render, law, security, queries, tasks and needs, so a weekly run spent zero tokens
+and measured no routing and no effect, and the enhancer adopted a skill edit with no A/B behind it. Ported from e-nous
+`archive/ops-v1` (`ops/nodes/skill/{semantic,activation,effect}`, `ops/evaluator/{routing,effect}`, the bare-completion
+runner, their metrics and tests). The cadence is v1's: all three are due at `weekly` (and `manual`, which runs
+everything) — **not** `nightly`, in v1 or here: a nightly run still measures nothing heuristic, by design.
+
+| node | does | cadence | cost |
+|---|---|---|---|
+| `semantic` | `security` with SkillSpector's LLM stage on (semantic analyzers + the meta-analyzer that drops the static stage's false positives), on `TAXIS_EVAL_SEMANTIC_TIER` (`builder`) through the provider's `openai_url`; same placing in core/ and accepted findings; findings become `security` needs | weekly | the scanner's LLM calls per skill (it reports no token count) |
+| `activation` | the routing probe: the run's coder (`TAXIS_EVAL_BACKEND`) in a sandbox config home around the render (`tree=base` or `candidate`), every query case that asserts in `mode` (`activation`/`navigation`/`preload`) run `TAXIS_EVAL_PROBE_RUNS` (3) times, `_PROBE_CONCURRENCY` (6) in flight across the run; pooled rate + Wilson interval, recall, precision; a refused session is unmeasured (transient ones retried twice with backoff, quotas not) and leaves the node in `skip` (no verdict, no break: decide holds); failures become `routing` needs | weekly | cases × runs coder sessions, each with every description in its index — the row's `tokens` (cache reads included) |
+| `effect` | the paired A/B on the `TAXIS_EVAL_EFFECT_SPLIT` (`test`) tasks: `TAXIS_EVAL_EFFECT_SEEDS` (5) bare completions per task and arm on `TAXIS_EVAL_TIER` (`scout`), the whole skill (router + references) as `system`; deterministic judge; seeded bootstrap (10 000 draws, α 0.05) over whole tasks; `outcomes.json` beside the node; no help the interval can tell from zero, and every task still failing, become `effect` needs | weekly | tasks × seeds × 2 completions on the cheapest tier |
+
+Graphs: the evaluator's skill graph adds `semantic` (base), `activation` (after `queries`, base) and `effect`
+(`value`: no skill against the skill), all feeding `needs`. The enhancer's skill graph reads `queries`, `tasks` and
+`activation_base` (routing of the untouched base render) while the proposers write, then gates the candidate on
+`activation_candidate` (rejected when its interval lies wholly below the base's) and `effect` (`delta`: proposes when
+underpowered — fewer than 6 tasks or 3 seeds — or inconclusive, rejects when an interval lies wholly below zero,
+adopts when the soft one lies wholly above). An enhancement run off the weekly cadence idles those gates, so it
+proposes and never adopts: adoption needs the A/B (v1's rule, kept).
+
+The provider is the checkout's `core/tekton/config/models.yaml` (tier → `<alias>/<model>`, the key read from the
+`{env:NAME}` it names) — `HouseProvider`; the completion is `AnthropicRunner` on wreq; the coders are `OpencodeCoder`
+(XDG config home with `opencode/` → the render, every other entry linked) and `ClaudeCoder` (`CLAUDE_CONFIG_DIR`
+around the render, credentials linked, global config copied). Statistics are stdlib (`engine.stats`): no numpy for a
+few dozen tasks.
+
+Still not ported, each a decision: `skillopt` (the SkillOpt proposer — a wrapped external optimizer on its own
+interpreter, a proposer that varies with the state of the art, not a measure); `replication` and the MCP probes
+(v1-only nodes).

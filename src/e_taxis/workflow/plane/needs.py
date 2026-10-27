@@ -8,6 +8,8 @@ list, plus a directive of yours.
 | `law` | a law's violations | the entity breaks the house law |
 | `security` | an unaccepted scanner finding | the text may instruct harm, or the scanner could not read it |
 | `coverage` | a missing or invalid query / task set | routing or effect cannot be measured |
+| `routing` | a query case that did not hold every run | the description loses a decision it should win |
+| `effect` | no measurable help, or a task still failing under the skill | the body does not make answers better |
 | `drift` | an upstream signal of a backend's sources | a spec lags its harness |
 | `broken` | a node that failed or broke without a reading | the entity does not render or load |"""
 
@@ -15,6 +17,8 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, ClassVar, Final
 
 from e_taxis.workflow.models.metrics import (
+    ActivationMetrics,
+    EffectMetrics,
     LawMetrics,
     LedgerMetrics,
     Need,
@@ -54,6 +58,26 @@ def needs_ledger(run: NodeRun, metrics: LedgerMetrics) -> list[Need]:
     return [Need("coverage", run.node, f"{metrics.kind}: {problem}") for problem in metrics.problems]
 
 
+def needs_activation(run: NodeRun, metrics: ActivationMetrics) -> list[Need]:
+    return [Need("routing", run.node, f"{metrics.mode}: {case}") for case in metrics.failures]
+
+
+def needs_effect(run: NodeRun, metrics: EffectMetrics) -> list[Need]:
+    """No help the interval can tell from zero, then every task the skill still fails."""
+    weak = (
+        f"the skill does not measurably help: soft {metrics.base.soft:.2f}→{metrics.candidate.soft:.2f} "
+        f"[{metrics.soft.low:+.3f}, {metrics.soft.high:+.3f}]"
+    )
+    return [
+        *([Need("effect", run.node, weak)] if metrics.soft.low <= 0 else []),
+        *(
+            Need("effect", run.node, f"task {task} fails under the skill (hard {after:.2f})")
+            for task, (_, after) in sorted(metrics.per_task.items())
+            if after < 1
+        ),
+    ]
+
+
 def needs_signals(run: NodeRun, metrics: SignalMetrics) -> list[Need]:
     return [
         Need("drift", run.node, f"{s.category}/{s.source}: {s.detail}")
@@ -68,6 +92,8 @@ READERS: Final[Mapping[type, Callable[..., list[Need]]]] = MappingProxyType(
         LawMetrics: needs_law,
         SecurityMetrics: needs_security,
         LedgerMetrics: needs_ledger,
+        ActivationMetrics: needs_activation,
+        EffectMetrics: needs_effect,
         SignalMetrics: needs_signals,
     }
 )

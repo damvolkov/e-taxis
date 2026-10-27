@@ -203,6 +203,71 @@ class LedgerMetrics(Struct, frozen=True, tag="ledger"):
         return f"{self.kind}: {self.cases} cases{splits} · {self.where}{listed}"
 
 
+class Interval(Struct, frozen=True, array_like=True):
+    """A closed interval [low, high]."""
+
+    low: float
+    high: float
+
+
+class Score(Struct, frozen=True, array_like=True):
+    """Mean hard (every check passed) and soft (the fraction of checks passed) scores."""
+
+    hard: float
+    soft: float
+
+
+class ActivationMetrics(Struct, frozen=True, tag="activation"):
+    """Routing for one skill, one mode, one tree: the pooled rate (percent) with its Wilson interval, recall and
+    precision as (held, declared), the runs no answer came back for, and the cases that did not hold every run."""
+
+    tree: str
+    mode: str
+    backend: str
+    passed: int
+    total: int
+    rate: float
+    interval: Interval
+    recall: tuple[int, int]
+    precision: tuple[int, int]
+    unmeasured: int
+    failures: tuple[str, ...] = ()
+
+    @property
+    def summary(self) -> str:
+        listed = "".join(f"\n      ✗ {case}" for case in self.failures[:SHOWN])
+        head = f"{self.tree} {self.mode} on {self.backend}: {self.passed}/{self.total} cases"
+        return (
+            f"{head} · {self.rate:.1f}% [{self.interval.low:.0f}-{self.interval.high:.0f}] · recall "
+            f"{self.recall[0]}/{self.recall[1]} · precision {self.precision[0]}/{self.precision[1]} · "
+            f"{self.unmeasured} unmeasured{listed}"
+        )
+
+
+class EffectMetrics(Struct, frozen=True, tag="effect"):
+    """A paired A/B on held-out tasks: `value` (evaluator) no skill against the skill; `delta` (enhancer) the skill
+    as it stands against the candidate. `per_task` is task → (A, B) mean hard score."""
+
+    split: str
+    tasks: int
+    seeds: int
+    base: Score
+    candidate: Score
+    delta: Score
+    hard: Interval
+    soft: Interval
+    per_task: dict[str, tuple[float, float]] = {}
+    mode: str = "delta"
+
+    @property
+    def summary(self) -> str:
+        return (
+            f"{self.mode} on {self.split} {self.tasks}x{self.seeds}: soft {self.base.soft:.2f}→{self.candidate.soft:.2f} "
+            f"[{self.soft.low:+.3f}, {self.soft.high:+.3f}] · hard {self.base.hard:.2f}→{self.candidate.hard:.2f} "
+            f"[{self.hard.low:+.3f}, {self.hard.high:+.3f}]"
+        )
+
+
 class LoadingMetrics(Struct, frozen=True, tag="loading"):
     """What the real harness, raised fenced on the render, showed of what the core declares."""
 
@@ -329,6 +394,8 @@ type Metrics = (
     | SecurityMetrics
     | LedgerMetrics
     | LoadingMetrics
+    | ActivationMetrics
+    | EffectMetrics
     | SignalMetrics
     | NeedsMetrics
     | BriefMetrics

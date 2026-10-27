@@ -24,6 +24,14 @@ class StepKind(StrEnum):
     LEAD = "lead"
 
 
+class AgentMode(StrEnum):
+    """An agent's `mode` in the live OpenCode tree (absent: `all`) — which driver can run it headless."""
+
+    PRIMARY = "primary"
+    SUBAGENT = "subagent"
+    ALL = "all"
+
+
 class ParamType(StrEnum):
     """A parameter's shape; every value still reaches a step as text (`{{name}}`)."""
 

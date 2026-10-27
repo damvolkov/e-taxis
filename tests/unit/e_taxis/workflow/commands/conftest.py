@@ -16,11 +16,14 @@ LIB = "core/tekton/skills/algo-py-core/references/lib.md"
 
 @pytest.fixture
 def enhanced(taxis: Callable[..., tuple[int, str, str]], plane_nous: Path, plane_deps: PlaneRun) -> Path:
-    """An enhancement of the mini checkout's skill over a hand edit, the edit then undone: a patch to promote."""
+    """An enhancement of the mini checkout's skill over a hand edit, the edit then undone: a patch to promote. At the
+    commit cadence the weekly measures idle, so the verdict is `propose` — promotable by id or with every verdict."""
     lib = plane_nous / LIB
     original = lib.read_text()
     lib.write_text(original + "\nPromoted depth.\n")
-    code, _, _ = taxis("enhance", "run", "skill", "algo-py-core", "--nous", str(plane_nous), "--manual")
+    code, _, _ = taxis(
+        "enhance", "run", "skill", "algo-py-core", "--nous", str(plane_nous), "--manual", "--cadence", "commit"
+    )
     lib.write_text(original)
     assert code == 0
     return plane_nous

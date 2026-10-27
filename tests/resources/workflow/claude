@@ -1,0 +1,4 @@
+#!/bin/sh
+# a `claude` stand-in: it writes into its working directory the way its Bash tool would, then answers.
+touch "$PWD/written-by-agent" 2>/dev/null || true
+printf '%s\n' '{"type": "result", "is_error": false, "result": "done", "modelUsage": {}}'

@@ -40,12 +40,27 @@ async def test_plane_evaluate_measures_the_checkout(plane_run: PlaneRun, plane_n
         "security": Status.OK,
         "queries": Status.FAIL,
         "tasks": Status.OK,
+        "semantic": Status.IDLE,
+        "activation": Status.IDLE,
+        "effect": Status.IDLE,
         "needs": Status.OK,
     }
     assert report.manifest.tree == str(plane_nous)
     assert [need.kind for need in report.needs[SKILL]] == ["coverage", "coverage"]
     assert (Path(report.folder) / "report.md").read_text() == report.markdown
     assert not (Path(report.folder) / "sandbox").exists()
+
+
+async def test_plane_evaluate_weekly_measures_the_heuristics(
+    plane_run: PlaneRun, plane_nous: Path, scanner, echo
+) -> None:
+    """W2 had dropped `semantic`, `activation` and `effect`: at the weekly cadence they run — the scan's LLM stage on
+    the semantic tier, the A/B on the render — and routing waits on a valid query set."""
+    report = await plane_run.evaluate(plane_nous, Target.SKILL, (SKILL,), Cadence.WEEKLY)
+    found = statuses(report)
+    assert (found["semantic"], found["activation"], found["effect"]) == (Status.OK, Status.SKIP, Status.OK)
+    assert {llm.model if llm else None for llm in scanner.llms} == {None, "builder"}
+    assert len(echo.systems) == 4
 
 
 async def test_plane_evaluate_refuses_an_unknown_subject(plane_run: PlaneRun, plane_nous: Path) -> None:
