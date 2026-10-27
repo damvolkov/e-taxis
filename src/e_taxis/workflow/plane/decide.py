@@ -4,20 +4,31 @@ It reads the candidate, every gate `params.gates` names, every proposal and the 
 finding: `settled` the candidate changed nothing · `reject` a gate is red · `hold` a gate broke, was skipped or never
 ran · `propose` green but a gate idled, or the grade is above the target's ceiling · `adopt` green, and the grade
 within the ceiling (`TAXIS_EVAL_PROMOTE`). Needs no proposer acts on (`routing`, `coverage`, `broken`) are carried as
-reasons, never weight. v1's effect and routing readings are gone with their weekly nodes (docs/workflow.md §9)."""
+reasons, never weight.
+
+A green gate whose metrics carry a reading is read, not just counted: `effect` proposes when underpowered (fewer than
+six tasks or three seeds) or inconclusive, rejects when an interval lies wholly below zero, adopts when the soft one
+lies wholly above; `activation` rejects a candidate whose routing interval lies wholly below the base's."""
 
 from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, ClassVar, Final
 
 from e_taxis.workflow.distill.matrix import VersionMatrix
-from e_taxis.workflow.models.metrics import BriefMetrics, CandidateMetrics, DecisionMetrics, GradeMetrics
+from e_taxis.workflow.models.metrics import (
+    ActivationMetrics,
+    BriefMetrics,
+    CandidateMetrics,
+    DecisionMetrics,
+    EffectMetrics,
+    GradeMetrics,
+)
 from e_taxis.workflow.models.plane import Guard, NodeCard, Role
 from e_taxis.workflow.models.run import NodeRun, Outcome, Status
 from e_taxis.workflow.models.verdict import Decision
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Callable, Mapping
 
     from e_taxis.workflow.models.ports import PlaneContext
 
@@ -38,8 +49,48 @@ BY_STATUS: Final[Mapping[Status, Decision]] = MappingProxyType(
 UNADDRESSED: Final[frozenset[str]] = frozenset({"routing", "coverage", "broken"})
 NONE: str = "none"
 MATRIX: str = "core/versioning/matrix.yaml"
+### below this an effect A/B is underpowered: its interval is no verdict.
+MIN_TASKS: int = 6
+MIN_SEEDS: int = 3
 
 type Finding = tuple[Decision, str]
+
+
+##### UTILITIES #####
+def read_effect(_context: PlaneContext, effect: EffectMetrics) -> Finding:
+    summary = (
+        f"effect soft {effect.delta.soft:+.3f} [{effect.soft.low:+.3f}, {effect.soft.high:+.3f}] "
+        f"hard {effect.delta.hard:+.3f} [{effect.hard.low:+.3f}, {effect.hard.high:+.3f}] "
+        f"n={effect.tasks}x{effect.seeds}"
+    )
+    match (
+        effect.tasks < MIN_TASKS or effect.seeds < MIN_SEEDS,
+        effect.soft.high < 0 or effect.hard.high < 0,
+        effect.soft.low > 0,
+    ):
+        case (True, _, _):
+            return (Decision.PROPOSE, f"underpowered · {summary}")
+        case (_, True, _):
+            return (Decision.REJECT, f"worse · {summary}")
+        case (_, _, True):
+            return (Decision.ADOPT, f"better · {summary}")
+        case _:
+            return (Decision.PROPOSE, f"inconclusive · {summary}")
+
+
+def read_activation(context: PlaneContext, candidate: ActivationMetrics) -> Finding:
+    summary = f"routing {candidate.rate:.1f}% [{candidate.interval.low:.0f}-{candidate.interval.high:.0f}]"
+    match context.upstream(context.param("activation_base", "activation_base")):
+        case NodeRun(metrics=ActivationMetrics(interval=base)) if candidate.interval.high < base.low:
+            return (Decision.REJECT, f"{summary} below base [{base.low:.0f}-{base.high:.0f}]")
+        case _:
+            return (Decision.ADOPT, summary)
+
+
+### metrics that carry a reading beyond their status; any other green gate is simply green.
+READERS: Final[Mapping[type, Callable[..., Finding]]] = MappingProxyType(
+    {EffectMetrics: read_effect, ActivationMetrics: read_activation}
+)
 
 
 ##### TYPES #####
@@ -63,6 +114,8 @@ class PlaneDecide:
         match context.upstream(gate):
             case None:
                 return (Decision.HOLD, f"{gate}: never ran")
+            case NodeRun(status=Status.OK, metrics=metrics) if (reader := READERS.get(type(metrics))) is not None:
+                return reader(context, metrics)
             case NodeRun(status=Status.OK):
                 return (Decision.ADOPT, f"{gate} green")
             case run:

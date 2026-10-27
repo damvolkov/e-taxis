@@ -20,6 +20,7 @@ from e_taxis.workflow.models.run import Outcome, Status
 from e_taxis.workflow.models.security import SEVERITY, SecurityBaseline
 
 if TYPE_CHECKING:
+    from e_taxis.workflow.models.endpoint import Endpoint
     from e_taxis.workflow.models.ports import PlaneContext, ScannerPort
 
 ##### DEFAULTS #####
@@ -47,6 +48,10 @@ class PlaneSecurity:
         self._fail = SEVERITY[fail]
 
     ##### PRIVATE METHODS #####
+
+    async def _run_llm(self, context: PlaneContext) -> Endpoint | None:  # noqa: ARG002 — `semantic` reads it
+        """The endpoint SkillSpector's LLM stage runs on: none, the static scan alone."""
+        return None
 
     @staticmethod
     async def _run_source(source: Path) -> str:
@@ -118,7 +123,7 @@ class PlaneSecurity:
                 flat = (await anyio.Path(folder / "SKILL.md").read_text()).splitlines()
         source = state.paths.tree(context.subject) if candidate else Path(state.manifest.tree)
         prefix = state.manifest.place(context.subject)
-        result = await self._scanner.scan(folder, await self._run_source(source))
+        result = await self._scanner.scan(folder, await self._run_source(source), await self._run_llm(context))
         core = await self._run_lines(source / prefix)
         accepted = (await self._run_accepted(source)).accepted.get(context.subject, ())
         placed = tuple(self._run_place(finding, flat, core, prefix) for finding in result.findings)

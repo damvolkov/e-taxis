@@ -3,19 +3,23 @@
 The scanner runs through `uvx` from the install source the e-nous stack pins (`git+<link>@<pin>`); its JSON report is
 decoded here into the house's `Finding`, still placed in the rendered tree (the node traces each one back to core/).
 An issue without the scanner's fingerprint gets one from its rule and snippet; duplicates of one place are folded.
-The LLM stage (legacy `skill/semantic`, weekly) is not ported."""
+With an `llm` endpoint the LLM stage runs too (`skill/semantic`, weekly): its semantic analyzers and the meta-analyzer
+that weeds out the static stage's false positives, on the house provider's OpenAI-compatible twin — never a vendor's
+default. The key travels in the child's environment, never in the argv."""
 
 import hashlib
 from typing import TYPE_CHECKING
 
 import msgspec
 
+from e_taxis.workflow.models.error import ProviderError
 from e_taxis.workflow.models.metrics import Finding
 from e_taxis.workflow.models.security import ScanResult
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from e_taxis.workflow.models.endpoint import Endpoint
     from e_taxis.workflow.models.ports import CommandPort
 
 ##### DEFAULTS #####
@@ -48,7 +52,7 @@ class SpectorReport(msgspec.Struct, frozen=True):
 
 
 class SkillspectorScanner:
-    """Satisfies ScannerPort over `uvx … skillspector scan --no-llm --format json`."""
+    """Satisfies ScannerPort over `uvx … skillspector scan [--no-llm] --format json`."""
 
     __slots__ = ("_command", "_limit")
 
@@ -71,18 +75,44 @@ class SkillspectorScanner:
             fingerprint=issue.match_fingerprint or stable,
         )
 
+    @staticmethod
+    def _scan_llm(llm: Endpoint) -> dict[str, str]:
+        """The LLM stage pointed at the provider's OpenAI-compatible twin."""
+        match llm.openai_url:
+            case "":
+                msg = f"the provider of {llm.model} declares no openai_url for SkillSpector's LLM stage"
+                raise ProviderError(msg)
+            case url:
+                return {
+                    "SKILLSPECTOR_PROVIDER": "openai_compatible",
+                    "SKILLSPECTOR_COMPAT_BASE_URL": url,
+                    "SKILLSPECTOR_COMPAT_API_KEY": llm.key,
+                    "SKILLSPECTOR_MODEL": llm.model,
+                }
+
     ############################################################
 
     ##### PUBLIC #####
 
-    async def scan(self, folder: Path, source: str) -> ScanResult:
+    async def scan(self, folder: Path, source: str, llm: Endpoint | None = None) -> ScanResult:
         raw = await self._command.run(
-            "uvx", "-q", "--from", source, NAME, "scan", str(folder), "--no-llm", "--format", "json", limit=self._limit
+            "uvx",
+            "-q",
+            "--from",
+            source,
+            NAME,
+            "scan",
+            str(folder),
+            *(() if llm else ("--no-llm",)),
+            "--format",
+            "json",
+            limit=self._limit,
+            env=self._scan_llm(llm) if llm else None,
         )
         report = msgspec.json.decode(raw, type=SpectorReport)
         found = {(f.rule, f.path, f.line): f for f in map(self._scan_finding, report.issues)}
         return ScanResult(
-            scanner=f"{NAME}@{source.rpartition('@')[2]}",
+            scanner=f"{NAME}@{source.rpartition('@')[2]}" + (f"+llm:{llm.model}" if llm else ""),
             score=report.risk_assessment.score,
             findings=tuple(found.values()),
         )

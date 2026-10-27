@@ -95,3 +95,7 @@ class IdleError(PlaneError):
     """An enhancement with nothing to act on: no subject has a need. Exit 3, the workflow step's `skip`."""
 
     exit_code: ClassVar[int] = 3
+
+
+class ProviderError(PlaneError):
+    """A tier, alias or key the checkout's models config does not resolve, or an endpoint that answered no message."""

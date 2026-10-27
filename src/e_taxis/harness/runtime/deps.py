@@ -64,16 +64,21 @@ from e_taxis.transpile.services.reverse import ReverseService
 from e_taxis.transpile.services.run import RunService
 from e_taxis.transpile.services.trial import TrialService
 from e_taxis.workflow.adapters.agent import ClaudeAgent, ModeAgent, OpencodeAgent
+from e_taxis.workflow.adapters.coder import ClaudeCoder, OpencodeCoder
 from e_taxis.workflow.adapters.command import ShellCommand
 from e_taxis.workflow.adapters.evals import NousEvals
 from e_taxis.workflow.adapters.ledger import JsonlLedger
 from e_taxis.workflow.adapters.lock import FlockLock
+from e_taxis.workflow.adapters.provider import HouseProvider
+from e_taxis.workflow.adapters.runner import AnthropicRunner
 from e_taxis.workflow.adapters.sandbox import GitSandbox
 from e_taxis.workflow.adapters.scanner import SkillspectorScanner
 from e_taxis.workflow.models.ports import AgentPort, CommandPort, PlaneNodePort, SandboxPort
+from e_taxis.workflow.plane.activation import PlaneActivation
 from e_taxis.workflow.plane.brief import PlaneBrief
 from e_taxis.workflow.plane.candidate import PlaneCandidate
 from e_taxis.workflow.plane.decide import PlaneDecide
+from e_taxis.workflow.plane.effect import PlaneEffect
 from e_taxis.workflow.plane.grade import PlaneGrade
 from e_taxis.workflow.plane.intake import PlaneIntake
 from e_taxis.workflow.plane.integrate import PlaneIntegrate
@@ -86,6 +91,7 @@ from e_taxis.workflow.plane.queries import PlaneQueries
 from e_taxis.workflow.plane.render import PlaneRender
 from e_taxis.workflow.plane.sandbox import PlaneSandbox
 from e_taxis.workflow.plane.security import PlaneSecurity
+from e_taxis.workflow.plane.semantic import PlaneSemantic
 from e_taxis.workflow.plane.signals import PlaneSignals
 from e_taxis.workflow.plane.snapshot import PlaneSnapshot
 from e_taxis.workflow.plane.speckeeper import PlaneSpeckeeper
@@ -277,6 +283,36 @@ class Deps:
     async def _resolve_sandbox(self) -> GitSandbox:
         return GitSandbox(await self.resolve(CommandPort))
 
+    async def _common_measures(self, command: CommandPort, evals: NousEvals) -> dict[str, PlaneNodePort]:
+        """The weekly heuristic measures: SkillSpector's LLM stage and the effect A/B on the house tiers, the routing
+        probe through the coders, each pointed at a sandbox around the render."""
+        settings, (home, claude) = await self.resolve(TaxisSettings), await self._common_homes()
+        provider, scanner = HouseProvider(os.environ), SkillspectorScanner(command, settings.taxis_eval_scan_timeout)
+        coders = MappingProxyType(
+            {"opencode": OpencodeCoder(command, home / ".config"), "claudecode": ClaudeCoder(command, claude)}
+        )
+        return {
+            "semantic": PlaneSemantic(
+                scanner, settings.taxis_eval_scan_fail, provider, settings.taxis_eval_semantic_tier
+            ),
+            "activation": PlaneActivation(
+                evals,
+                coders,
+                runs=settings.taxis_eval_probe_runs,
+                concurrency=settings.taxis_eval_probe_concurrency,
+                limit=settings.taxis_eval_probe_timeout,
+            ),
+            "effect": PlaneEffect(
+                evals,
+                provider,
+                AnthropicRunner(tokens=settings.taxis_eval_tokens, limit=settings.taxis_eval_runner_timeout),
+                tier=settings.taxis_eval_tier,
+                seeds=settings.taxis_eval_effect_seeds,
+                split=settings.taxis_eval_effect_split,
+                concurrency=settings.taxis_eval_probe_concurrency,
+            ),
+        }
+
     async def _common_nodes(self) -> Mapping[str, PlaneNodePort]:
         """Every plane node by the `use` a graph names it with: the planes' one table use → node."""
         settings, command = await self.resolve(TaxisSettings), await self.resolve(CommandPort)
@@ -292,6 +328,7 @@ class Deps:
                 ),
                 "queries": PlaneQueries(evals),
                 "tasks": PlaneTasks(evals),
+                **(await self._common_measures(command, evals)),
                 "needs": PlaneNeeds(),
                 "signals": PlaneSignals(await self.resolve(CheckService)),
                 "loading": PlaneLoading(await self.resolve(TrialService), await self.resolve(CapturePort)),

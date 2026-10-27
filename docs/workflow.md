@@ -18,7 +18,7 @@ GitNous (the checkout as it stands) ─▶ WorkflowReader (typed Workflow, stati
 |---|---|---|
 | `workflow/models` | models | `Workflow` (+ `problems()`, `writers()`), `GraphSpec`/`StepSpec`, `NodeRun`/`RunManifest`/`RunReport`, metrics, the distill chain (`models/distill.py`), errors, ports |
 | `workflow/engine` | processors | `WorkflowReader` (tree → graph), `ParamBind` (parameters as quoted variable references), `DagExecutor` — no I/O of their own |
-| `workflow/adapters` | adapters | `ShellCommand` (argv, stdout to a file, live stderr, timeout), `JsonlLedger`, `FlockLock`, `ModeAgent` → `OpencodeAgent` · `ClaudeAgent` (headless, fenced when read-only) |
+| `workflow/adapters` | adapters | `ShellCommand` (argv, stdout to a file, live stderr, timeout), `JsonlLedger`, `FlockLock`, `ModeAgent` → `OpencodeAgent` · `ClaudeAgent` (headless, fenced when read-only); for the measures (§9) `HouseProvider`, `AnthropicRunner`, `OpencodeCoder` · `ClaudeCoder` |
 | `workflow/services` | services | `WorkflowStep` (the one node kind), `WorkflowRun` (end to end) |
 | `workflow/distill` | services | reverse-distill: `DistillScope`, `DistillGraph`, `DistillDrift`, `DistillInventory`, `VersionMatrix`, `DistillGrade`, `DistillReport`, `DistillStore` |
 | `workflow/commands` | cli | `taxis workflow …`, `taxis distill …` |
@@ -212,3 +212,36 @@ e-taxis does not edit e-nous. The edits e-nous must take:
    (queries and tasks per subject) before W2 reads it from `--nous`.
 6. **Retire `ops/`** — once W1 and W2 run from e-taxis, `feat/restore-ops-workflows` is discarded and e-nous keeps
    no `ops/`.
+
+## 9. Heuristic measures
+
+**(2026-10-27) W2 had omitted them.** PR #17 ported the planes without `semantic`, `activation` and `effect`: `taxis
+eval graph skill` listed snapshot, render, law, security, queries, tasks and needs, so a weekly run spent zero tokens
+and measured no routing and no effect, and the enhancer adopted a skill edit with no A/B behind it. Ported from e-nous
+`archive/ops-v1` (`ops/nodes/skill/{semantic,activation,effect}`, `ops/evaluator/{routing,effect}`, the bare-completion
+runner, their metrics and tests). The cadence is v1's: all three are due at `weekly` (and `manual`, which runs
+everything) — **not** `nightly`, in v1 or here: a nightly run still measures nothing heuristic, by design.
+
+| node | does | cadence | cost |
+|---|---|---|---|
+| `semantic` | `security` with SkillSpector's LLM stage on (semantic analyzers + the meta-analyzer that drops the static stage's false positives), on `TAXIS_EVAL_SEMANTIC_TIER` (`builder`) through the provider's `openai_url`; same placing in core/ and accepted findings; findings become `security` needs | weekly | the scanner's LLM calls per skill (it reports no token count) |
+| `activation` | the routing probe: the run's coder (`TAXIS_EVAL_BACKEND`) in a sandbox config home around the render (`tree=base` or `candidate`), every query case that asserts in `mode` (`activation`/`navigation`/`preload`) run `TAXIS_EVAL_PROBE_RUNS` (3) times, `_PROBE_CONCURRENCY` (6) in flight across the run; pooled rate + Wilson interval, recall, precision; a refused session is unmeasured (transient ones retried twice with backoff, quotas not) and leaves the node in `skip` (no verdict, no break: decide holds); failures become `routing` needs | weekly | cases × runs coder sessions, each with every description in its index — the row's `tokens` (cache reads included) |
+| `effect` | the paired A/B on the `TAXIS_EVAL_EFFECT_SPLIT` (`test`) tasks: `TAXIS_EVAL_EFFECT_SEEDS` (5) bare completions per task and arm on `TAXIS_EVAL_TIER` (`scout`), the whole skill (router + references) as `system`; deterministic judge; seeded bootstrap (10 000 draws, α 0.05) over whole tasks; `outcomes.json` beside the node; no help the interval can tell from zero, and every task still failing, become `effect` needs | weekly | tasks × seeds × 2 completions on the cheapest tier |
+
+Graphs: the evaluator's skill graph adds `semantic` (base), `activation` (after `queries`, base) and `effect`
+(`value`: no skill against the skill), all feeding `needs`. The enhancer's skill graph reads `queries`, `tasks` and
+`activation_base` (routing of the untouched base render) while the proposers write, then gates the candidate on
+`activation_candidate` (rejected when its interval lies wholly below the base's) and `effect` (`delta`: proposes when
+underpowered — fewer than 6 tasks or 3 seeds — or inconclusive, rejects when an interval lies wholly below zero,
+adopts when the soft one lies wholly above). An enhancement run off the weekly cadence idles those gates, so it
+proposes and never adopts: adoption needs the A/B (v1's rule, kept).
+
+The provider is the checkout's `core/tekton/config/models.yaml` (tier → `<alias>/<model>`, the key read from the
+`{env:NAME}` it names) — `HouseProvider`; the completion is `AnthropicRunner` on wreq; the coders are `OpencodeCoder`
+(XDG config home with `opencode/` → the render, every other entry linked) and `ClaudeCoder` (`CLAUDE_CONFIG_DIR`
+around the render, credentials linked, global config copied). Statistics are stdlib (`engine.stats`): no numpy for a
+few dozen tasks.
+
+Still not ported, each a decision: `skillopt` (the SkillOpt proposer — a wrapped external optimizer on its own
+interpreter, a proposer that varies with the state of the art, not a measure); `replication` and the MCP probes
+(v1-only nodes).

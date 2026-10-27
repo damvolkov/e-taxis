@@ -33,7 +33,9 @@ from e_taxis.workflow.adapters.sandbox import GitSandbox
 from e_taxis.workflow.distill.grade import DistillGrade
 from e_taxis.workflow.distill.matrix import VersionMatrix
 from e_taxis.workflow.engine.reader import WorkflowReader
+from e_taxis.workflow.models.case import ProbeMode, ProbeResult
 from e_taxis.workflow.models.distill import Candidate, Change, HarnessPart, HarnessTarget, Relation, Target
+from e_taxis.workflow.models.endpoint import Endpoint
 from e_taxis.workflow.models.entity import Entity
 from e_taxis.workflow.models.error import AgentError, CommandError
 from e_taxis.workflow.models.graph import GraphSpec, StepSpec
@@ -43,9 +45,11 @@ from e_taxis.workflow.models.ports import AgentPort, NodeContext, PlaneContext, 
 from e_taxis.workflow.models.run import NodeRun, Outcome, Reply, RunManifest, RunPaths, Status
 from e_taxis.workflow.models.security import ScanResult
 from e_taxis.workflow.models.workflow import Workflow
+from e_taxis.workflow.plane.activation import PlaneActivation
 from e_taxis.workflow.plane.brief import PlaneBrief
 from e_taxis.workflow.plane.candidate import PlaneCandidate
 from e_taxis.workflow.plane.decide import PlaneDecide
+from e_taxis.workflow.plane.effect import PlaneEffect
 from e_taxis.workflow.plane.grade import PlaneGrade
 from e_taxis.workflow.plane.intake import PlaneIntake
 from e_taxis.workflow.plane.integrate import PlaneIntegrate
@@ -58,6 +62,7 @@ from e_taxis.workflow.plane.queries import PlaneQueries
 from e_taxis.workflow.plane.render import PlaneRender
 from e_taxis.workflow.plane.sandbox import PlaneSandbox
 from e_taxis.workflow.plane.security import PlaneSecurity
+from e_taxis.workflow.plane.semantic import PlaneSemantic
 from e_taxis.workflow.plane.signals import PlaneSignals
 from e_taxis.workflow.plane.snapshot import PlaneSnapshot
 from e_taxis.workflow.plane.speckeeper import PlaneSpeckeeper
@@ -593,15 +598,60 @@ def answer(rundir: Path) -> Callable[[str, Any], None]:
 
 ##### PLANE #####
 class FakeScanner:
-    """ScannerPort that scans nothing: every call recorded; it answers `findings` with score 7."""
+    """ScannerPort that scans nothing: every call recorded (the LLM endpoint too); it answers `findings`, score 7."""
 
     def __init__(self) -> None:
         self.calls: list[tuple[Path, str]] = []
+        self.llms: list[Endpoint | None] = []
         self.findings: list[Finding] = []
 
-    async def scan(self, folder: Path, source: str) -> ScanResult:
+    async def scan(self, folder: Path, source: str, llm: Endpoint | None = None) -> ScanResult:
         self.calls.append((folder, source))
+        self.llms.append(llm)
         return ScanResult(scanner=f"fake@{source.rpartition('@')[2]}", score=7, findings=tuple(self.findings))
+
+
+class FakeProvider:
+    """ProviderPort that resolves every tier to a fake endpoint named after it; `tiers` records the asks."""
+
+    def __init__(self) -> None:
+        self.tiers: list[str] = []
+
+    async def endpoint(self, nous: Path, tier: str) -> Endpoint:
+        self.tiers.append(tier)
+        return Endpoint(base_url="http://fake/v1", key="k", model=tier, openai_url="http://fake/oai")
+
+
+class EchoRunner:
+    """RunnerPort answering its system context then the prompt: a check on the skill's text passes only with it."""
+
+    def __init__(self) -> None:
+        self.systems: list[str] = []
+
+    async def complete(self, endpoint: Endpoint, prompt: str, *, system: str = "") -> Reply:
+        self.systems.append(system)
+        return Reply(text=f"{system}\n{prompt}", tokens=2)
+
+
+class FakeCoder:
+    """CoderPort: `loads` is prompt → the skills a session loads; `refusals` is prompt → the errors its next sessions
+    raise, in order. Every sandbox (flat, root) and probe recorded."""
+
+    def __init__(self) -> None:
+        self.loads: dict[str, frozenset[str]] = {}
+        self.refusals: dict[str, list[str]] = {}
+        self.sandboxes: list[tuple[Path, Path]] = []
+        self.probes: list[tuple[str, ProbeMode]] = []
+
+    async def sandbox(self, flat: Path, root: Path) -> Mapping[str, str]:
+        self.sandboxes.append((flat, root))
+        return {"SANDBOX": str(root)}
+
+    async def probe(self, prompt: str, mode: ProbeMode, *, env: Mapping[str, str], limit: float) -> ProbeResult:
+        self.probes.append((prompt, mode))
+        if self.refusals.get(prompt):
+            raise CommandError(self.refusals[prompt].pop(0))
+        return ProbeResult(loaded=self.loads.get(prompt, frozenset()), text="done", tokens=5)
 
 
 class FakeTrial:
@@ -629,6 +679,21 @@ def scanner() -> FakeScanner:
 @pytest.fixture
 def trial() -> FakeTrial:
     return FakeTrial()
+
+
+@pytest.fixture
+def provider() -> FakeProvider:
+    return FakeProvider()
+
+
+@pytest.fixture
+def echo() -> EchoRunner:
+    return EchoRunner()
+
+
+@pytest.fixture
+def coder() -> FakeCoder:
+    return FakeCoder()
 
 
 @pytest.fixture
@@ -661,9 +726,13 @@ def plane_nodes(
     sandbox: GitSandbox,
     trial: FakeTrial,
     command: ShellCommand,
+    provider: FakeProvider,
+    echo: EchoRunner,
+    coder: FakeCoder,
     tmp_path: Path,
 ) -> dict[str, Any]:
-    """Every plane node, real but for the scanner, the agent and the trial; HOME is a temp dir."""
+    """Every plane node, real but for the scanner, the agent, the trial, the provider, the runner and the coder;
+    HOME is a temp dir; a probe never sleeps before a retry."""
     checker = CheckService()
     render = PlaneRender(RunService(checker), tmp_path / "home")
     evals = NousEvals()
@@ -674,6 +743,9 @@ def plane_nodes(
         "security": PlaneSecurity(scanner, "HIGH"),
         "queries": PlaneQueries(evals),
         "tasks": PlaneTasks(evals),
+        "semantic": PlaneSemantic(scanner, "HIGH", provider, "builder"),
+        "activation": PlaneActivation(evals, {"claudecode": coder}, runs=2, concurrency=4, limit=5.0, backoff=0.0),
+        "effect": PlaneEffect(evals, provider, echo, tier="scout", seeds=2, split="test", concurrency=4),
         "needs": PlaneNeeds(),
         "signals": PlaneSignals(checker),
         "loading": PlaneLoading(trial, HttpCapture()),

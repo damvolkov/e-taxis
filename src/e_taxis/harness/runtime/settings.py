@@ -58,8 +58,13 @@ class TaxisSettings(BaseSettings):
     under the same lock: TAXIS_EVAL_BACKEND is the render they measure, _CONCURRENCY the node runs in flight,
     _CADENCE a run's default, _SCAN_TIMEOUT one SkillSpector scan, _SCAN_FAIL the lowest severity that turns the
     security gate red, _AGENT_TIMEOUT one proposer session, _PROMOTE the heaviest grade each target adopts without a
-    human. TAXIS_HUMAN is the mandate a terminal-started `taxis` hands its children (a human command run by a
-    workflow step it started); TAXIS_HEADLESS (or e-nous's OPS_GLOBAL__HEADLESS) marks a session an agent drives —
+    human. The heuristic measures (weekly): _TIER the house tier the effect A/B's bare completions run on, _TOKENS
+    their answer cap, _RUNNER_TIMEOUT one completion; _SEMANTIC_TIER the tier SkillSpector's LLM stage runs on;
+    _PROBE_RUNS the sessions per routing case, _PROBE_CONCURRENCY those in flight, _PROBE_TIMEOUT one session;
+    _EFFECT_SEEDS the answers per task and arm, _EFFECT_SPLIT the held-out split the A/B reads.
+
+    TAXIS_HUMAN is the mandate a terminal-started `taxis` hands its children (a human command run by a workflow step
+    it started); TAXIS_HEADLESS (or e-nous's OPS_GLOBAL__HEADLESS) marks a session an agent drives —
     no human command runs there, mandate or not."""
 
     taxis_catalog: Path = CATALOG
@@ -91,5 +96,14 @@ class TaxisSettings(BaseSettings):
     taxis_eval_scan_fail: str = "HIGH"
     taxis_eval_agent_timeout: float = 900.0
     taxis_eval_promote: dict[str, str] = PROMOTE
+    taxis_eval_tier: str = "scout"
+    taxis_eval_semantic_tier: str = "builder"
+    taxis_eval_tokens: int = 8192
+    taxis_eval_runner_timeout: float = 300.0
+    taxis_eval_probe_runs: int = 3
+    taxis_eval_probe_concurrency: int = 6
+    taxis_eval_probe_timeout: float = 180.0
+    taxis_eval_effect_seeds: int = 5
+    taxis_eval_effect_split: str = "test"
     taxis_human: bool = False
     taxis_headless: bool = Field(default=False, validation_alias=AliasChoices("TAXIS_HEADLESS", "OPS_GLOBAL__HEADLESS"))
