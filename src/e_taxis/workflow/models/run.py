@@ -67,11 +67,12 @@ class Outcome(Struct, frozen=True, kw_only=True):
 
 
 class NodeRun(Struct, frozen=True, kw_only=True):
-    """One step, as it happened."""
+    """One step, or one plane node over one subject (`subject` empty: the corpus, or a workflow step), as it happened."""
 
     run_id: str
     node: str
     status: Status
+    subject: str = ""
     started: dt.datetime
     ended: dt.datetime
     input_hash: str

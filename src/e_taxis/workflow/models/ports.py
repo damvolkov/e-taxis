@@ -1,4 +1,5 @@
-"""models.ports: what the workflow engine asks of the world — run a command, drive an agent, keep a ledger, run a step.
+"""models.ports: what the workflow engine asks of the world — run a command, drive an agent, keep a ledger, run a step;
+and for the planes, a git sandbox, a scanner, the evaluator's ledgers, and a node over one subject.
 
 The context is part of the contract: a run's resources (manifest, paths, ledger) are fixed when it starts; the
 evidence lives only in the ledger, append-only and typed. A step reads upstream evidence through its context."""
@@ -9,8 +10,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
+from e_taxis.workflow.models.case import QuerySet, TaskSet
 from e_taxis.workflow.models.graph import StepSpec
+from e_taxis.workflow.models.plane import NodeCard, NodeSpec, PlaneManifest, PlanePaths
 from e_taxis.workflow.models.run import NodeRun, Outcome, Reply, RunManifest, RunPaths
+from e_taxis.workflow.models.security import ScanResult
 
 
 ##### PORTS #####
@@ -51,7 +55,7 @@ class LedgerPort(Protocol):
 
     async def append(self, run: NodeRun) -> None: ...
 
-    def latest(self, node: str) -> NodeRun | None: ...
+    def latest(self, node: str, subject: str = "") -> NodeRun | None: ...
 
     def runs(self) -> tuple[NodeRun, ...]: ...
 
@@ -93,3 +97,86 @@ class NodePort(Protocol):
     """A step: one async call from its context to an outcome. Never raises for a verdict."""
 
     async def run(self, context: NodeContext) -> Outcome: ...
+
+
+##### PLANE PORTS #####
+@runtime_checkable
+class SandboxPort(Protocol):
+    """git over a checkout and the run's clone of it: every repo is named per call, so one adapter serves both."""
+
+    async def head(self, repo: Path) -> str: ...
+
+    async def dirty(self, repo: Path, *paths: str) -> tuple[str, ...]: ...
+
+    async def created(self, repo: Path, *paths: str) -> tuple[str, ...]: ...
+
+    async def open(self, repo: Path, path: Path, base: str) -> Path: ...
+
+    async def close(self, path: Path) -> None: ...
+
+    async def fingerprint(self, repo: Path) -> tuple[str, dict[str, str]]: ...
+
+    async def changed(self, repo: Path, base: str, rel: str) -> tuple[str, ...]: ...
+
+    async def overlay(self, source: Path, target: Path, rel: str) -> None: ...
+
+    async def diff(self, sandbox: Path, base: str, rel: str) -> str: ...
+
+    async def apply(self, repo: Path, patch: Path, *, check: bool = False, reverse: bool = False) -> bool: ...
+
+
+@runtime_checkable
+class ScannerPort(Protocol):
+    """A security scan of one rendered folder, with the scanner at the install source `source` names."""
+
+    async def scan(self, folder: Path, source: str) -> ScanResult: ...
+
+
+@runtime_checkable
+class EvalsPort(Protocol):
+    """The evaluator's ledgers in an e-nous checkout: a skill's query and task sets, and where each was read."""
+
+    async def queries(self, nous: Path, skill: str) -> tuple[QuerySet | None, str]: ...
+
+    async def tasks(self, nous: Path, skill: str) -> tuple[TaskSet | None, str]: ...
+
+
+##### PLANE CONTEXT #####
+@dataclass(frozen=True, slots=True)
+class PlaneState:
+    """The resources of one plane run. Immutable; the ledger is the only thing that grows."""
+
+    manifest: PlaneManifest
+    paths: PlanePaths
+    ledger: LedgerPort
+
+
+@dataclass(frozen=True, slots=True)
+class PlaneContext:
+    """What one node run sees: the run, its own spec, and the subject it is scoped to (empty: the corpus)."""
+
+    state: PlaneState
+    spec: NodeSpec
+    subject: str
+
+    @property
+    def workdir(self) -> Path:
+        return self.state.paths.node(self.spec.id, self.subject)
+
+    def param(self, key: str, default: str = "") -> str:
+        return self.spec.params.get(key, default)
+
+    def upstream(self, node: str) -> NodeRun | None:
+        """The latest run of another node over this subject, or over the corpus when it is corpus-scoped."""
+        return self.state.ledger.latest(node, self.subject) or self.state.ledger.latest(node)
+
+
+@runtime_checkable
+class PlaneNodePort(Protocol):
+    """A node of a plane graph: its card, and one async call from its context to an outcome. Never raises for a
+    verdict."""
+
+    @property
+    def card(self) -> NodeCard: ...
+
+    async def run(self, context: PlaneContext) -> Outcome: ...

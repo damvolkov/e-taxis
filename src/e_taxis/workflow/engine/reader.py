@@ -1,4 +1,5 @@
-"""engine.reader: a corpus workflow, read from one e-nous tree, as the graph the executor runs.
+"""engine.reader: a corpus workflow, read from one e-nous tree, as the graph the executor runs — and a plane graph,
+its nodes carded, as the graph the subject executor fans out.
 
 The tree comes from the transpiler's own reader (`GitNous`): every `{source: nodes/<id>.yaml}` envelope is already
 resolved there, so no second loader exists. Where things live is what `core/schema.yaml` says: the workflow folder
@@ -13,12 +14,17 @@ from typing import TYPE_CHECKING
 
 import msgspec
 
-from e_taxis.workflow.models.error import WorkflowError
+from e_taxis.workflow.models.error import PlaneError, WorkflowError
 from e_taxis.workflow.models.graph import GraphSpec, LoopDecl, StepSpec
+from e_taxis.workflow.models.graphs import GRAPHS
+from e_taxis.workflow.models.plane import NodeSpec, PlaneGraph
 from e_taxis.workflow.models.workflow import Node, Workflow
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from e_taxis.transpile.models.nous import NousTree
+    from e_taxis.workflow.models.plane import NodeCard, NodeUse, Plane, PlaneDecl, Target
 
 ##### DEFAULTS #####
 ENTITY: str = "workflow"
@@ -167,3 +173,76 @@ class WorkflowReader:
             case unknown:
                 msg = f"{decl.id}: undeclared parameter(s) {', '.join(unknown)}"
                 raise WorkflowError(msg)
+
+
+class PlaneReader:
+    """The plane graphs (`models.graphs`), each node joined with its own card from `cards` (use → card), and proved
+    wired before anything runs: an unknown node, a duplicate id, an unknown dependency or a cycle is refused."""
+
+    __slots__ = ("_cards", "_graphs")
+
+    def __init__(
+        self, cards: Mapping[str, NodeCard], graphs: Mapping[Plane, Mapping[Target, PlaneDecl]] = GRAPHS
+    ) -> None:
+        self._cards = cards
+        self._graphs = graphs
+
+    ##### PRIVATE METHODS #####
+
+    def _read_node(self, use: NodeUse) -> NodeSpec:
+        match self._cards.get(use.use):
+            case None:
+                msg = f"{use.key}: no node {use.use!r}"
+                raise PlaneError(msg)
+            case card:
+                return NodeSpec(id=use.key, use=use.use, card=card, depends=use.depends, params=use.params)
+
+    @staticmethod
+    def _read_problems(nodes: tuple[NodeSpec, ...]) -> tuple[str, ...]:
+        ids = [node.id for node in nodes]
+        try:
+            graphlib.TopologicalSorter({node.id: node.depends for node in nodes}).prepare()
+        except graphlib.CycleError as cycle:
+            looped: tuple[str, ...] = (f"cycle: {' → '.join(cycle.args[1])}",)
+        else:
+            looped = ()
+        return (
+            *(f"duplicate id {ident}" for ident in sorted({i for i in ids if ids.count(i) > 1})),
+            *(f"{node.id} depends on unknown {dep}" for node in nodes for dep in node.depends if dep not in ids),
+            *looped,
+        )
+
+    ############################################################
+
+    ##### PUBLIC #####
+
+    def targets(self, plane: Plane) -> tuple[Target, ...]:
+        """Every target this plane declares a graph for."""
+        return tuple(self._graphs[plane])
+
+    def read(self, plane: Plane, target: Target) -> PlaneGraph:
+        match self._graphs[plane].get(target):
+            case None:
+                msg = f"no {plane} graph for {target}"
+                raise PlaneError(msg)
+            case decl:
+                nodes = tuple(self._read_node(use) for use in decl.nodes)
+        match self._read_problems(nodes):
+            case ():
+                return PlaneGraph(plane=plane, target=target, summary=decl.summary, nodes=nodes)
+            case problems:
+                msg = f"{plane}/{target}: {'; '.join(problems)}"
+                raise PlaneError(msg)
+
+    def describe(self, plane: Plane, target: Target | None = None) -> str:
+        """Each graph as its nodes in declaration order: role, nature, scope, cadence, edges."""
+        graphs = (self.read(plane, one) for one in ((target,) if target else self.targets(plane)))
+        return "\n".join(
+            f"## {plane}/{graph.target} — {graph.summary}\n"
+            + "\n".join(
+                f"  {n.id:<20}{n.card.role:<9}{n.card.nature:<15}{n.card.scope:<9}"
+                f"{'/'.join(n.card.cadence) or 'always':<15}{'after ' + ', '.join(n.depends) if n.depends else ''}".rstrip()
+                for n in graph.nodes
+            )
+            for graph in graphs
+        )

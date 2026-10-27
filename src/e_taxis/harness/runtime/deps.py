@@ -65,9 +65,20 @@ from e_taxis.transpile.services.run import RunService
 from e_taxis.transpile.services.trial import TrialService
 from e_taxis.workflow.adapters.agent import OpencodeAgent
 from e_taxis.workflow.adapters.command import ShellCommand
+from e_taxis.workflow.adapters.evals import NousEvals
 from e_taxis.workflow.adapters.ledger import JsonlLedger
 from e_taxis.workflow.adapters.lock import FlockLock
-from e_taxis.workflow.models.ports import AgentPort, CommandPort
+from e_taxis.workflow.adapters.sandbox import GitSandbox
+from e_taxis.workflow.adapters.scanner import SkillspectorScanner
+from e_taxis.workflow.models.ports import AgentPort, CommandPort, PlaneNodePort, SandboxPort
+from e_taxis.workflow.plane.law import PlaneLaw
+from e_taxis.workflow.plane.needs import PlaneNeeds
+from e_taxis.workflow.plane.queries import PlaneQueries
+from e_taxis.workflow.plane.render import PlaneRender
+from e_taxis.workflow.plane.security import PlaneSecurity
+from e_taxis.workflow.plane.snapshot import PlaneSnapshot
+from e_taxis.workflow.plane.tasks import PlaneTasks
+from e_taxis.workflow.services.plane import PlaneRun
 from e_taxis.workflow.services.run import WorkflowRun
 
 T = TypeVar("T")
@@ -235,6 +246,44 @@ class Deps:
             reports=settings.taxis_workflow_reports,
         )
 
+    async def _resolve_sandbox(self) -> GitSandbox:
+        return GitSandbox(await self.resolve(CommandPort))
+
+    async def _common_nodes(self) -> Mapping[str, PlaneNodePort]:
+        """Every plane node by the `use` a graph names it with: the planes' one table use → node."""
+        settings, command = await self.resolve(TaxisSettings), await self.resolve(CommandPort)
+        sandbox, evals = await self.resolve(SandboxPort), NousEvals()
+        render = PlaneRender(await self.resolve(RunService), Path.home())
+        return MappingProxyType(
+            {
+                "snapshot": PlaneSnapshot(command, sandbox),
+                "render": render,
+                "law": PlaneLaw(await self.resolve(CheckService)),
+                "security": PlaneSecurity(
+                    SkillspectorScanner(command, settings.taxis_eval_scan_timeout), settings.taxis_eval_scan_fail
+                ),
+                "queries": PlaneQueries(evals),
+                "tasks": PlaneTasks(evals),
+                "needs": PlaneNeeds(),
+            }
+        )
+
+    async def _resolve_plane(self) -> PlaneRun:
+        """Plane runs share the workflows' reports root and lock: a nested run re-enters its parent's."""
+        settings = await self.resolve(TaxisSettings)
+        lock = FlockLock(
+            settings.taxis_workflow_lock_wait, settings.taxis_lock, say=lambda line: sys.stderr.write(f"{line}\n")
+        )
+        return PlaneRun(
+            await self._common_nodes(),
+            await self.resolve(SandboxPort),
+            lock,
+            JsonlLedger.open,
+            concurrency=settings.taxis_eval_concurrency,
+            reports=settings.taxis_workflow_reports,
+            backend=settings.taxis_eval_backend,
+        )
+
     ############################################################
 
     ##### PUBLIC #####
@@ -266,6 +315,8 @@ class Deps:
             CommandPort: _resolve_command,
             AgentPort: _resolve_agent,
             WorkflowRun: _resolve_workflow,
+            SandboxPort: _resolve_sandbox,
+            PlaneRun: _resolve_plane,
         }
     )
 

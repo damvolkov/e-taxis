@@ -53,3 +53,45 @@ class LockError(WorkflowError):
     """Another run held the e-nous checkout past the wait (EX_TEMPFAIL: try again later)."""
 
     exit_code: ClassVar[int] = 75
+
+
+class PlaneError(WorkflowError):
+    """An evaluation or enhancement that cannot start or be read: no graph, an unknown subject or node, no such run."""
+
+    exit_code: ClassVar[int] = 27
+
+
+class ReasonError(PlaneError):
+    """An enhancement asked for without a reason on record, or over uncommitted edits it was not told to take."""
+
+    exit_code: ClassVar[int] = 28
+
+
+class HumanError(PlaneError):
+    """A human command run without a human: no terminal and no mandate handed down, or inside a headless session."""
+
+    exit_code: ClassVar[int] = 29
+
+
+class StaleError(PlaneError):
+    """A promotion refused: HEAD moved since the run's base, so its measurements no longer describe the checkout."""
+
+    exit_code: ClassVar[int] = 30
+
+
+class NeedsOpenError(PlaneError):
+    """`eval needs` found open needs: exit 1, the `until` check's reading of "still open"."""
+
+    exit_code: ClassVar[int] = 1
+
+
+class RefusedError(PlaneError):
+    """A promotion applied what it could and refused at least one patch: exit 1, after the record is written."""
+
+    exit_code: ClassVar[int] = 1
+
+
+class IdleError(PlaneError):
+    """An enhancement with nothing to act on: no subject has a need. Exit 3, the workflow step's `skip`."""
+
+    exit_code: ClassVar[int] = 3
