@@ -1,5 +1,6 @@
 """transforms.opencode: the named transforms of `specs/tekton/opencode.yaml`, one handler per contract there."""
 
+import re
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final
 
@@ -15,6 +16,14 @@ if TYPE_CHECKING:
 ##### DEFAULTS #####
 BACKEND: str = "opencode"
 SPLIT: str = "/"
+### the core writes an env reference as Claude reads it, `${NAME}`; OpenCode reads `{env:NAME}`.
+ENV_REF: Final[re.Pattern[str]] = re.compile(r"\$\{(\w+)\}")
+
+
+##### UTILITIES #####
+def env_opencode(text: str) -> str:
+    """`${NAME}` written the way OpenCode expands it: `{env:NAME}`."""
+    return ENV_REF.sub(r"{env:\1}", text)
 
 
 ##### HANDLERS #####
@@ -94,10 +103,14 @@ def mcp_opencode(value: Mapping[str, Mapping[str, Any]], ctx: RowContext) -> dic
                 {
                     "type": "local",
                     "command": [ctx.bind(arg) for arg in server["command"]],
-                    "environment": {k: ctx.bind(v) for k, v in (server.get("env") or {}).items()},
+                    "environment": {k: env_opencode(ctx.bind(v)) for k, v in (server.get("env") or {}).items()},
                 }
                 if server.get("command")
-                else {"type": "remote", "url": ctx.bind(server["url"]), "headers": dict(server.get("headers") or {})}
+                else {
+                    "type": "remote",
+                    "url": ctx.bind(server["url"]),
+                    "headers": {k: env_opencode(v) for k, v in (server.get("headers") or {}).items()},
+                }
             ).items()
             if item
         }

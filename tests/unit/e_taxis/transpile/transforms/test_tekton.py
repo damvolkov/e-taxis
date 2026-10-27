@@ -82,6 +82,27 @@ async def test_tekton_mcp_opencode_keeps_its_servers(ctx: RowContext) -> None:
     }
 
 
+async def test_tekton_mcp_opencode_speaks_its_env_syntax(ctx: RowContext) -> None:
+    servers = {
+        "r": {"url": "http://u", "headers": {"Authorization": "Bearer ${KB_TOKEN}"}},
+        "l": {"command": ["x"], "env": {"K": "${KEY}-${KEY2}", "P": "plain"}},
+    }
+    assert opencode.mcp_opencode(servers, ctx) == {
+        "r": {
+            "type": "remote",
+            "url": "http://u",
+            "headers": {"Authorization": "Bearer {env:KB_TOKEN}"},
+            "enabled": True,
+        },
+        "l": {
+            "type": "local",
+            "command": ["x"],
+            "environment": {"K": "{env:KEY}-{env:KEY2}", "P": "plain"},
+            "enabled": True,
+        },
+    }
+
+
 async def test_tekton_agents_registry_resolves_tiers(ctx: RowContext) -> None:
     agents = {"overrides": {"plan": {"model": "scout"}}, "system": {"x": {"hidden": True}}}
     assert opencode.agents_registry(agents, ctx) == {
