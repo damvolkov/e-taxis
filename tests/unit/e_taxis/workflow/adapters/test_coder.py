@@ -135,3 +135,9 @@ async def test_coder_opencode_sandbox_links_resolve_from_a_relative_render(
     (tmp_path / "run" / "flat" / "skills").mkdir(parents=True)
     await OpencodeCoder(fake_command, real).sandbox(Path("run/flat"), root)
     assert (root / "opencode" / "skills").is_dir()
+
+
+@pytest.mark.parametrize("key", ["name", "id"], ids=["opencode-1", "opencode-2"])
+async def test_coder_opencode_reads_the_skill_by_either_key(key: str) -> None:
+    event = {"part": {"type": "tool", "tool": "skill", "state": {"input": {key: "para-py-dispatch"}}}}
+    assert OpencodeCoder.read(msgspec.json.encode(event).decode()).loaded == frozenset({"para-py-dispatch"})

@@ -97,7 +97,8 @@ class OpencodeCoder:
         """One event part as the little it says: a skill loaded and references named, a text, the tokens spent."""
         match part:
             case {"type": "tool", "tool": tool, "state": {"input": dict(payload)}}:
-                name = payload.get("name")
+                ### OpenCode 1.x names the skill `name`; 2.x names it `id`.
+                name = payload.get("name", payload.get("id"))
                 loaded = frozenset({name}) if tool == "skill" and isinstance(name, str) else frozenset()
                 return ProbeResult(loaded=loaded, opened=references_coder(payload.values()))
             case {"type": "text", "text": str(chunk)}:
