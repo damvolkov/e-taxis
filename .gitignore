@@ -32,3 +32,6 @@ __pycache__/
 .coverage
 .coverage.*
 src/e_taxis/.materialized.json
+
+# agent plans (e-nous persona: Plans) — working state, never committed
+.plans/

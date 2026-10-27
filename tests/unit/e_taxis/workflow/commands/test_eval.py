@@ -53,3 +53,9 @@ def test_eval_needs_without_a_run_exits_27(taxis: Taxis, plane_nous: Path, plane
     code, _, err = taxis("eval", "needs", "skill", "--nous", str(plane_nous))
     assert code == 27
     assert "no evaluator skill run 'latest'" in err
+
+
+def test_eval_run_only_refuses_a_gate(taxis: Taxis, plane_nous: Path, plane_deps: PlaneRun) -> None:
+    code, _, err = taxis("eval", "run", "skill", "algo-py-core", "--nous", str(plane_nous), "--only", "law")
+    assert code != 0
+    assert "--only names no measure of skill: law" in err

@@ -21,7 +21,7 @@ from e_taxis.workflow.engine.reader import PlaneReader
 from e_taxis.workflow.engine.subject import NousSubject
 from e_taxis.workflow.models.error import IdleError, PlaneError, ReasonError
 from e_taxis.workflow.models.metrics import NeedsMetrics
-from e_taxis.workflow.models.plane import Plane, PlaneManifest, PlanePaths
+from e_taxis.workflow.models.plane import Plane, PlaneManifest, PlanePaths, Role
 from e_taxis.workflow.models.ports import PlaneState
 from e_taxis.workflow.models.report import PlaneReport
 
@@ -214,11 +214,20 @@ class PlaneRun:
         *,
         candidate: str = "",
         keep: bool = False,
+        only: tuple[str, ...] = (),
         notify: Callable[[NodeRun], None] | None = None,
     ) -> PlaneReport:
-        """Measure `target`'s subjects (all, or `ids`) in the checkout — or in an enhancer run's candidate."""
+        """Measure `target`'s subjects (all, or `ids`) in the checkout — or in an enhancer run's candidate; `only`
+        narrows the measures to the ones named."""
         subjects = NousSubject(await GitNous(root, None).load()).all(target, ids)
-        manifest = await self._common_manifest(root, Plane.EVALUATOR, target, subjects, cadence)
+        planned = await self._common_manifest(root, Plane.EVALUATOR, target, subjects, cadence)
+        measures = frozenset(node.id for node in planned.graph.nodes if node.card.role is Role.MEASURE)
+        match sorted(frozenset(only) - measures):
+            case []:
+                manifest = msgspec.structs.replace(planned, only=only)
+            case unknown:
+                msg = f"--only names no measure of {target}: {', '.join(unknown)} (measures: {', '.join(sorted(measures))})"
+                raise PlaneError(msg)
         paths = PlanePaths(self.reports(root) / manifest.run_id)
         match candidate:
             case "":

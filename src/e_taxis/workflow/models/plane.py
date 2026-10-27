@@ -122,6 +122,10 @@ class NodeSpec(Struct, frozen=True, kw_only=True):
         """A node that names no cadence is always due; a manual run runs everything."""
         return not self.card.cadence or cadence in self.card.cadence or cadence is Cadence.MANUAL
 
+    def selected(self, only: tuple[str, ...]) -> bool:
+        """Whether `--only` lets it run: a measure (paid in tokens) only when named; every other node always."""
+        return not only or self.card.role is not Role.MEASURE or self.id in only
+
 
 class PlaneGraph(Struct, frozen=True, kw_only=True):
     """A whole graph in declaration order — the order the report reads it back in."""
@@ -144,7 +148,7 @@ class PlaneManifest(Struct, frozen=True, kw_only=True):
     `nous` is the checkout and `base_sha` its HEAD; `tree` the source the evaluator measured — the checkout as it
     stands, or the candidate of an enhancer run (`candidate`, its id; `patched` the subjects it changed). `places` is where each subject lives in the
     checkout. `source` is the evaluation an enhancement acts on, `directive` your instruction, `manual` whether your
-    working-tree edits are a proposal."""
+    working-tree edits are a proposal. `only` names the measures to run; empty runs every due one."""
 
     run_id: str
     plane: Plane
@@ -163,6 +167,7 @@ class PlaneManifest(Struct, frozen=True, kw_only=True):
     manual: bool = False
     candidate: str = ""
     patched: tuple[str, ...] = ()
+    only: tuple[str, ...] = ()
 
     def place(self, subject: str) -> str:
         """Where a subject lives in the checkout, repo-relative: what is overlaid, diffed and promoted."""

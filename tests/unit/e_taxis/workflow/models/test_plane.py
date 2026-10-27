@@ -52,6 +52,21 @@ async def test_plane_node_due(cadence: Cadence, declared: tuple[Cadence, ...], d
 
 
 @pytest.mark.parametrize(
+    ("role", "only", "selected"),
+    [
+        (Role.MEASURE, (), True),
+        (Role.MEASURE, ("n",), True),
+        (Role.MEASURE, ("other",), False),
+        (Role.GATE, ("other",), True),
+    ],
+    ids=["no-selection", "named", "not-named", "gates-always-run"],
+)
+async def test_plane_node_selected(role: Role, only: tuple[str, ...], selected: bool) -> None:
+    spec = NodeSpec(id="n", use="n", card=NodeCard(role=role, summary="s"))
+    assert spec.selected(only) is selected
+
+
+@pytest.mark.parametrize(
     ("metrics", "expected"),
     [
         (SessionMetrics(agent="a", narrative=("x", "last")), "a: last"),

@@ -126,3 +126,15 @@ async def test_executor_plane_error_is_evidence_and_rerun_pays_once(
     await SubjectExecutor({"subject": node}, 2).run(state)
     assert node.seen.count(("ok", "s1")) == 1
     assert node.seen.count(("boom", "s1")) == 2
+
+
+async def test_executor_plane_only_runs_the_named_measures(
+    plane_state: Callable[..., Any], scripted_plane: Callable[..., Any]
+) -> None:
+    node = scripted_plane({}, SUBJECT)
+    nodes = {"corpus": node, "subject": node, "weekly": node, "settled": node}
+    state = await plane_state(*PLANE, cadence=Cadence.WEEKLY, only=("other",))
+    runs = await SubjectExecutor(nodes, 4).run(state)
+    probe = next(run for run in runs if run.node == "probe")
+    assert (probe.status, probe.reason) == (Status.IDLE, "not selected by --only")
+    assert next(run for run in runs if run.node == "law").status is Status.OK

@@ -55,6 +55,7 @@ async def run(
     cadence: Cadence | None = None,
     candidate: str = "",
     keep: bool = False,
+    only: str = "",
     runner: Inject[PlaneRun],
     settings: Inject[TaxisSettings],
     console: Inject[Console],
@@ -68,6 +69,7 @@ async def run(
         cadence: commit · nightly · weekly · manual — which nodes are due (default: TAXIS_EVAL_CADENCE).
         candidate: an enhancer run id, or `latest`: measure that run's candidate (its base, its patches applied).
         keep: keep the run's clone (a candidate evaluation's) after the run.
+        only: comma-separated measures to run (activation, effect, semantic…); the free gates always run.
     """
     report = await runner.evaluate(
         nous,
@@ -76,6 +78,7 @@ async def run(
         cadence or settings.taxis_eval_cadence,
         candidate=candidate,
         keep=keep,
+        only=tuple(name for name in only.split(",") if name),
         notify=render_live,
     )
     render_close(report, console)

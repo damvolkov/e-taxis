@@ -197,10 +197,12 @@ class SubjectExecutor:
     def _run_gate(state: PlaneState, spec: NodeSpec, upstream: tuple[NodeRun, ...]) -> Outcome | None:
         """The outcome a node gets without running, or None when it must run."""
         red = next((run for run in upstream if not run.status.green), None)
-        match (spec.due(state.manifest.cadence), spec.card.guard, red):
-            case (False, _, _):
+        match (spec.due(state.manifest.cadence), spec.selected(state.manifest.only), spec.card.guard, red):
+            case (False, _, _, _):
                 return Outcome(status=Status.IDLE, reason=f"not due at cadence {state.manifest.cadence}")
-            case (True, Guard.GREEN, NodeRun() as blocked):
+            case (True, False, _, _):
+                return Outcome(status=Status.IDLE, reason="not selected by --only")
+            case (True, True, Guard.GREEN, NodeRun() as blocked):
                 return Outcome(status=Status.SKIP, reason=f"upstream {blocked.node} is {blocked.status}")
             case _:
                 return None
