@@ -36,8 +36,31 @@ def agents_registry(value: Mapping[str, Mapping[str, Any]], ctx: RowContext) -> 
             raise RenderError(msg)
 
 
+def model_entry(tiers: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
+    """One model entry for every tier routed to it, named by them all; they must agree on the rest."""
+    shapes = [
+        {
+            key: item
+            for key, item in {
+                "reasoning": spec.get("reasoning"),
+                "limit": spec.get("limits"),
+                "modalities": spec.get("modalities"),
+                "options": spec.get("options"),
+            }.items()
+            if item
+        }
+        for spec in tiers.values()
+    ]
+    match [shape for shape in shapes if shape != shapes[0]]:
+        case []:
+            return {"name": SPLIT.join(tiers)} | shapes[0]
+        case _:
+            msg = f"tiers routed to one model with different settings: {', '.join(tiers)}"
+            raise RenderError(msg)
+
+
 def providers_tree(value: Mapping[str, Any], _: RowContext) -> dict[str, dict[str, Any]]:
-    """One entry per provider id, carrying the tiers whose alias names it, in tier order; empty keys omitted."""
+    """One entry per provider id, each model once in tier order, named by the tiers routed to it; empty keys omitted."""
     providers, tiers = value["providers"], value["tiers"]
     return {
         data["id"]: {
@@ -49,19 +72,9 @@ def providers_tree(value: Mapping[str, Any], _: RowContext) -> dict[str, dict[st
                 if item
             },
             "models": {
-                spec["model"].partition(SPLIT)[2]: {
-                    key: item
-                    for key, item in {
-                        "name": name,
-                        "reasoning": spec.get("reasoning"),
-                        "limit": spec.get("limits"),
-                        "modalities": spec.get("modalities"),
-                        "options": spec.get("options"),
-                    }.items()
-                    if item
-                }
-                for name, spec in tiers.items()
-                if spec["model"].partition(SPLIT)[0] == alias
+                model: model_entry({name: spec for name, spec in tiers.items() if spec["model"] == route})
+                for route in dict.fromkeys(spec["model"] for spec in tiers.values())
+                if (parts := route.partition(SPLIT))[0] == alias and (model := parts[2])
             },
         }
         for alias, data in providers.items()
