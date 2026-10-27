@@ -19,6 +19,8 @@ from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, Final
 
+import anyio
+
 from e_taxis.workflow.engine.stats import interval_wilson
 from e_taxis.workflow.models.case import ProbeMode, ProbeResult, QueryCase
 from e_taxis.workflow.models.error import CommandError
@@ -160,11 +162,15 @@ class PlaneActivation:
         flat = state.paths.candidate(context.subject) if tree == CANDIDATE else state.paths.base
         coder = self._coders[state.manifest.backend]
         env = await coder.sandbox(flat, context.workdir / "home")
-        async with asyncio.TaskGroup() as group:
-            tasks = [
-                (case, [group.create_task(self._run_attempt(coder, case, mode, env)) for _ in range(self._runs)])
-                for case in cases
-            ]
+        try:
+            async with asyncio.TaskGroup() as group:
+                tasks = [
+                    (case, [group.create_task(self._run_attempt(coder, case, mode, env)) for _ in range(self._runs)])
+                    for case in cases
+                ]
+        finally:
+            ### the borrowed credentials never outlive the probes: the run folder is a report, not a home.
+            await anyio.Path(context.workdir / "home" / ".credentials.json").unlink(missing_ok=True)
         rows = [(case, tuple(task.result() for task in row)) for case, row in tasks]
         metrics = self._run_metrics(tree, mode, state.manifest.backend, rows)
         return Outcome(
