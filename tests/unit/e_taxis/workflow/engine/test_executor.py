@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from e_taxis.workflow.engine.executor import DagExecutor, SubjectExecutor
+from e_taxis.workflow.engine.executor import DagExecutor, SubjectExecutor, reason_executor
 from e_taxis.workflow.models.error import WorkflowError
 from e_taxis.workflow.models.graph import StepSpec
 from e_taxis.workflow.models.plane import Cadence, Guard, NodeCard, NodeSpec, Role, Scope
@@ -138,3 +138,18 @@ async def test_executor_plane_only_runs_the_named_measures(
     probe = next(run for run in runs if run.node == "probe")
     assert (probe.status, probe.reason) == (Status.IDLE, "not selected by --only")
     assert next(run for run in runs if run.node == "law").status is Status.OK
+
+
+@pytest.mark.parametrize(
+    ("exc", "reason"),
+    [
+        (RuntimeError("kaput"), "RuntimeError: kaput"),
+        (
+            ExceptionGroup("tg", [ValueError("bad"), ExceptionGroup("inner", [OSError("down")])]),
+            "ValueError: bad; OSError: down",
+        ),
+    ],
+    ids=["plain", "nested-group"],
+)
+async def test_executor_reason_names_every_cause(exc: BaseException, reason: str) -> None:
+    assert reason_executor(exc) == reason

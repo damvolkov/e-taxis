@@ -37,6 +37,16 @@ ENCODER: Final[msgspec.json.Encoder] = msgspec.json.Encoder(order="deterministic
 REASON: int = 2000
 
 
+##### UTILITIES #####
+def reason_executor(exc: BaseException) -> str:
+    """A failure as its causes: a group names every leaf exception, never just that a group was raised."""
+    match exc:
+        case BaseExceptionGroup(exceptions=leaves):
+            return "; ".join(reason_executor(leaf) for leaf in leaves)
+        case _:
+            return f"{type(exc).__name__}: {exc}"
+
+
 ##### TYPES #####
 class DagExecutor:
     """Runs `state.manifest.graph` and returns every step run it recorded, in declaration order.
@@ -93,7 +103,7 @@ class DagExecutor:
             try:
                 return await self._node.run(NodeContext(state=state, spec=spec))
             except Exception as exc:  # noqa: BLE001 — a step's failure is evidence, not a crash
-                return Outcome(status=Status.ERROR, reason=f"{type(exc).__name__}: {exc}"[:REASON])
+                return Outcome(status=Status.ERROR, reason=reason_executor(exc)[:REASON])
 
     async def _run_fresh(
         self, state: RunState, spec: StepSpec, gate: asyncio.Semaphore, digest: str, upstream: tuple[NodeRun, ...]
@@ -220,7 +230,7 @@ class SubjectExecutor:
             try:
                 return await self._nodes[spec.use].run(PlaneContext(state=state, spec=spec, subject=subject))
             except Exception as exc:  # noqa: BLE001 — a node's failure is evidence, not a crash
-                return Outcome(status=Status.ERROR, reason=f"{type(exc).__name__}: {exc}"[:REASON])
+                return Outcome(status=Status.ERROR, reason=reason_executor(exc)[:REASON])
 
     async def _run_fresh(
         self,
