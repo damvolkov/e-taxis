@@ -101,3 +101,16 @@ async def test_tekton_providers_tree_and_dependency(ctx: RowContext) -> None:
     assert next(iter(provider["models"])) == "qwen3.8-max"
     assert provider["models"]["qwen3.8-max"]["name"] == "builder"
     assert opencode.npm_dependency("@scope/pkg@1.2", ctx) == {"@scope/pkg": "1.2"}
+
+
+async def test_tekton_providers_tree_shares_one_model_across_tiers(ctx: RowContext) -> None:
+    think = {"thinking": {"type": "enabled", "budgetTokens": 4096}}
+    tiers = {"builder": {"model": "bailian/m", "options": think}, "scout": {"model": "bailian/m", "options": think}}
+    tree = opencode.providers_tree(ctx.config["models"] | {"tiers": tiers}, ctx)
+    assert tree["bailian-token-plan-personal"]["models"] == {"m": {"name": "builder/scout", "options": think}}
+
+
+async def test_tekton_providers_tree_refuses_tiers_disagreeing_on_a_model(ctx: RowContext) -> None:
+    tiers = {"builder": {"model": "bailian/m", "reasoning": True}, "scout": {"model": "bailian/m"}}
+    with pytest.raises(RenderError, match="different settings"):
+        opencode.providers_tree(ctx.config["models"] | {"tiers": tiers}, ctx)
