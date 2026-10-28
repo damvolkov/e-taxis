@@ -50,11 +50,11 @@ def hint(value: Mapping[str, Any], _: Any, __: RowContext) -> str:
     return " ".join(f"[{name}]" for name in value)
 
 
-def denied(value: Mapping[str, Any], params: Mapping[str, Any], _: RowContext) -> list[str]:
+def denied(value: Mapping[str, Any], params: Mapping[str, Any], ctx: RowContext) -> list[str]:
     """The backend tools a house permission vetoes outright: a flat `deny`, or patterns that only deny."""
     return [
         tool
-        for key, tools in params["tools"].items()
+        for key, tools in resolve_param(params["tools"], ctx).items()
         if (rule := value.get(key)) == "deny" or (isinstance(rule, Mapping) and set(rule.values()) == {"deny"})
         for tool in tools
     ]

@@ -3,7 +3,7 @@
 from collections.abc import Mapping, Sequence
 from contextlib import AbstractAsyncContextManager
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from e_taxis.transpile.models.nous import NousTree
@@ -49,7 +49,7 @@ class FencePort(Protocol):
 
 @runtime_checkable
 class CapturePort(Protocol):
-    """A fake model endpoint: where a phantom sends its calls, and every request body it received."""
+    """A fake model endpoint: where a phantom sends its calls, every request body it received, refusing or answering."""
 
     @property
     def url(self) -> str: ...
@@ -60,5 +60,7 @@ class CapturePort(Protocol):
     def bodies(self) -> tuple[bytes, ...]: ...
 
     def clear(self) -> None: ...
+
+    def answer(self, reply: Mapping[str, Any] | None) -> None: ...
 
     def serve(self) -> AbstractAsyncContextManager[CapturePort]: ...

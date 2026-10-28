@@ -74,6 +74,16 @@ def test_transpile_run_json_lists_files_and_registry(taxis, nous_root: Path, tmp
     assert "e-gnosis" in summary["registry"]["mcp-user"]
 
 
+def test_transpile_run_check_fails_while_the_live_tree_is_apart(taxis, nous_root: Path, tmp_path: Path) -> None:
+    home = tmp_path / "live"
+    args = ("transpile", "run", "--target", "opencode", "--nous", str(nous_root), "--worktree", "--home", str(home))
+    code, _, err = taxis(*args, "--check")
+    assert code == 32
+    assert "apart from the render" in " ".join(err.split())
+    assert taxis(*args, "--yes", "--check")[0] == 0
+    assert taxis(*args, "--check")[0] == 0
+
+
 def test_transpile_run_without_out_plans_then_lands_with_yes(taxis, nous_root: Path, tmp_path: Path) -> None:
     home = tmp_path / "live"
     code, out, _ = taxis(
@@ -104,7 +114,7 @@ def test_transpile_run_without_out_plans_then_lands_with_yes(taxis, nous_root: P
 
 
 def test_transpile_trial_reports_and_fails_when_not_held(
-    taxis, nous_root: Path, fence, capture, monkeypatch: pytest.MonkeyPatch
+    taxis, nous_root: Path, fence, capture, hooked, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     async def fake_trial(deps: Deps) -> TrialService:
         return TrialService(RunService(CheckService()), fence, path="/usr/bin")
@@ -127,6 +137,7 @@ def test_transpile_trial_reports_and_fails_when_not_held(
     tree = anyio.run(GitNous(nous_root, None).load)
     slots = [*tree.persona["base"]["slots"].values(), *tree.persona["tekton"]["slots"].values()]
     fence.body = msgspec.json.encode([*slots, *tree.entities["skill"], *tree.entities["agent"]])
+    fence.printer = hooked("claudecode", ".claude")
     code, out, _ = taxis("transpile", "trial", "--target", "claudecode", "--nous", str(nous_root), "--worktree")
     assert code == 0
     assert "· held" in out

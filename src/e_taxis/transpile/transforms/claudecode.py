@@ -2,9 +2,11 @@
 
 `TRANSFORMS` is the table the renderer reads; a test holds it equal to the spec's `transforms:` block."""
 
-import shlex
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final
+
+from e_taxis.transpile.transforms.backends import reaches
+from e_taxis.transpile.transforms.hooks import command_hook, matchers_hook, native_hook, reaching_hooks
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
@@ -14,12 +16,6 @@ if TYPE_CHECKING:
 ##### DEFAULTS #####
 BACKEND: str = "claudecode"
 SIGNALS: Final[tuple[str, ...]] = ("metrics", "logs", "traces")
-
-
-##### UTILITIES #####
-def reaches(entry: Mapping[str, Any] | str, backend: str) -> bool:
-    """A bare entry reaches every backend; `{…, backends}` only those it names."""
-    return isinstance(entry, str) or backend in (entry.get("backends") or [backend])
 
 
 ##### HANDLERS #####
@@ -34,14 +30,15 @@ def claude_telemetry(value: Mapping[str, Any], _: RowContext) -> dict[str, str]:
 
 
 def claude_hooks(value: Mapping[str, Sequence[Mapping[str, Any]]], ctx: RowContext) -> dict[str, list[dict[str, Any]]]:
+    """Each house event under its Claude Code name: one entry per hook that reaches Claude, matchers joined by `|`."""
     return {
-        event: [
-            ({"matcher": matcher} if matcher else {})
-            | {"hooks": [{"type": "command", "command": shlex.join(ctx.bind(arg) for arg in entry["run"])}]}
-            for entry in entries
-            for matcher in entry.get("matchers") or [""]
+        native["event"]: [
+            ({"matcher": "|".join(matchers)} if (matchers := matchers_hook(event, hook, native, ctx)) else {})
+            | {"hooks": [{"type": "command", "command": command_hook(hook, ctx)}]}
+            for hook in hooks
         ]
-        for event, entries in value.items()
+        for event, hooks in reaching_hooks(value, BACKEND)
+        for native in (native_hook(event, ctx),)
     }
 
 

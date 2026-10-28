@@ -160,9 +160,36 @@ config:
       rules:
         - "a server has exactly one of command (stdio) or url (remote)"
         - "backends absent = every backend of the facet; a server reaches only the backends it lists"
-    hooks:
-      shape: "map<event, list<{matchers: list<str>, run: Argv}>>"
-      doc: "events without matchers admit none (Stop, SessionEnd)"
+    hooks:                                  # the house vocabulary: one field per moment of an agent loop, not of one product
+      fields:
+        session_start:      {type: "list<Hook>", default: [], doc: "a session begins or resumes · matchers: origin (startup, resume, clear, compact, fork)"}
+        session_end:        {type: "list<Hook>", default: [], doc: "a session terminates · matchers: reason (clear, resume, logout, prompt_input_exit, other)"}
+        prompt_submit:      {type: "list<Hook>", default: [], doc: "a prompt is admitted, before the model sees it · exit 2 blocks the prompt"}
+        turn_end:           {type: "list<Hook>", default: [], doc: "the agent finished answering · exit 2 keeps the turn open, stderr to the agent"}
+        turn_fail:          {type: "list<Hook>", default: [], doc: "the turn ended on a model or API error · matchers: error type"}
+        model_before:       {type: "list<Hook>", default: [], doc: "before each model call of the agent loop"}
+        tool_before:        {type: "list<Hook>", default: [], doc: "before a tool call · matchers: house tools · exit 2 denies the call, stderr to the agent"}
+        tool_after:         {type: "list<Hook>", default: [], doc: "after a tool call succeeded · matchers: house tools · exit 2: stderr to the agent"}
+        tool_fail:          {type: "list<Hook>", default: [], doc: "after a tool call failed · matchers: house tools · exit 2: stderr to the agent"}
+        tool_batch:         {type: "list<Hook>", default: [], doc: "after a batch of parallel tool calls, before the next model call · exit 2 stops the loop"}
+        permission_request: {type: "list<Hook>", default: [], doc: "a tool call needs a permission decision · matchers: house tools"}
+        permission_deny:    {type: "list<Hook>", default: [], doc: "the harness denied a tool call · matchers: house tools"}
+        agent_start:        {type: "list<Hook>", default: [], doc: "a subagent spawned · matchers: agent id"}
+        agent_end:          {type: "list<Hook>", default: [], doc: "a subagent finished · matchers: agent id · exit 2 keeps it working"}
+        compact_before:     {type: "list<Hook>", default: [], doc: "before context compaction · matchers: manual, auto · exit 2 blocks it"}
+        compact_after:      {type: "list<Hook>", default: [], doc: "after context compaction · matchers: manual, auto"}
+        instructions_load:  {type: "list<Hook>", default: [], doc: "an instruction file entered the context · matchers: load reason"}
+        notify:             {type: "list<Hook>", default: [], doc: "the harness raised a notification · matchers: notification type"}
+        config_change:      {type: "list<Hook>", default: [], doc: "a config file changed mid-session · matchers: config source · exit 2 blocks the change"}
+        cwd_change:         {type: "list<Hook>", default: [], doc: "the working directory changed"}
+        file_change:        {type: "list<Hook>", default: [], doc: "a watched file changed · matchers: the file names watched"}
+      structs:
+        Hook: {run: {type: Argv, required: true}, matchers: {type: "list<str>", default: []}, backends: "list<backend>"}
+      rules:
+        - "the vocabulary is the contract every spec realizes in native.hooks; an event a backend cannot realize refuses the render of a hook that reaches it"
+        - "matchers empty = every occurrence; tool matchers are house tool names (Permission's), never a harness's"
+        - "backends absent = every backend of the facet; a hook reaches only the backends it lists"
+        - "stdin carries the harness's JSON in Claude Code's field names (session_id, cwd, transcript_path, stop_hook_active, tool_name, tool_input); exit 2 is the only blocking signal"
     plugins:
       fields:
         opencode:     {type: "list<str>", default: []}
