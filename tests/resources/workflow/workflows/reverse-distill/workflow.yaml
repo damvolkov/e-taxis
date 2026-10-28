@@ -3,9 +3,9 @@ description: The miners, the judge and the adversary — named only by the model
 parameters:
   project: {doc: "the project's path"}
 nodes:
-  - {id: guard, run: "taxis distill guard --rundir {{rundir}} --project {{project}}"}
+  - {id: guard, run: "taxis workflow reverse-distill guard --rundir {{rundir}} --project {{project}}"}
   - {id: mine-harness, depends: [guard], actor: builder, readonly: true, instruction: "mine e-nous", outputs: [{name: mining, model: Mining}]}
   - {id: mine-blueprint, depends: [guard], actor: builder, readonly: true, instruction: "mine e-arkhetypo", outputs: [{name: mining, model: Mining}]}
-  - {id: grade, depends: [mine-harness, mine-blueprint], run: "taxis distill grade --nous {{nous}} --rundir {{rundir}}"}
+  - {id: grade, depends: [mine-harness, mine-blueprint], run: "taxis workflow reverse-distill grade --nous {{nous}} --rundir {{rundir}}"}
   - {id: worth, depends: [grade], actor: builder, readonly: true, instruction: "judge", outputs: [{name: judgements, model: Judgements}]}
   - {id: audit2, depends: [worth], actor: builder, readonly: true, instruction: "attack", outputs: [{name: reviews, model: Reviews}]}

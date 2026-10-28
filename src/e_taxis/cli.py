@@ -23,7 +23,7 @@ typo fails the gate, never a user.
     taxis transpile run   --target T [--nous PATH] --out DIR [--ref REF | --worktree] [--json]   # pure export
     taxis workflow run ID [--nous PATH] [name=value ...]                  # a corpus workflow, end to end
     taxis workflow list [--nous PATH] · check [ID ...] [--nous PATH]
-    taxis distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas [--nous PATH] --rundir DIR …
+    taxis workflow reverse-distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas [--nous PATH] --rundir DIR …
     taxis eval run TARGET [IDS ...] [--nous PATH] [--cadence C] [--candidate RUN]   # the evaluator, read-only
     taxis eval graph [TARGET] · eval needs TARGET [--nous PATH] [--run R] [--owner O]
     taxis enhance run TARGET [IDS ...] [--nous PATH] (--from R | --directive D | --manual) [--cadence C]
@@ -57,7 +57,9 @@ GROUPS: tuple[CommandGroup, ...] = (
         path="workflow", help="Corpus workflows: graphs of command and agent steps, run from an e-nous checkout."
     ),
     CommandGroup(
-        path="distill", help="reverse-distill's deterministic steps, one per workflow node: --nous, --rundir."
+        path="workflow reverse-distill",
+        help="reverse-distill's deterministic steps, one per workflow node: --nous, --rundir.",
+        show=False,
     ),
     CommandGroup(
         path="eval", help="The evaluator: measure a corpus target, read-only; every subject ends in its needs."
@@ -135,52 +137,52 @@ CARDS: tuple[CommandCard, ...] = (
         summary="Hold workflows to their static law; writes nothing.",
     ),
     CommandCard(
-        path="distill guard",
+        path="workflow reverse-distill guard",
         target="e_taxis.workflow.commands.distill:guard",
         summary="Fix the scope; exit 3 when nothing is past the base.",
     ),
     CommandCard(
-        path="distill intake",
+        path="workflow reverse-distill intake",
         target="e_taxis.workflow.commands.distill:intake",
         summary="The range's commits and touched files.",
     ),
     CommandCard(
-        path="distill index",
+        path="workflow reverse-distill index",
         target="e_taxis.workflow.commands.distill:index",
         summary="e-nous, e-arkhetypo and the project into the code graph.",
     ),
     CommandCard(
-        path="distill scan",
+        path="workflow reverse-distill scan",
         target="e_taxis.workflow.commands.distill:scan",
         summary="The range's changed files and impacted symbols.",
     ),
     CommandCard(
-        path="distill drift",
+        path="workflow reverse-distill drift",
         target="e_taxis.workflow.commands.distill:drift",
         summary="The project's own drift checks, read.",
     ),
     CommandCard(
-        path="distill inventory",
+        path="workflow reverse-distill inventory",
         target="e_taxis.workflow.commands.distill:inventory",
         summary="Every plane, without a model: what the cores do not say.",
     ),
     CommandCard(
-        path="distill grade",
+        path="workflow reverse-distill grade",
         target="e_taxis.workflow.commands.distill:grade",
         summary="Merge the miners, propagate contradictions, weigh.",
     ),
     CommandCard(
-        path="distill report",
+        path="workflow reverse-distill report",
         target="e_taxis.workflow.commands.distill:report",
         summary="Join verdicts and reviews; write report.md and briefs.",
     ),
     CommandCard(
-        path="distill ship",
+        path="workflow reverse-distill ship",
         target="e_taxis.workflow.commands.distill:ship",
         summary="Run the commands that apply the musts.",
     ),
     CommandCard(
-        path="distill schemas",
+        path="workflow reverse-distill schemas",
         target="e_taxis.workflow.commands.distill:schemas",
         summary="Write (or --check) every port's JSON Schema.",
     ),
@@ -253,7 +255,7 @@ def build() -> App:
     )
     apps = {"": root}
     for group in GROUPS:
-        apps[group.path] = App(name=group.name, help=group.help)
+        apps[group.path] = App(name=group.name, help=group.help, show=group.show)
         apps[group.parent].command(apps[group.path])
     for card in CARDS:
         apps[card.parent].command(card.target, name=card.name, help=card.summary)

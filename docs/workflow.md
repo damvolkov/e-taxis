@@ -21,7 +21,7 @@ GitNous (the checkout as it stands) ─▶ WorkflowReader (typed Workflow, stati
 | `workflow/adapters` | adapters | `ShellCommand` (argv, stdout to a file, live stderr, timeout), `JsonlLedger`, `FlockLock`, `ModeAgent` → `OpencodeAgent` · `ClaudeAgent` (headless, fenced when read-only); for the measures (§9) `HouseProvider`, `AnthropicRunner`, `OpencodeCoder` · `ClaudeCoder` |
 | `workflow/services` | services | `WorkflowStep` (the one node kind), `WorkflowRun` (end to end) |
 | `workflow/distill` | services | reverse-distill: `DistillScope`, `DistillGraph`, `DistillDrift`, `DistillInventory`, `VersionMatrix`, `DistillGrade`, `DistillReport`, `DistillStore` |
-| `workflow/commands` | cli | `taxis workflow …`, `taxis distill …` |
+| `workflow/commands` | cli | `taxis workflow …`, `taxis workflow reverse-distill …` |
 
 The workflow is read through the transpiler's own `GitNous` (worktree), so `{source: nodes/<id>.yaml}` envelopes
 resolve in one place. Where things live is what `core/schema.yaml` says: the workflow folder is its entity path,
@@ -37,16 +37,16 @@ taxis workflow run ID [--nous PATH] [name=value ...]     # run; live rows on std
 taxis workflow list [--nous PATH]                        # every workflow: parameters, steps, when, after
 taxis workflow check [ID ...] [--nous PATH]              # static law of every (or the named) workflow; 23 if one fails
 
-taxis distill guard     --rundir DIR --project P [--branches "a b"] [--since REF] [--work TEXT]   # 3: nothing to do
-taxis distill intake    --rundir DIR
-taxis distill index     [--nous PATH] --rundir DIR
-taxis distill scan      --rundir DIR
-taxis distill drift     --rundir DIR
-taxis distill inventory [--nous PATH] --rundir DIR
-taxis distill grade     [--nous PATH] --rundir DIR
-taxis distill report    [--nous PATH] --rundir DIR
-taxis distill ship      [--nous PATH] --rundir DIR
-taxis distill schemas   [--nous PATH] [--check]
+taxis workflow reverse-distill guard     --rundir DIR --project P [--branches "a b"] [--since REF] [--work TEXT]   # 3: nothing to do
+taxis workflow reverse-distill intake    --rundir DIR
+taxis workflow reverse-distill index     [--nous PATH] --rundir DIR
+taxis workflow reverse-distill scan      --rundir DIR
+taxis workflow reverse-distill drift     --rundir DIR
+taxis workflow reverse-distill inventory [--nous PATH] --rundir DIR
+taxis workflow reverse-distill grade     [--nous PATH] --rundir DIR
+taxis workflow reverse-distill report    [--nous PATH] --rundir DIR
+taxis workflow reverse-distill ship      [--nous PATH] --rundir DIR
+taxis workflow reverse-distill schemas   [--nous PATH] [--check]
 ```
 
 `--nous` is taken only where the step reads e-nous; without it the checkout is located (the README's "One system"
@@ -205,12 +205,12 @@ musts. Defect 7 lands with it.
 
 e-taxis does not edit e-nous. The edits e-nous must take:
 
-1. **reverse-distill `run:` lines** — `uv run op distill <step> --rundir {{rundir}}` → `taxis distill <step> --rundir
+1. **reverse-distill `run:` lines** — `uv run op distill <step> --rundir {{rundir}}` → `taxis workflow reverse-distill <step> --rundir
    {{rundir}}`, plus `--nous {{nous}}` on `index`, `inventory`, `grade`, `report`, `ship`. `guard` keeps its
-   parameters and drops the quotes the binder now owns: `taxis distill guard --rundir {{rundir}} --project
+   parameters and drops the quotes the binder now owns: `taxis workflow reverse-distill guard --rundir {{rundir}} --project
    {{project}} --branches {{branches}} --since {{since}} --work {{work}}` (quoted or not, a value arrives intact).
    `taxis` must be on the PATH of the login shell a step runs in (e.g. `uv tool install` from the e-taxis checkout).
-2. **Schemas** — `taxis distill schemas --nous <e-nous>` regenerates `core/tekton/workflows/reverse-distill/schemas/`:
+2. **Schemas** — `taxis workflow reverse-distill schemas --nous <e-nous>` regenerates `core/tekton/workflows/reverse-distill/schemas/`:
    `Candidate` gained `replaces`, `Grade` gained `propagated` (`--check` fails until then).
 3. **Miner instructions** — `mine-harness` and `mine-blueprint` must fill `replaces` for every candidate whose
    relation is `contradicts` (the term the core states today), and keep candidate ids to letters, digits, `.`, `_`,

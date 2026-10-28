@@ -75,16 +75,16 @@ Every command, one line each — `taxis <command> --help` gives its flags. `test
 
 | Command | Does |
 |---|---|
-| `taxis distill guard` | Fix the scope; exit 3 when nothing is past the base. |
-| `taxis distill intake` | The range's commits and touched files. |
-| `taxis distill index` | e-nous, e-arkhetypo and the project into the code graph. |
-| `taxis distill scan` | The range's changed files and impacted symbols. |
-| `taxis distill drift` | The project's own drift checks, read. |
-| `taxis distill inventory` | Every plane, without a model: what the cores do not say. |
-| `taxis distill grade` | Merge the miners, propagate contradictions, weigh. |
-| `taxis distill report` | Join verdicts and reviews; write report.md and briefs. |
-| `taxis distill ship` | Run the commands that apply the musts. |
-| `taxis distill schemas` | Write (or --check) every port's JSON Schema. |
+| `taxis workflow reverse-distill guard` | Fix the scope; exit 3 when nothing is past the base. |
+| `taxis workflow reverse-distill intake` | The range's commits and touched files. |
+| `taxis workflow reverse-distill index` | e-nous, e-arkhetypo and the project into the code graph. |
+| `taxis workflow reverse-distill scan` | The range's changed files and impacted symbols. |
+| `taxis workflow reverse-distill drift` | The project's own drift checks, read. |
+| `taxis workflow reverse-distill inventory` | Every plane, without a model: what the cores do not say. |
+| `taxis workflow reverse-distill grade` | Merge the miners, propagate contradictions, weigh. |
+| `taxis workflow reverse-distill report` | Join verdicts and reviews; write report.md and briefs. |
+| `taxis workflow reverse-distill ship` | Run the commands that apply the musts. |
+| `taxis workflow reverse-distill schemas` | Write (or --check) every port's JSON Schema. |
 
 **Evaluation and enhancement**
 
@@ -123,7 +123,7 @@ taxis install --target T [--nous PATH] [--profile P] [--ref REF | --worktree] [-
 taxis transpile check|run|reverse|trial …                           # the brain alone: docs/transpile.md
 taxis workflow run ID [--nous PATH] [name=value ...]                # a corpus workflow, end to end: docs/workflow.md
 taxis workflow list [--nous PATH] · check [ID ...] [--nous PATH]    # every workflow; its static law
-taxis distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas --rundir DIR [--nous PATH] …
+taxis workflow reverse-distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas --rundir DIR [--nous PATH] …
 taxis eval run T [IDS] [--nous PATH] [--cadence C] [--only M,...] [--candidate RUN] # the evaluator, read-only
 taxis enhance run T [IDS] [--nous PATH] (--from R | --directive D | --manual) # verdicts + patches, in a sandbox
 taxis enhance promote [RUN] [--nous PATH] [--ids …] [--yes]         # a human command: the patches into the checkout
