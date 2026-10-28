@@ -3,7 +3,8 @@ the real git repos reverse-distill reads (a project with a feature branch, the t
 
 `nous` is the transpiler's mini checkout (copied per test) with its `converge` replaced by the workflows under
 `tests/resources/workflow/workflows`: `demo` (every kind of step), `looped` (a bounded loop) and `broken` (an unknown
-agent). Commands run for real (bash, git); agents never do — `FakeAgent` answers, `FakeFence` decides the canary."""
+agent). Commands run for real (bash, git); agents never do — `FakeAgent` answers, `FakeFence` decides the canary.
+soa-sweep never leaves the machine: `FakeWeb` serves the recorded pages under `tests/resources/sweep`."""
 
 import asyncio
 import datetime as dt
@@ -37,13 +38,15 @@ from e_taxis.workflow.models.case import ProbeMode, ProbeResult
 from e_taxis.workflow.models.distill import Candidate, Change, HarnessPart, HarnessTarget, Relation, Target
 from e_taxis.workflow.models.endpoint import Endpoint
 from e_taxis.workflow.models.entity import Entity
-from e_taxis.workflow.models.error import AgentError, CommandError
+from e_taxis.workflow.models.error import AgentError, CommandError, SweepError
 from e_taxis.workflow.models.graph import GraphSpec, StepSpec
 from e_taxis.workflow.models.plane import Cadence, NodeCard, NodeSpec, Plane, PlaneGraph, PlaneManifest, PlanePaths
 from e_taxis.workflow.models.plane import Target as PlaneTarget
-from e_taxis.workflow.models.ports import AgentPort, NodeContext, PlaneContext, PlaneState, RunState
+from e_taxis.workflow.models.ports import AgentPort, NodeContext, PlaneContext, PlaneState, RunState, WebPort
 from e_taxis.workflow.models.run import NodeRun, Outcome, Reply, RunManifest, RunPaths, Status
 from e_taxis.workflow.models.security import ScanResult
+from e_taxis.workflow.models.sweep import Finding as SweepFinding
+from e_taxis.workflow.models.sweep import FindingKind
 from e_taxis.workflow.models.workflow import Workflow
 from e_taxis.workflow.plane.activation import PlaneActivation
 from e_taxis.workflow.plane.brief import PlaneBrief
@@ -867,3 +870,108 @@ def plane_context() -> Callable[..., PlaneContext]:
 @pytest.fixture
 def scripted_plane() -> type[ScriptedPlaneNode]:
     return ScriptedPlaneNode
+
+
+##### SWEEP #####
+FEED = "https://blog.example/feed/"
+PROFILE = "https://www.linkedin.com/in/adavoice"
+POST = "https://www.linkedin.com/posts/adavoice_tracing-otel-activity-1111111111111111111-AbCd"
+REPO = "https://github.com/spanline/spanline"
+
+
+class FakeWeb:
+    """WebPort over a table url → body: an unknown URL raises SweepError, as a page that does not answer; every
+    post is kept (url, fields, files)."""
+
+    def __init__(self, pages: Mapping[str, str]) -> None:
+        self.pages = dict(pages)
+        self.posted: list[tuple[str, dict[str, str], dict[str, tuple[str, bytes]]]] = []
+
+    async def get(self, url: str) -> str:
+        if url not in self.pages:
+            msg = f"{url}: 404 Not Found"
+            raise SweepError(msg)
+        return self.pages[url]
+
+    async def post(self, url: str, *, fields: Mapping[str, str], files: Mapping[str, tuple[str, bytes]]) -> None:
+        self.posted.append((url, dict(fields), dict(files)))
+
+
+@pytest.fixture
+def soa_nous(resources: Resources, nous: Path) -> Path:
+    """The mini checkout with a soa.yaml: two topics, a LinkedIn voice for all of them, a feed for memory only."""
+    shutil.copy(resources.path / "sweep" / "soa.yaml", nous / "core" / "tekton" / "config" / "soa.yaml")
+    return nous
+
+
+@pytest.fixture
+def web_page(resources: Resources) -> str:
+    """A project's page: a title, a publish date, text among a script and a style, links relative and repeated."""
+    return (resources.path / "sweep" / "page.html").read_text()
+
+
+@pytest.fixture
+def profile_page(resources: Resources) -> str:
+    """A public LinkedIn profile, hand-authored in its real shape: a JSON-LD @graph of the author's posts (two in a
+    short window, one older), an article, another author's repost, the page and the person."""
+    return (resources.path / "sweep" / "profile.html").read_text()
+
+
+@pytest.fixture
+def post_page(resources: Resources) -> str:
+    """A LinkedIn post page, hand-authored in its real shape: its SocialMediaPosting with the body and comments —
+    another reader's first, then the author's own first comment (the repo link) listed after a later one."""
+    return (resources.path / "sweep" / "post.html").read_text()
+
+
+@pytest.fixture
+def feed_xml(resources: Resources) -> str:
+    """A real Atom feed (a Bear blog), cut to three entries: 2026-04-30, 2025-12-19, 2025-03-24."""
+    return (resources.path / "sweep" / "feed.xml").read_text()
+
+
+@pytest.fixture
+def web(web_page: str, profile_page: str, post_page: str, feed_xml: str) -> FakeWeb:
+    """The recorded world: the feed and its newest entry's page, the profile and its newest post, the repo."""
+    return FakeWeb(
+        {
+            FEED: feed_xml,
+            "https://karpathy.bearblog.dev/sequoia-ascent-2026/": web_page,
+            PROFILE: profile_page,
+            POST: post_page,
+            REPO: web_page,
+        }
+    )
+
+
+@pytest.fixture
+def finding() -> Callable[..., SweepFinding]:
+    """A finding as an agent would answer it: grounded by default in the project's page (its repo link)."""
+
+    def build(title: str, **fields: Any) -> SweepFinding:
+        told: dict[str, Any] = {
+            "title": title,
+            "kind": FindingKind.TOOL,
+            "description": f"{title} exports agent spans.",
+            "why": "Observability of agents.",
+            "facts": ("OpenTelemetry exporter",),
+            "links": (REPO,),
+            "sources": (POST,),
+            "published_at": "2026-10-27",
+            "relevance": 3,
+            "via": "search",
+        }
+        return SweepFinding(**(told | fields))
+
+    return build
+
+
+@pytest.fixture
+def web_deps(monkeypatch: pytest.MonkeyPatch, web: FakeWeb) -> FakeWeb:
+    """Every `taxis` run reads the recorded world in place of the web."""
+
+    async def fake(deps: Deps) -> FakeWeb:
+        return web
+
+    monkeypatch.setattr(Deps, "PROVIDERS", MappingProxyType({**Deps.PROVIDERS, WebPort: fake}))
+    return web

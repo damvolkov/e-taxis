@@ -73,6 +73,19 @@ Every command, one line each — `taxis <command> --help` gives its flags. `test
 | `taxis workflow put` | Keep a harness agent's answer as a semantic step's out. |
 | `taxis workflow check` | Hold workflows to their static law; writes nothing. |
 
+**soa-sweep steps**
+
+| Command | Does |
+|---|---|
+| `taxis workflow soa-sweep frame` | Fix the frame from soa.yaml; an unknown topic fails here. |
+| `taxis workflow soa-sweep ledger` | The seen ledger, for the frame's voices. |
+| `taxis workflow soa-sweep fetch` | Every voice and entry page inside the window. |
+| `taxis workflow soa-sweep ground` | Merge the findings; keep what a fetched page holds. |
+| `taxis workflow soa-sweep fit` | Mark each finding have, considered or new. |
+| `taxis workflow soa-sweep report` | Write report.md and report.json; record the ledger. |
+| `taxis workflow soa-sweep deliver` | Post the summary and report.md to Discord. |
+| `taxis workflow soa-sweep schemas` | Write (or --check) every soa-sweep port's JSON Schema. |
+
 **reverse-distill steps**
 
 | Command | Does |
@@ -126,6 +139,7 @@ taxis transpile check|run|reverse|trial …                           # the brai
 taxis workflow run ID [--nous PATH] [name=value ...]                # a corpus workflow, end to end: docs/workflow.md
 taxis workflow list [--nous PATH] · check [ID ...] [--nous PATH]    # every workflow; its static law
 taxis workflow reverse-distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas --rundir DIR [--nous PATH] …
+taxis workflow soa-sweep frame|ledger|fetch|ground|fit|report|deliver|schemas --rundir DIR [--nous PATH] …
 taxis eval run T [IDS] [--nous PATH] [--cadence C] [--only M,...] [--candidate RUN] # the evaluator, read-only
 taxis enhance run T [IDS] [--nous PATH] (--from R | --directive D | --manual) # verdicts + patches, in a sandbox
 taxis enhance promote [RUN] [--nous PATH] [--ids …] [--yes]         # a human command: the patches into the checkout

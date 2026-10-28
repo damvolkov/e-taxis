@@ -45,6 +45,7 @@ targets:
   hooks/autolearn.mjs:  {format: file}
   hooks/plans.mjs:      {format: file}
   mcp/playwright.json:  {format: file}
+  workflows/{id}.js:    {format: text}                                  # Claude Code dynamic workflow, rendered by claude_workflow
   mcp-user:                                                             # user scope lives in ~/.claude.json, binary state: never written as a file
     format: registry
     apply:
@@ -156,14 +157,23 @@ map:
 
   workflow:
     kind: instanced
-    status: pending
+    target: "workflows/{id}.js"
+    rows:
+      - {from: nodes, to: "#", required: true, via: claude_workflow}
+    unmapped:
+      id:          {reason: covered, detail: "claude_workflow reads the instance: meta.name and WORKFLOW"}
+      description: {reason: covered, detail: "claude_workflow: meta.description"}
+      parameters:  {reason: covered, detail: "claude_workflow: the args defaults"}
+      nodes:       {reason: covered, detail: "claude_workflow: one gated promise per node (the row's own from)"}
+      loop:        {reason: covered, detail: "claude_workflow: the loop's copies, in order"}
+      output:      {reason: house, detail: "taxis workflow run --harness verifies it on disk; the script returns the rundir"}
+      triggers:    {reason: house, detail: "eng-grammar phrases read by the channel hooks (e-metaxy), not by the coder"}
     notes: >-
-      Native form exists: .claude/workflows/<name>.js, a deterministic script
-      (meta + agent()/parallel()/pipeline()) the Workflow tool runs. Missing:
-      a `script` combinator (graph → script: nodes in order, siblings in
-      parallel(), run nodes as a command-running agent, when as guards, loop
-      unrolled) checked against workflows.md, and whether ~/.claude/workflows
-      is a scope Claude reads.
+      A Claude Code dynamic workflow (~/.claude/workflows/<id>.js, run as /<id>,
+      headless with --allowedTools 'Workflow(<id>)'; verified 2026-10-28).
+      Taxis stays the executor of every deterministic decision: command steps,
+      skips and idles go through `taxis workflow step`, agent answers through
+      `taxis workflow put`.
 
   config:
     kind: config
@@ -199,6 +209,7 @@ map:
       permissions.granular:  {reason: pending, detail: "Claude's permissions.ask/deny with Tool(pattern) rules could carry the edit/bash patterns (.env*, sudo *…); the translation transform is not built and would add live prompts — a decision, not a gap to close silently"}
       security:              {reason: internal, detail: "scanner acceptances, never rendered"}
       schedules:             {reason: internal, detail: "unattended runs: taxis schedule renders them into systemd timers, never the harness"}
+      soa:                   {reason: internal, detail: "soa-sweep's frame, read by taxis workflow soa-sweep, never the harness"}
       mcp.servers.*.note:    {reason: pending, detail: "no description field known in Claude's MCP entry; confirm against mcp.md"}
       mcp.servers.*.smoke:   {reason: internal, detail: "evaluation data (taxis eval run config)"}
     notes: >-
@@ -224,6 +235,9 @@ transforms:
     consumes: [main.instructions]
     binds: [out]
     returns: "text — one '@<path>' line per entry that reaches claudecode (a bare path, or {path, backends} naming it), {out} bound"
+  claude_workflow:
+    consumes: []                                                        # reads the instance, not config: its fields are covered in map.workflow
+    returns: "text — the workflow as a Claude Code dynamic workflow: a literal meta (name, description, one phase per node), each node a promise gated on its parents; command, skipped and idle steps through `taxis workflow step`, due agent steps through their house agent (agentType) and `taxis workflow put`; a loop's copies in order"
   mcp_claudecode:
     consumes: [mcp.servers.*.command, mcp.servers.*.url, mcp.servers.*.env, mcp.servers.*.headers, mcp.servers.*.backends]
     binds: [out]

@@ -177,6 +177,14 @@ config:
     security:
       fields:
         accepted:     {type: "map<skill, list<{fingerprint: str, file: path, why: str}>>", default: {}, doc: "scanner acceptances: internal, never rendered"}
+    soa:
+      fields:
+        brief:        {type: str, required: true, doc: "the plane soa-sweep watches"}
+        window:       {type: int, required: true, doc: "calendar days back from today"}
+        topics:       {type: "map<str, {keywords: list<str>}>", required: true}
+        authors:      {type: "map<str, {name: str, url: url, kind: enum[atom_feed, linkedin_profile, web], topics: list<str>}>", default: {}}
+        links:        {type: "map<str, {url: url, topics: list<str>}>", default: {}}
+        discord:      {type: "{webhook: str}", default: {}, doc: "webhook names the file holding the URL, never the URL"}
     schedules:
       shape: "map<str, {doc: str, calendar: str, steps: list<Argv>, off: bool}>"
       doc: "what runs unattended: taxis schedule apply renders each into a systemd user timer taxis-<id>; calendar is OnCalendar, steps are taxis argv run in order; internal, never rendered"

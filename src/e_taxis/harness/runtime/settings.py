@@ -65,6 +65,7 @@ class TaxisSettings(BaseSettings):
     _EFFECT_SEEDS the answers per task and arm, _EFFECT_SPLIT the held-out split the A/B reads.
 
     TAXIS_SCHEDULE_UNITS is the systemd user units dir `taxis schedule` renders its `taxis-<id>` timers into.
+    TAXIS_SOA_STATE is soa-sweep's state, its seen ledger (`ledger.json`) — never config, never the checkout.
 
     TAXIS_HUMAN is the mandate a terminal-started `taxis` hands its children (a human command run by a workflow step
     it started); TAXIS_HEADLESS (or e-nous's OPS_GLOBAL__HEADLESS) marks a session an agent drives —
@@ -110,5 +111,6 @@ class TaxisSettings(BaseSettings):
     taxis_eval_effect_seeds: int = 5
     taxis_eval_effect_split: str = "test"
     taxis_schedule_units: Path = Path("~/.config/systemd/user")
+    taxis_soa_state: Path = Path("~/.local/state/e-taxis/soa")
     taxis_human: bool = False
     taxis_headless: bool = Field(default=False, validation_alias=AliasChoices("TAXIS_HEADLESS", "OPS_GLOBAL__HEADLESS"))
