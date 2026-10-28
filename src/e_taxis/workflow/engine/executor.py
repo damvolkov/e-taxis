@@ -106,10 +106,17 @@ class DagExecutor:
                 return Outcome(status=Status.ERROR, reason=reason_executor(exc)[:REASON])
 
     async def _run_fresh(
-        self, state: RunState, spec: StepSpec, gate: asyncio.Semaphore, digest: str, upstream: tuple[NodeRun, ...]
+        self,
+        state: RunState,
+        spec: StepSpec,
+        gate: asyncio.Semaphore,
+        digest: str,
+        upstream: tuple[NodeRun, ...],
+        *,
+        given: Outcome | None = None,
     ) -> NodeRun:
         started = dt.datetime.now(dt.UTC)
-        outcome = self._run_gate(upstream) or await self._run_call(state, spec, gate)
+        outcome = given or self._run_gate(upstream) or await self._run_call(state, spec, gate)
         run = NodeRun(
             run_id=state.manifest.run_id,
             node=spec.id,
@@ -144,6 +151,24 @@ class DagExecutor:
     ############################################################
 
     ##### PUBLIC #####
+
+    async def one(self, state: RunState, ident: str, *, kept: bool = True) -> NodeRun:
+        """One step alone, its upstream read from the ledger — never waited for: a harness walks the graph itself, so
+        a parent that never ran is a skip, like a red one. `kept` false records it afresh (an answer just given)."""
+        self._run_check(state)
+        match next((step for step in state.manifest.graph if step.id == ident), None):
+            case None:
+                msg = f"{state.manifest.workflow}: no step {ident!r}"
+                raise WorkflowError(msg)
+            case spec:
+                pass
+        upstream = self._run_upstream(state, spec)
+        never = next((dep for dep in spec.depends if state.ledger.latest(dep) is None), None)
+        given = Outcome(status=Status.SKIP, reason=f"upstream {never} never ran") if never else None
+        digest = self._run_hash(state, spec, upstream)
+        return (self._run_kept(state, spec, digest) if kept else None) or await self._run_fresh(
+            state, spec, asyncio.Semaphore(1), digest, upstream, given=given
+        )
 
     async def run(self, state: RunState) -> tuple[NodeRun, ...]:
         """Every step as one task that starts when its own upstream ended, under one bound."""

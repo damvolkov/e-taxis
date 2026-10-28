@@ -6,17 +6,20 @@ step failed or broke — after the report, never instead of it. `list` shows eve
 steps; `check` holds every workflow (or the ones named) to its static law and writes nothing."""
 
 import sys
+from pathlib import Path
 
+import msgspec
 from rich.console import Console
 from rich.markup import escape
 
 from e_taxis.harness.runtime.deps import Inject
 from e_taxis.harness.runtime.locator import UNSET, Nous
+from e_taxis.harness.runtime.settings import TaxisSettings
 from e_taxis.transpile.adapters.nous import GitNous
 from e_taxis.workflow.engine.chart import WorkflowChart
 from e_taxis.workflow.engine.reader import WorkflowReader
-from e_taxis.workflow.models.error import RunFailedError, WorkflowError
-from e_taxis.workflow.models.run import NodeRun
+from e_taxis.workflow.models.error import NothingError, RunFailedError, WorkflowError
+from e_taxis.workflow.models.run import NodeRun, Status
 from e_taxis.workflow.services.run import WorkflowRun
 
 
@@ -53,6 +56,25 @@ def check_workflow(reader: WorkflowReader, ident: str) -> tuple[bool, str]:
     except WorkflowError as bad:
         return False, bad.message
     return True, ""
+
+
+def render_one(run: NodeRun) -> str:
+    """One step as the JSON line a harness agent answers with."""
+    out = run.artifacts[0] if run.artifacts else ""
+    return msgspec.json.encode({"node": run.node, "status": run.status, "reason": run.reason, "out": out}).decode()
+
+
+def raise_one(run: NodeRun) -> None:
+    """The step's exit: 0 when green, 3 when it skipped, 24 when it broke — after its line is printed."""
+    match run.status:
+        case Status.SKIP:
+            msg = f"{run.node}: {run.reason}"
+            raise NothingError(msg)
+        case status if status.broken:
+            msg = f"{run.node} {status}: {run.reason}"
+            raise RunFailedError(msg)
+        case _:
+            pass
 
 
 ##### COMMANDS #####
@@ -103,3 +125,51 @@ async def check(*workflow: str, nous: Nous = UNSET, console: Inject[Console]) ->
         case bad:
             msg = f"{len(bad)} of {len(found)} workflow(s) do not read clean: {', '.join(bad)}"
             raise WorkflowError(msg)
+
+
+async def step(
+    node: str,
+    *param: str,
+    workflow: str,
+    rundir: Path,
+    nous: Nous = UNSET,
+    runner: Inject[WorkflowRun],
+    settings: Inject[TaxisSettings],
+    console: Inject[Console],
+) -> None:
+    """Run NODE of a workflow the way the engine does, inside a run a harness walks: one JSON line on stdout.
+
+    Args:
+        node: the step id (a loop's copy is `<id>_<k>`).
+        param: name=value pairs; the run's first step records them, the later ones read them back.
+        workflow: the workflow id.
+        rundir: the run's folder; the first step creates it.
+        nous: the e-nous checkout.
+    """
+    run = await runner.one(GitNous(nous, None), workflow, node, parse_params(param), rundir, token=settings.taxis_lock)
+    console.out(render_one(run), highlight=False)
+    raise_one(run)
+
+
+async def put(
+    node: str,
+    *,
+    workflow: str,
+    rundir: Path,
+    file: Path,
+    nous: Nous = UNSET,
+    runner: Inject[WorkflowRun],
+    console: Inject[Console],
+) -> None:
+    """Keep FILE as the answer of the semantic NODE a harness agent ran: its out, as the engine keeps a reply.
+
+    Args:
+        node: the semantic step id.
+        workflow: the workflow id.
+        rundir: the run's folder.
+        file: the agent's answer.
+        nous: the e-nous checkout.
+    """
+    run = await runner.one(GitNous(nous, None), workflow, node, {}, rundir, answer=file)
+    console.out(render_one(run), highlight=False)
+    raise_one(run)

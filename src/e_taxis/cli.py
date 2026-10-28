@@ -23,6 +23,7 @@ typo fails the gate, never a user.
     taxis transpile run   --target T [--nous PATH] --out DIR [--ref REF | --worktree] [--json]   # pure export
     taxis workflow run ID [--nous PATH] [name=value ...]                  # a corpus workflow, end to end
     taxis workflow list [--nous PATH] · check [ID ...] [--nous PATH]
+    taxis workflow step NODE --workflow W --rundir DIR [--nous PATH] [name=value ...] · put NODE --workflow W --rundir DIR --file F
     taxis workflow reverse-distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas [--nous PATH] --rundir DIR …
     taxis eval run TARGET [IDS ...] [--nous PATH] [--cadence C] [--candidate RUN]   # the evaluator, read-only
     taxis eval graph [TARGET] · eval needs TARGET [--nous PATH] [--run R] [--owner O]
@@ -125,6 +126,16 @@ CARDS: tuple[CommandCard, ...] = (
         path="workflow run",
         target="e_taxis.workflow.commands.workflow:run",
         summary="Run a workflow; exits 24 when a step failed.",
+    ),
+    CommandCard(
+        path="workflow step",
+        target="e_taxis.workflow.commands.workflow:step",
+        summary="Run one step inside a run a harness walks; one JSON line.",
+    ),
+    CommandCard(
+        path="workflow put",
+        target="e_taxis.workflow.commands.workflow:put",
+        summary="Keep a harness agent's answer as a semantic step's out.",
     ),
     CommandCard(
         path="workflow list",

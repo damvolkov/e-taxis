@@ -18,7 +18,7 @@ from e_taxis.workflow.engine.reader import WorkflowReader
 from e_taxis.workflow.models.error import CommandError
 from e_taxis.workflow.models.ports import RunState
 from e_taxis.workflow.models.run import RunManifest, RunPaths, RunReport
-from e_taxis.workflow.services.step import WorkflowStep
+from e_taxis.workflow.services.step import AnsweredStep, WorkflowStep
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -67,6 +67,16 @@ class WorkflowRun:
         except CommandError:
             return ""
 
+    async def _one_manifest(self, paths: RunPaths, manifest: RunManifest) -> RunManifest:
+        """The run's manifest: the one its folder holds, else this one, written once — the first step opens the run."""
+        await anyio.Path(paths.root).mkdir(parents=True, exist_ok=True)
+        try:
+            async with await anyio.open_file(paths.manifest, "xb") as fresh:
+                await fresh.write(msgspec.json.format(msgspec.json.encode(manifest)))
+        except FileExistsError:
+            return msgspec.json.decode(await anyio.Path(paths.manifest).read_bytes(), type=RunManifest)
+        return manifest
+
     ############################################################
 
     ##### PUBLIC #####
@@ -100,3 +110,43 @@ class WorkflowRun:
         report = RunReport(manifest=manifest, runs=runs, folder=str(paths.root))
         await anyio.Path(paths.report).write_text(report.markdown)
         return report
+
+    async def one(
+        self,
+        source: NousPort,
+        ident: str,
+        node: str,
+        given: dict[str, str],
+        rundir: Path,
+        *,
+        answer: Path | None = None,
+        token: str = "",
+    ) -> NodeRun:
+        """One step of a run a harness walks: `rundir` holds the run; its first step opens it with `given`. With
+        `answer`, the step is a semantic one the harness's agent already answered."""
+        tree = await source.load()
+        reader = WorkflowReader(tree)
+        graph, decl = reader.read(ident)
+        root = Path(tree.root)
+        base = await self._run_head(root)
+        paths = RunPaths(Path(await anyio.Path(rundir).resolve()))
+        manifest = await self._one_manifest(
+            paths,
+            RunManifest(
+                run_id=paths.root.name,
+                workflow=ident,
+                nous=str(root),
+                base_sha=base,
+                started=dt.datetime.now(dt.UTC),
+                graph=graph,
+                params=reader.bind(decl, given),
+            ),
+        )
+        ledger = await self._ledgers(paths.ledger)
+        port = (
+            AnsweredStep(answer)
+            if answer
+            else WorkflowStep(self._command, self._agent, limit=self._limit, env={LOCK_ENV: token} if token else {})
+        )
+        state = RunState(manifest=manifest, paths=paths, ledger=ledger)
+        return await DagExecutor(port, 1).one(state, node, kept=answer is None)

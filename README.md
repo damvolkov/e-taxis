@@ -69,6 +69,8 @@ Every command, one line each — `taxis <command> --help` gives its flags. `test
 |---|---|
 | `taxis workflow run` | Run a workflow; exits 24 when a step failed. |
 | `taxis workflow list` | Every workflow drawn: parameters, then D/S step chains. |
+| `taxis workflow step` | Run one step inside a run a harness walks; one JSON line. |
+| `taxis workflow put` | Keep a harness agent's answer as a semantic step's out. |
 | `taxis workflow check` | Hold workflows to their static law; writes nothing. |
 
 **reverse-distill steps**
