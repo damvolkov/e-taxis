@@ -76,7 +76,8 @@ map:
       - {from: soul,        to: "#Engineering soul"}
       - {from: knowledge,   to: "#Knowledge architecture"}
       - {from: categories,  to: "#Software categories"}
-      - {from: pillars,     to: "#The three pillars"}
+      - {from: triad,       to: "#The Triad", glue: "\n\n"}
+      - {from: pillars,     to: "#The Triad", glue: "\n\n"}
       - {from: rules,       to: "#Skill creation rules"}
       - {from: conduct,     to: "#Operating contract", glue: "\n"}
       - {from: contract,    to: "#Operating contract", glue: "\n"}

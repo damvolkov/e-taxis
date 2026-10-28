@@ -91,6 +91,7 @@ map:
       - {from: family,      to: "memory/persona/SOUL.md#Family"}
       - {from: attunement,  to: "memory/persona/SOUL.md#Attunement"}
       - {from: unity,       to: "memory/persona/SOUL.md#One mind, two materials"}
+      - {from: triad,       to: "memory/persona/SOUL.md#The Triad"}
       - {from: stance,      to: "memory/persona/SOUL.md#Outlook"}
       - {from: worldview,   to: "memory/persona/SOUL.md#Worldview"}
       - {from: lineage,     to: "memory/persona/SOUL.md#Lineage"}

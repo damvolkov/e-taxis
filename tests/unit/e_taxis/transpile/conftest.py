@@ -175,6 +175,6 @@ def spec_model(nous_tree: NousTree) -> SpecModel:
 
 @pytest.fixture
 def without_added() -> Callable[[bytes], bytes]:
-    """A persona render with the sections v2 added on purpose cut out: what is left must be v1's, byte for byte."""
-    added = re.compile(rb"\n\n## (Plans|Agents)\n.*?(?=\n\n## |\Z)", re.DOTALL)
+    """A persona with the sections v2 added or replaced on purpose cut out: what is left must be v1's, byte for byte."""
+    added = re.compile(rb"\n\n## (Plans|Agents|The Triad|The three pillars)\n.*?(?=\n\n## |\Z)", re.DOTALL)
     return lambda text: added.sub(b"", text)
