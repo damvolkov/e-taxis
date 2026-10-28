@@ -34,6 +34,8 @@ REASON: int = 200
 OPEN: int = 1
 RUNNER: str = "bash"
 AGENT: str = "opencode"
+### a step a harness walked: its agent ran there, taxis only kept the answer.
+HARNESS: str = "harness"
 
 
 ##### TYPES #####
@@ -225,7 +227,7 @@ class AnsweredStep:
         lines = tuple(line for line in text.splitlines() if line.strip())[-SAID:]
         return Outcome(
             status=Status.OK,
-            runner=AGENT,
+            runner=HARNESS,
             artifacts=(str(out),),
             metrics=SessionMetrics(agent=spec.actor or LEAD, narrative=lines),
         )
