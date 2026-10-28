@@ -1,0 +1,58 @@
+{
+  "$ref": "#/$defs/Verdict",
+  "$defs": {
+    "Verdict": {
+      "title": "Verdict",
+      "description": "verdict: adopt, trial, hold or reject, with its evidence and its landing.",
+      "type": "object",
+      "properties": {
+        "verdict": {
+          "$ref": "#/$defs/Ring"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "landing": {
+          "$ref": "#/$defs/Landing"
+        },
+        "command": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "verdict",
+        "evidence",
+        "landing",
+        "command"
+      ],
+      "additionalProperties": false
+    },
+    "Ring": {
+      "title": "Ring",
+      "description": "The radar's rings: what a machine can act on.",
+      "enum": [
+        "adopt",
+        "hold",
+        "reject",
+        "trial"
+      ]
+    },
+    "Landing": {
+      "title": "Landing",
+      "description": "Where the lesson lands, by the Triad.",
+      "enum": [
+        "e-arkhetypo",
+        "e-nous",
+        "e-taxis",
+        "none"
+      ]
+    }
+  }
+}

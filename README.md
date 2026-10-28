@@ -101,6 +101,18 @@ Every command, one line each — `taxis <command> --help` gives its flags. `test
 | `taxis workflow reverse-distill ship` | Run the commands that apply the musts. |
 | `taxis workflow reverse-distill schemas` | Write (or --check) every port's JSON Schema. |
 
+**soa-assess steps**
+
+| Command | Does |
+|---|---|
+| `taxis workflow soa-assess intake` | Resolve a technology to its repository and package. |
+| `taxis workflow soa-assess inventory` | What lives here in the candidate's domain, no model. |
+| `taxis workflow soa-assess health` | Dated health KPIs from no-auth sources. |
+| `taxis workflow soa-assess bench` | Install every arm fenced; run the plan interleaved. |
+| `taxis workflow soa-assess stats` | The paired bootstrap interval against the threshold. |
+| `taxis workflow soa-assess report` | Write report.md and assess.json; index the verdict. |
+| `taxis workflow soa-assess schemas` | Write (or --check) every soa-assess port's JSON Schema. |
+
 **Evaluation and enhancement**
 
 | Command | Does |
@@ -140,6 +152,7 @@ taxis workflow run ID [--nous PATH] [name=value ...]                # a corpus w
 taxis workflow list [--nous PATH] · check [ID ...] [--nous PATH]    # every workflow; its static law
 taxis workflow reverse-distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas --rundir DIR [--nous PATH] …
 taxis workflow soa-sweep frame|ledger|fetch|ground|fit|report|deliver|schemas --rundir DIR [--nous PATH] …
+taxis workflow soa-assess intake|inventory|health|bench|stats|report|schemas --rundir DIR [--nous PATH] …
 taxis eval run T [IDS] [--nous PATH] [--cadence C] [--only M,...] [--candidate RUN] # the evaluator, read-only
 taxis enhance run T [IDS] [--nous PATH] (--from R | --directive D | --manual) # verdicts + patches, in a sandbox
 taxis enhance promote [RUN] [--nous PATH] [--ids …] [--yes]         # a human command: the patches into the checkout
@@ -176,7 +189,7 @@ Exit codes: `0` · nothing to undo `4` · catalog does not load `5` · bad sourc
 blocked parts `7` · verify failed `8` · doctor found problems `9` · apply refused or failed `10` ·
 uninstall failed `11` · transpile `17`–`22` (docs/transpile.md) · nothing to distill `3` · workflow `23`–`26`, planes `27`–`30`
 (open needs and refused promotions `1`), lock held past the wait `75` (docs/workflow.md) · no e-nous checkout `31` · schedule refused `32`, a schedule
-run that did not succeed `33`.
+run that did not succeed `33` · soa-assess `34`.
 The report always prints first.
 
 `TAXIS_NOUS` is the e-nous checkout read when `--nous` is not given (One system, above).

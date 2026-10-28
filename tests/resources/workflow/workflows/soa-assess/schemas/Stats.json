@@ -1,0 +1,103 @@
+{
+  "$ref": "#/$defs/Stats",
+  "$defs": {
+    "Stats": {
+      "title": "Stats",
+      "description": "stats: the interval of the paired difference (candidate - baseline, in the metric's units) against the\nthreshold; `secondary` describes, never decides.",
+      "type": "object",
+      "properties": {
+        "metric": {
+          "type": "string"
+        },
+        "outcome": {
+          "$ref": "#/$defs/Outcome"
+        },
+        "candidate": {
+          "type": "string",
+          "default": ""
+        },
+        "baseline": {
+          "type": "string",
+          "default": ""
+        },
+        "pairs": {
+          "type": "integer",
+          "default": 0
+        },
+        "mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "low": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "high": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "threshold": {
+          "type": "number",
+          "default": 0.0
+        },
+        "higher_is_better": {
+          "type": "boolean",
+          "default": true
+        },
+        "resamples": {
+          "type": "integer",
+          "default": 0
+        },
+        "confidence": {
+          "type": "number",
+          "default": 0.0
+        },
+        "secondary": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "reason": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "metric",
+        "outcome"
+      ]
+    },
+    "Outcome": {
+      "title": "Outcome",
+      "enum": [
+        "better",
+        "no difference",
+        "not measured",
+        "worse"
+      ]
+    }
+  }
+}

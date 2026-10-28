@@ -1,0 +1,61 @@
+{
+  "$ref": "#/$defs/Review",
+  "$defs": {
+    "Review": {
+      "title": "Review",
+      "description": "adversary: what tried to sink the verdict, and whether it stands; `verdict` is the reviewer's own.",
+      "type": "object",
+      "properties": {
+        "stands": {
+          "type": "boolean"
+        },
+        "objections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Objection"
+          }
+        },
+        "verdict": {
+          "$ref": "#/$defs/Ring"
+        }
+      },
+      "required": [
+        "stands",
+        "objections",
+        "verdict"
+      ],
+      "additionalProperties": false
+    },
+    "Objection": {
+      "title": "Objection",
+      "type": "object",
+      "properties": {
+        "claim": {
+          "type": "string"
+        },
+        "refuted": {
+          "type": "boolean"
+        },
+        "evidence": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "claim",
+        "refuted"
+      ],
+      "additionalProperties": false
+    },
+    "Ring": {
+      "title": "Ring",
+      "description": "The radar's rings: what a machine can act on.",
+      "enum": [
+        "adopt",
+        "hold",
+        "reject",
+        "trial"
+      ]
+    }
+  }
+}

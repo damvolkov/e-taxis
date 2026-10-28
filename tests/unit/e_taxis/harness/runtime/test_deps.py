@@ -19,11 +19,13 @@ from e_taxis.harness.services.plan import PlanService
 from e_taxis.harness.services.uninstall import UninstallService
 from e_taxis.harness.services.verify import VerifyService
 from e_taxis.transpile.adapters.capture import HttpCapture
+from e_taxis.transpile.adapters.fence import LandrunFence
 from e_taxis.transpile.models.ports import CapturePort
 from e_taxis.transpile.services.trial import TrialService
 from e_taxis.workflow.adapters.web import WreqWeb
+from e_taxis.workflow.assess.bench import AssessBench
 from e_taxis.workflow.models.plane import Plane
-from e_taxis.workflow.models.ports import CommandPort, WebPort
+from e_taxis.workflow.models.ports import ApiPort, CommandPort, LabPort, WebPort
 from e_taxis.workflow.services.plane import PlaneRun
 from e_taxis.workflow.services.promote import PlanePromote
 
@@ -109,3 +111,14 @@ async def test_deps_command_hands_the_human_mandate(
         command = await Deps(stack, _state()).resolve(CommandPort)
         said = await command.run("sh", "-c", 'printf %s "$TAXIS_HUMAN"', limit=10.0)
     assert said == expected
+
+
+@pytest.mark.parametrize(("token", "signed"), [("t0k", "Bearer t0k"), ("", None)], ids=["token", "anonymous"])
+async def test_deps_binds_soa_assess(monkeypatch: pytest.MonkeyPatch, token: str, signed: str | None) -> None:
+    monkeypatch.setenv("GH_TOKEN", token)
+    async with AsyncExitStack() as stack:
+        deps = Deps(stack, _state())
+        api = await deps.resolve(ApiPort)
+        assert api._get_headers("https://api.github.com/x").get("Authorization") == signed  # ty: ignore[unresolved-attribute]
+        assert isinstance(await deps.resolve(LabPort), LandrunFence)
+        assert isinstance(await deps.resolve(AssessBench), AssessBench)

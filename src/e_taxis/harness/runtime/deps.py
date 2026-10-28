@@ -68,6 +68,7 @@ from e_taxis.transpile.services.reverse import ReverseService
 from e_taxis.transpile.services.run import RunService
 from e_taxis.transpile.services.trial import TrialService
 from e_taxis.workflow.adapters.agent import ClaudeAgent, ModeAgent, OpencodeAgent
+from e_taxis.workflow.adapters.api import WreqApi
 from e_taxis.workflow.adapters.coder import ClaudeCoder, OpencodeCoder
 from e_taxis.workflow.adapters.command import ShellCommand
 from e_taxis.workflow.adapters.evals import NousEvals
@@ -78,7 +79,16 @@ from e_taxis.workflow.adapters.runner import AnthropicRunner
 from e_taxis.workflow.adapters.sandbox import GitSandbox
 from e_taxis.workflow.adapters.scanner import SkillspectorScanner
 from e_taxis.workflow.adapters.web import WreqWeb
-from e_taxis.workflow.models.ports import AgentPort, CommandPort, PlaneNodePort, SandboxPort, WebPort
+from e_taxis.workflow.assess.bench import AssessBench
+from e_taxis.workflow.models.ports import (
+    AgentPort,
+    ApiPort,
+    CommandPort,
+    LabPort,
+    PlaneNodePort,
+    SandboxPort,
+    WebPort,
+)
 from e_taxis.workflow.plane.activation import PlaneActivation
 from e_taxis.workflow.plane.brief import PlaneBrief
 from e_taxis.workflow.plane.candidate import PlaneCandidate
@@ -387,6 +397,22 @@ class Deps:
             UserSystemd(await self.resolve(RunnerPort), units), Path(await anyio.Path(sys.argv[0]).absolute())
         )
 
+    async def _resolve_api(self) -> WreqApi:
+        """soa-assess's public APIs; the GitHub token, when the settings hold one, signs GitHub's requests only."""
+        settings = await self.resolve(TaxisSettings)
+        token = settings.gh_token.get_secret_value() if settings.gh_token else ""
+        return WreqApi(settings.taxis_assess_timeout, token)
+
+    async def _resolve_lab(self) -> LandrunFence:
+        return LandrunFence((await self.resolve(TaxisSettings)).taxis_landrun.expanduser())
+
+    async def _resolve_bench(self) -> AssessBench:
+        """The bench's sandboxes start from this process's PATH: the arms find the same toolchain."""
+        settings = await self.resolve(TaxisSettings)
+        return AssessBench(
+            await self.resolve(LabPort), path=os.environ.get("PATH", ""), limit=settings.taxis_assess_limit
+        )
+
     ############################################################
 
     ##### PUBLIC #####
@@ -424,6 +450,9 @@ class Deps:
             PlaneRun: _resolve_plane,
             PlanePromote: _resolve_promote,
             ScheduleService: _resolve_schedule,
+            ApiPort: _resolve_api,
+            LabPort: _resolve_lab,
+            AssessBench: _resolve_bench,
         }
     )
 

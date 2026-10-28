@@ -1,0 +1,49 @@
+{
+  "$ref": "#/$defs/Inventory",
+  "$defs": {
+    "Inventory": {
+      "title": "Inventory",
+      "description": "inventory: what lives here today in the candidate's domain, and every past assessment.",
+      "type": "object",
+      "properties": {
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Row"
+          }
+        },
+        "assessed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "rows",
+        "assessed"
+      ]
+    },
+    "Row": {
+      "title": "Row",
+      "description": "One thing that lives here: where it is written, its name, the job it does there.",
+      "type": "object",
+      "properties": {
+        "where": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "where",
+        "name"
+      ]
+    }
+  }
+}

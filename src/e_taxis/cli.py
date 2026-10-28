@@ -26,6 +26,7 @@ typo fails the gate, never a user.
     taxis workflow step NODE --workflow W --rundir DIR [--nous PATH] [name=value ...] · put NODE --workflow W --rundir DIR --file F
     taxis workflow reverse-distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas [--nous PATH] --rundir DIR …
     taxis workflow soa-sweep frame|ledger|fetch|ground|fit|report|deliver|schemas [--nous PATH] --rundir DIR …
+    taxis workflow soa-assess intake|inventory|health|bench|stats|report|schemas [--nous PATH] --rundir DIR …
     taxis eval run TARGET [IDS ...] [--nous PATH] [--cadence C] [--candidate RUN]   # the evaluator, read-only
     taxis eval graph [TARGET] · eval needs TARGET [--nous PATH] [--run R] [--owner O]
     taxis enhance run TARGET [IDS ...] [--nous PATH] (--from R | --directive D | --manual) [--cadence C]
@@ -57,6 +58,11 @@ GROUPS: tuple[CommandGroup, ...] = (
     ),
     CommandGroup(
         path="workflow", help="Corpus workflows: graphs of command and agent steps, run from an e-nous checkout."
+    ),
+    CommandGroup(
+        path="workflow soa-assess",
+        help="soa-assess's deterministic steps, one per workflow node: --rundir, --nous.",
+        show=False,
     ),
     CommandGroup(
         path="workflow soa-sweep",
@@ -152,6 +158,41 @@ CARDS: tuple[CommandCard, ...] = (
         path="workflow check",
         target="e_taxis.workflow.commands.workflow:check",
         summary="Hold workflows to their static law; writes nothing.",
+    ),
+    CommandCard(
+        path="workflow soa-assess intake",
+        target="e_taxis.workflow.commands.assess:intake",
+        summary="Resolve a technology to its repository and package.",
+    ),
+    CommandCard(
+        path="workflow soa-assess inventory",
+        target="e_taxis.workflow.commands.assess:inventory",
+        summary="What lives here in the candidate's domain, no model.",
+    ),
+    CommandCard(
+        path="workflow soa-assess health",
+        target="e_taxis.workflow.commands.assess:health",
+        summary="Dated health KPIs from no-auth sources.",
+    ),
+    CommandCard(
+        path="workflow soa-assess bench",
+        target="e_taxis.workflow.commands.assess:bench",
+        summary="Install every arm fenced; run the plan interleaved.",
+    ),
+    CommandCard(
+        path="workflow soa-assess stats",
+        target="e_taxis.workflow.commands.assess:stats",
+        summary="The paired bootstrap interval against the threshold.",
+    ),
+    CommandCard(
+        path="workflow soa-assess report",
+        target="e_taxis.workflow.commands.assess:report",
+        summary="Write report.md and assess.json; index the verdict.",
+    ),
+    CommandCard(
+        path="workflow soa-assess schemas",
+        target="e_taxis.workflow.commands.assess:schemas",
+        summary="Write (or --check) every soa-assess port's JSON Schema.",
     ),
     CommandCard(
         path="workflow soa-sweep frame",

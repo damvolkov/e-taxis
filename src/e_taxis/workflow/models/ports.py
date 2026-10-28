@@ -5,14 +5,15 @@ a coder under measurement, and a node over one subject; for soa-sweep, the open 
 The context is part of the contract: a run's resources (manifest, paths, ledger) are fixed when it starts; the
 evidence lives only in the ledger, append-only and typed. A step reads upstream evidence through its context."""
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from e_taxis.transpile.models.ports import CapturePort, NousPort
-from e_taxis.transpile.models.trial import TrialReport
+from e_taxis.transpile.models.trial import TrialReport, TrialRun
+from e_taxis.workflow.models.assess import Fetched
 from e_taxis.workflow.models.case import ProbeMode, ProbeResult, QuerySet, TaskSet
 from e_taxis.workflow.models.endpoint import Endpoint
 from e_taxis.workflow.models.graph import StepSpec
@@ -227,3 +228,30 @@ class PlaneNodePort(Protocol):
     def card(self) -> NodeCard: ...
 
     async def run(self, context: PlaneContext) -> Outcome: ...
+
+
+##### ASSESS PORTS #####
+@runtime_checkable
+class ApiPort(Protocol):
+    """One GET against a public JSON API. Never raises: a transport failure is status 0 with its error."""
+
+    async def get(self, url: str) -> Fetched: ...
+
+
+@runtime_checkable
+class LabPort(Protocol):
+    """Runs argv confined, the network open when asked: read and execute everywhere, write only under `writable`."""
+
+    async def run(
+        self,
+        argv: Sequence[str],
+        *,
+        env: Mapping[str, str],
+        cwd: Path,
+        writable: Sequence[Path],
+        ports: Sequence[int],
+        limit: float,
+        network: bool = False,
+    ) -> TrialRun: ...
+
+    async def canary(self, inside: Path, outside: Path) -> bool: ...

@@ -119,6 +119,12 @@ path = "e_taxis.workflow.sweep"
 layer = "services"
 depends_on = []
 
+### soa-assess reads agent answers with reverse-distill's own fence pattern.
+[[modules]]
+path = "e_taxis.workflow.assess"
+layer = "services"
+depends_on = ["e_taxis.workflow.distill"]
+
 ### the planes' nodes render and check through the transpiler's own services (v2), never a second render.
 [[modules]]
 path = "e_taxis.workflow.plane"
@@ -130,10 +136,11 @@ path = "e_taxis.workflow.engine"
 layer = "processors"
 depends_on = []
 
+### the public-API reader names wreq's transport failures once, with the downloader.
 [[modules]]
 path = "e_taxis.workflow.adapters"
 layer = "adapters"
-depends_on = []
+depends_on = ["e_taxis.adapters"]
 
 [[modules]]
 path = "e_taxis.workflow.models"
