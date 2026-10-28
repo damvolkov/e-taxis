@@ -103,6 +103,7 @@ entities:
       description: {type: str, required: true}
       domains:     {type: "list<enum[tekton, nomos]>", required: true, doc: "the hemispheres it serves: rendered only into their harnesses"}
       family:      {type: str, doc: "a family of core/tekton/config/workflows.yaml: its kwargs, output and nodes ({use: node}), expanded at load"}
+      each:        {type: str, doc: "a list kwarg: one run per item, in parallel, joined in the parent's report"}
       parameters:  {type: "map<str, str | {doc: str, type: str, default: str, values: list<str>}>", default: {}, doc: "after load: name → its entry; the manifest may name kwargs of the workflows vocabulary (a list) or refine them"}
       triggers:    {type: "list<map<str, str>>", default: [], doc: "phrases that launch it, by grammar ({eng: 'flow …'})"}
       nodes:       {type: "list<Node | {source: path}>", required: true, doc: "declaration order = render order"}

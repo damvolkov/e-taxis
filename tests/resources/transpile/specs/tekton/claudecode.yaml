@@ -168,6 +168,7 @@ map:
       loop:        {reason: covered, detail: "claude_workflow: the loop's copies, in order"}
       domains:     {reason: house, detail: "read by the renderer: an instance reaches only the harnesses of its domains"}
       family:      {reason: covered, detail: "expanded at load (adapters.ontology): its kwargs, output and nodes are in the instance"}
+      each:        {reason: house, detail: "taxis fans the run out per item (engine and --harness); inside a session the command launches the workflow once per item"}
       output:      {reason: house, detail: "taxis workflow run --harness verifies it on disk; the script returns the rundir"}
       triggers:    {reason: house, detail: "eng-grammar phrases read by the channel hooks (e-metaxy), not by the coder"}
     notes: >-

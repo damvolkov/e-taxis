@@ -11,7 +11,7 @@ kwargs:
   topic:   {type: topic, doc: "a topic of soa.yaml; empty = the whole plane"}
   deliver: {type: str, values: [report, discord], default: report, doc: "report writes it; discord also posts it"}
   query:   {type: str, doc: "what you ask, in your words"}
-  tech:    {type: str, doc: "a technology: a repository URL, a package or a name"}
+  tech:    {type: list, doc: "technologies — repository URLs, packages or names; several separated by commas run in parallel"}
   entity:  {type: str, values: [skill, agent, command, workflow, tool, persona, config], doc: "an entity kind of the corpus"}
   ids:     {doc: "subjects, space-separated; empty = every subject of the kind"}
   backend: {type: str, values: [opencode, claudecode], doc: "a tekton backend; empty = every backend"}
