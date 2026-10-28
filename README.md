@@ -25,9 +25,9 @@ One triumvirate, all Greek — the mind decides, the archetypes hold the forms, 
 
 | Pillar | Is | Changes here |
 |---|---|---|
-| [e-nous](https://github.com/damvolkov/e-nous) | the mind — persona, skills, agents, commands, workflows, evals, and the transpiler | doctrine |
+| [e-nous](https://github.com/damvolkov/e-nous) | the mind — persona, skills, agents, commands, workflows, evals, specs; data only | doctrine |
 | [e-arkhetypo](https://github.com/damvolkov/e-arkhetypo) | the archetypes — project blueprints, stacks, CI sources; data only | templates |
-| **e-taxis** | the order — the deterministic engine that turns archetypes into running things and installs the mind into each harness | tools |
+| **e-taxis** | the order — all the code: turns archetypes into running things, transpiles, evaluates and enhances the mind, runs its workflows | tools |
 
 **One system.** `make taxis` in e-nous or e-arkhetypo puts this CLI on the PATH, and `taxis` finds the brain from
 any shell — no `--nous` to type. The first rung holding a valid e-nous checkout (`core/schema.yaml` and
