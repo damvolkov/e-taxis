@@ -12,8 +12,8 @@ async def test_locator_explicit_relative_is_made_absolute(checkout: Path, worksp
     assert await NousLocator(env=None, cwd=workspace).locate(Path("e-nous")) == checkout
 
 
-async def test_locator_explicit_wins_over_every_rung(checkout: Path, tmp_path: Path) -> None:
-    other = tmp_path / "other"
+async def test_locator_explicit_wins_over_every_rung(checkout: Path, workspace: Path) -> None:
+    other = workspace / "other"
     (other / "core").mkdir(parents=True)
     (other / "specs").mkdir()
     (other / "core" / "schema.yaml").write_text("{}\n")
@@ -48,8 +48,9 @@ async def test_locator_sibling_of_a_plain_dir(checkout: Path, workspace: Path) -
     assert await NousLocator(env=None, cwd=plain).locate(None) == checkout
 
 
-async def test_locator_none_names_every_rung(tmp_path: Path) -> None:
+async def test_locator_none_names_every_rung(workspace: Path) -> None:
+    workspace.mkdir()
     with pytest.raises(NousLocatorError) as error:
-        await NousLocator(env=tmp_path / "gone", cwd=tmp_path).locate(None)
+        await NousLocator(env=workspace / "gone", cwd=workspace).locate(None)
     assert all(rung in error.value.message for rung in ("--nous", "TAXIS_NOUS", "ancestor", "sibling"))
-    assert str(tmp_path.parent / "e-nous") in error.value.message
+    assert str(workspace.parent / "e-nous") in error.value.message

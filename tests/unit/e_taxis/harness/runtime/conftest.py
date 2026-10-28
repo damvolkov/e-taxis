@@ -13,7 +13,8 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def workspace(tmp_path: Path) -> Path:
-    return tmp_path / "ws"
+    """Resolved, as the locator hands its paths out: macOS's temp dir sits behind the `/var` → `/private/var` link."""
+    return tmp_path.resolve() / "ws"
 
 
 @pytest.fixture
