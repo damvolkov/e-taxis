@@ -13,11 +13,9 @@ if TYPE_CHECKING:
 def test_workflow_list_shows_every_workflow(taxis: Callable[..., tuple[int, str, str]], nous: Path) -> None:
     code, out, _ = taxis("workflow", "list", "--nous", str(nous))
     assert code == 0
-    assert "## demo — Every kind of step" in out
-    assert "  param value       a value the first step writes as it is" in out
-    assert "  think             semantic       builder             after first" in out
-    assert "  last              deterministic  run                 when apply=true · after echo, think" in out
-    assert "## broken — ✗ broken: a: unknown agent nobody" in out
+    assert "demo — Every kind of step" in out
+    assert "  params value · apply" in out
+    assert "broken — ✗ broken: a: unknown agent nobody" in out
 
 
 def test_workflow_check_names_what_does_not_read(taxis: Callable[..., tuple[int, str, str]], nous: Path) -> None:

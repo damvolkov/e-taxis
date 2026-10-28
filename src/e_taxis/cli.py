@@ -129,7 +129,7 @@ CARDS: tuple[CommandCard, ...] = (
     CommandCard(
         path="workflow list",
         target="e_taxis.workflow.commands.workflow:listing",
-        summary="Every workflow, its parameters and steps.",
+        summary="Every workflow drawn: parameters, then D/S step chains.",
     ),
     CommandCard(
         path="workflow check",

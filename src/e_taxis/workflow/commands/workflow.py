@@ -13,9 +13,9 @@ from rich.markup import escape
 from e_taxis.harness.runtime.deps import Inject
 from e_taxis.harness.runtime.locator import UNSET, Nous
 from e_taxis.transpile.adapters.nous import GitNous
+from e_taxis.workflow.engine.chart import WorkflowChart
 from e_taxis.workflow.engine.reader import WorkflowReader
 from e_taxis.workflow.models.error import RunFailedError, WorkflowError
-from e_taxis.workflow.models.graph import StepSpec
 from e_taxis.workflow.models.run import NodeRun
 from e_taxis.workflow.services.run import WorkflowRun
 
@@ -37,22 +37,13 @@ def render_live(run: NodeRun) -> None:
     sys.stderr.write(f"  {run.node:<24}{run.status:<6}{run.seconds:>7.1f}s  {reason}\n")
 
 
-def render_step(step: StepSpec) -> str:
-    runner = "run" if step.run else step.actor or "lead"
-    when = " · ".join(f"when {key}={'|'.join(values)}" for key, values in step.when.items())
-    after = f"after {', '.join(step.depends)}" if step.depends else ""
-    nature = "semantic" if step.semantic else "deterministic"
-    return f"  {step.id:<18}{nature:<15}{runner:<20}{' · '.join(part for part in (when, after) if part)}".rstrip()
-
-
 def render_workflow(reader: WorkflowReader, ident: str) -> str:
-    """One workflow's card: parameters and steps — or why it does not read."""
+    """One workflow drawn: heading, parameters and chains — or why it does not read."""
     try:
-        graph, decl = reader.read(ident)
+        _, decl = reader.read(ident)
     except WorkflowError as bad:
-        return f"## {ident} — ✗ {bad.message}"
-    params = [f"  param {name:<12}{param.doc}" for name, param in decl.params.items()]
-    return "\n".join([f"## {ident} — {graph.summary[:100]}", *params, *(render_step(step) for step in graph)])
+        return f"{ident} — ✗ {bad.message}"
+    return WorkflowChart(decl).render()
 
 
 def check_workflow(reader: WorkflowReader, ident: str) -> tuple[bool, str]:
@@ -87,13 +78,13 @@ async def run(
 
 
 async def listing(*, nous: Nous = UNSET, console: Inject[Console]) -> None:
-    """List every workflow of an e-nous checkout with its parameters and steps.
+    """Draw every workflow of an e-nous checkout: parameters, then its steps as chains (D command, S agent).
 
     Args:
         nous: the e-nous checkout.
     """
     reader = WorkflowReader(await GitNous(nous, None).load())
-    _ = [console.out(render_workflow(reader, ident), highlight=False) for ident in reader.ids()]
+    console.out("\n\n".join(render_workflow(reader, ident) for ident in reader.ids()), highlight=False)
 
 
 async def check(*workflow: str, nous: Nous = UNSET, console: Inject[Console]) -> None:

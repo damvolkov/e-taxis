@@ -68,7 +68,7 @@ Every command, one line each — `taxis <command> --help` gives its flags. `test
 | Command | Does |
 |---|---|
 | `taxis workflow run` | Run a workflow; exits 24 when a step failed. |
-| `taxis workflow list` | Every workflow, its parameters and steps. |
+| `taxis workflow list` | Every workflow drawn: parameters, then D/S step chains. |
 | `taxis workflow check` | Hold workflows to their static law; writes nothing. |
 
 **reverse-distill steps**
