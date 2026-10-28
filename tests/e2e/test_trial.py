@@ -30,11 +30,11 @@ async def test_trial_harness_shows_the_render(
     version = (
         "" if binary is None else (await anyio.run_process([binary, "--version"], check=False)).stdout.decode().strip()
     )
-    match (binary, backend, version.startswith("1.")):
+    match (binary, backend, version.removeprefix("opencode ").startswith("v2.")):
         case (None, _, _):
             pytest.skip(f"no {backend} binary on the PATH")
         case (_, "opencode", False):
-            pytest.skip("the spec's opencode trial runs on the stable 1.x line; set TAXIS_E2E_PATH to one")
+            pytest.skip("the spec's opencode trial runs on the pinned 2.x line (stack.yaml); set TAXIS_E2E_PATH to one")
         case _:
             pass
     report = await prover.run(GitNous(nous_root, None), backend, capture)

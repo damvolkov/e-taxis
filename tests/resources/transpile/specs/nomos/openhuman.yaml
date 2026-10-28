@@ -223,7 +223,7 @@ map:
       mcp.servers.*.headers:    {reason: pending, detail: "remote servers carry only an endpoint in mcp_client; headers not checked"}
       mcp.servers.*.note:       {reason: pending, detail: "whether an mcp_client server takes a description is not checked"}
       mcp.servers.*.consent:    {reason: house, detail: "the secret file belongs to the watcher (make mcp), never to the render"}
-      mcp.servers.*.smoke:      {reason: internal, detail: "evaluation data (op eval run config)"}
+      mcp.servers.*.smoke:      {reason: internal, detail: "evaluation data (taxis eval run config)"}
     notes: >-
       Drift the check must see: voice routes evoice-stt:<model> /
       evoice-tts:<voice> (the UI rewrites them to cloud); primary_cloud is an

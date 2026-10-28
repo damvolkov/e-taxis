@@ -11,6 +11,11 @@ from e_taxis.cli import CARDS, GROUPS, main
 
 
 @pytest.mark.parametrize("card", CARDS, ids=[card.path for card in CARDS])
+def test_cli_card_is_documented_in_the_readme(card, readme: str) -> None:
+    assert f"| `taxis {card.path}` | {card.summary} |" in readme
+
+
+@pytest.mark.parametrize("card", CARDS, ids=[card.path for card in CARDS])
 def test_cli_card_target_is_a_coroutine_function(card) -> None:
     module, _, function = card.target.partition(":")
     assert inspect.iscoroutinefunction(getattr(importlib.import_module(module), function))

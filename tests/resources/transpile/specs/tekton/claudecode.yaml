@@ -43,6 +43,7 @@ targets:
   settings.json:        {format: json}                                  # whole: every key Claude would write is modeled here
   rules/instructions.md: {format: text}                                 # ~/.claude/rules/ is user memory: its @imports always load
   hooks/autolearn.mjs:  {format: file}
+  hooks/plans.mjs:      {format: file}
   mcp/playwright.json:  {format: file}
   mcp-user:                                                             # user scope lives in ~/.claude.json, binary state: never written as a file
     format: registry
@@ -70,6 +71,7 @@ map:
       - {from: critique,    to: "#Voice", glue: "\n"}
       - {from: prudence,    to: "#Method: prudence before action", glue: "\n"}
       - {from: method,      to: "#Method: prudence before action", glue: "\n"}
+      - {from: plans,       to: "#Plans"}
       - {from: honesty,     to: "#Honesty"}
       - {from: soul,        to: "#Engineering soul"}
       - {from: knowledge,   to: "#Knowledge architecture"}
@@ -79,6 +81,7 @@ map:
       - {from: conduct,     to: "#Operating contract", glue: "\n"}
       - {from: contract,    to: "#Operating contract", glue: "\n"}
       - {from: skills,      to: "#Skills"}
+      - {from: agents,      to: "#Agents"}
     unmapped:
       about:   {reason: house, detail: "bond slot: human-hemisphere content; the tekton harness renders doctrine, not bond"}
       profile: {reason: house, detail: "user memory seed: only the nomos harnesses plant it"}
@@ -181,6 +184,7 @@ map:
       - {from: mcp.servers, to: "mcp-user#{name}", each: name, via: mcp_claudecode}
     assets:
       - {from: hooks/autolearn.mjs,        to: hooks/autolearn.mjs}
+      - {from: hooks/plans.mjs,            to: hooks/plans.mjs}
       - {from: mcp/playwright.json,        to: mcp/playwright.json}
     unmapped:
       main.user:             {reason: pending, detail: "no username key known in settings.json; confirm against the settings schema"}
@@ -194,7 +198,7 @@ map:
       permissions.granular:  {reason: pending, detail: "Claude's permissions.ask/deny with Tool(pattern) rules could carry the edit/bash patterns (.env*, sudo *…); the translation transform is not built and would add live prompts — a decision, not a gap to close silently"}
       security:              {reason: internal, detail: "scanner acceptances, never rendered"}
       mcp.servers.*.note:    {reason: pending, detail: "no description field known in Claude's MCP entry; confirm against mcp.md"}
-      mcp.servers.*.smoke:   {reason: internal, detail: "evaluation data (op eval run config)"}
+      mcp.servers.*.smoke:   {reason: internal, detail: "evaluation data (taxis eval run config)"}
     notes: >-
       settings.json is owned whole: outputStyle, statusLine or any key Claude
       writes on a UI action is drift until the core models it. settings.local.json

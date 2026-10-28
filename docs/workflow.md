@@ -162,6 +162,14 @@ Found on the way and fixed, each with its test:
 - `codebase-memory-mcp` 0.12 deprecated raw JSON arguments and renamed `impacted_symbols` → `impacted`: calls go
   through `--args-file`, both names are read.
 
+### Added after W2 (2026-10-27/28)
+
+- Probe sandboxes link the render absolutely; the activation node drops borrowed credentials when it ends (#20).
+- `taxis eval run --only` runs just the named measures (#21).
+- A failed node names its causes: an `ExceptionGroup` lists every leaf (#22).
+- The OpenCode probe reads 2.x's skill `id` (#23). Still open: on 2.x the probe's `opencode run` needs a served port
+  (see transpile-log, 2026-10-28); measure activation on Claude Code meanwhile.
+
 ## 6. Decisions (2026-10-26)
 
 - **graphlib over rustworkx** — evidence: the executor orders a dozen steps; graphlib is the repo's DAG tool

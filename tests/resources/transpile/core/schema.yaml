@@ -177,7 +177,7 @@ config:
     security:
       fields:
         accepted:     {type: "map<skill, list<{fingerprint: str, file: path, why: str}>>", default: {}, doc: "scanner acceptances: internal, never rendered"}
-    assets: [hooks, mcp]
+    assets: [hooks, mcp, plugins]
 
   nomos:
     main:
@@ -245,7 +245,7 @@ config:
 # ─── Outside the render ─────────────────────────────────────────────────────
 # Core files no spec reads: named here so the closed world has no hole.
 outside:
-  core/<facet>/stack.yaml:     "the parts each facet needs from the world (op stack)"
+  core/<facet>/stack.yaml:     "the parts each facet needs from the world (taxis plan · verify)"
   core/common/stack.yaml:      "the parts both facets share"
   core/versioning/matrix.yaml: "the grade of every emitted slot and key (report severity)"
   core/nomos/config/openhuman: "the harness's build and deployment (image, compose, patches, systemd): stack material, not config"

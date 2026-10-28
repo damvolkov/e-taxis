@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 def test_transpile_check_clean_checkout_exits_zero(taxis, nous_root: Path) -> None:
     code, out, _ = taxis("transpile", "check", "--nous", str(nous_root), "--worktree")
     assert code == 0
-    assert out.rstrip().endswith("3 signal")
+    assert out.rstrip().endswith("2 signal")
 
 
 def test_transpile_check_blocking_finding_exits_twenty(

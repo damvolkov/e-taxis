@@ -3,6 +3,7 @@
 Safety first: every test runs with HOME and CLAUDE_CONFIG_DIR inside its own temp dir, and every `taxis` run
 gets a runner and a downloader that touch nothing — the real ones are tested on their own, on harmless input."""
 
+from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, ClassVar
 
@@ -16,7 +17,6 @@ from e_taxis.harness.runtime.deps import Deps
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
-    from pathlib import Path
 
     from pytest_resources import Resources
 
@@ -200,3 +200,9 @@ def world_root(resources: Resources) -> Path:
 def dangling_root(resources: Resources) -> Path:
     """A catalog whose one entry requires an id no entry provides."""
     return resources.path / "dangling"
+
+
+@pytest.fixture(scope="session")
+def readme() -> str:
+    """The repository README, as a user reads it."""
+    return (Path(__file__).parents[3] / "README.md").read_text()
