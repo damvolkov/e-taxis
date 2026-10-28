@@ -120,8 +120,12 @@ async def test_workflow_each_must_name_a_list_kwarg(flow) -> None:
 
 @pytest.mark.parametrize(
     ("value", "items"),
-    [("a b", ("a", "b")), ("auto ontology, open ontologies", ("auto ontology", "open ontologies")), ("", ())],
-    ids=["spaces", "commas", "empty"],
+    [
+        ("auto ontology", ("auto ontology",)),
+        ("auto ontology, open ontologies", ("auto ontology", "open ontologies")),
+        ("", ()),
+    ],
+    ids=["one-with-spaces", "commas", "empty"],
 )
 async def test_workflow_items_split_a_list(value: str, items: tuple[str, ...]) -> None:
     assert items_workflow(value) == items

@@ -170,13 +170,13 @@ class Plan(msgspec.Struct, frozen=True, kw_only=True, forbid_unknown_fields=True
         roles = Counter(Role.EMPTY if arm.role is Role.INCUMBENT else arm.role for arm in self.arms)
         names = Counter(arm.name for arm in self.arms)
         match (roles[Role.CANDIDATE], roles[Role.EMPTY], max(names.values(), default=0)):
-            case (1, 1, 1):
+            case (1, 1, 1) | (0, 0, 0):
                 return
             case (_, _, twice) if twice > 1:
                 msg = f"arm names repeat: {sorted(name for name, seen in names.items() if seen > 1)}"
                 raise ValueError(msg)
             case _:
-                msg = "a plan runs exactly one candidate arm and one baseline (incumbent or empty)"
+                msg = "a plan runs exactly one candidate arm and one baseline (incumbent or empty), or none (desk only)"
                 raise ValueError(msg)
 
     @property

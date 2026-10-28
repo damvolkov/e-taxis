@@ -17,8 +17,8 @@ from e_taxis.workflow.models.graph import LoopDecl
 
 ##### UTILITIES #####
 def items_workflow(value: str) -> tuple[str, ...]:
-    """A list kwarg's items: comma-separated when any item holds a space, else whitespace-separated."""
-    return tuple(item.strip() for item in (value.split(",") if "," in value else value.split()) if item.strip())
+    """A list kwarg's items, comma-separated: a name may hold spaces (`auto ontology`), so a space never splits."""
+    return tuple(item.strip() for item in value.split(",") if item.strip())
 
 
 ##### TYPES #####

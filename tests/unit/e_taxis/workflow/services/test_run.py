@@ -144,7 +144,7 @@ async def test_run_each_with_one_item_is_a_plain_run(workflow_run: WorkflowRun, 
 
 
 async def test_run_launch_each_walks_every_item(workflow_run: WorkflowRun, nous: Path, tmp_path: Path, writing) -> None:
-    report = await workflow_run.launch(GitNous(nous, None), "fanned", {"items": "x y"}, writing, cwd=tmp_path)
+    report = await workflow_run.launch(GitNous(nous, None), "fanned", {"items": "x, y"}, writing, cwd=tmp_path)
     assert sorted(args["items"] for _, args, _ in writing.seen) == ["x", "y"]
     assert [run.node for run in report.runs] == ["1·write", "2·write"]
     assert "## each items" in (await anyio.Path(report.folder, "report.md").read_text())

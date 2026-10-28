@@ -215,5 +215,7 @@ class AssessBench:
                 return Samples(
                     arms=(), warmup=plan.warmup, seed=plan.seed, reason="overlap none: nothing to weigh it against"
                 )
+            case _ if not plan.arms:
+                return Samples(arms=(), warmup=plan.warmup, seed=plan.seed, reason="the plan has no arms: desk only")
             case _:
                 return await self._run_fenced(plan, now)

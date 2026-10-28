@@ -114,17 +114,18 @@ async def test_bench_run_records_a_failed_install_and_sandboxes_each_arm(
 
 
 @pytest.mark.parametrize(
-    ("skip", "overlap", "reason"),
+    ("skip", "knobs", "reason"),
     [
-        (True, Overlap.REPLACES, "bench=false: judged on desk evidence"),
-        (False, Overlap.NONE, "overlap none: nothing to weigh it against"),
+        (True, {"overlap": Overlap.REPLACES}, "bench=false: judged on desk evidence"),
+        (False, {"overlap": Overlap.NONE}, "overlap none: nothing to weigh it against"),
+        (False, {"arms": ()}, "the plan has no arms: desk only"),
     ],
-    ids=["bench-false", "overlap-none"],
+    ids=["bench-false", "overlap-none", "no-arms"],
 )
 async def test_bench_run_installs_nothing(
-    lab: LabPort, plan: Callable[..., Plan], now: dt.datetime, skip: bool, overlap: Overlap, reason: str
+    lab: LabPort, plan: Callable[..., Plan], now: dt.datetime, skip: bool, knobs: dict, reason: str
 ) -> None:
-    found = await AssessBench(lab, path=PATH, limit=10).run(plan(overlap=overlap), skip=skip, now=now)
+    found = await AssessBench(lab, path=PATH, limit=10).run(plan(**knobs), skip=skip, now=now)
     assert (found.arms, found.reason, found.machine) == ((), reason, None)
 
 
