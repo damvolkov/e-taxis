@@ -18,6 +18,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Annotated, ClassVar, TypeVar, cast
 
+import anyio
 from cyclopts import Parameter
 from rich.console import Console
 
@@ -56,6 +57,8 @@ from e_taxis.harness.services.plan import PlanService
 from e_taxis.harness.services.resolver import ResolverService
 from e_taxis.harness.services.uninstall import UninstallService
 from e_taxis.harness.services.verify import VerifyService
+from e_taxis.schedule.adapters.systemd import UserSystemd
+from e_taxis.schedule.services.schedule import ScheduleService
 from e_taxis.transpile.adapters.capture import HttpCapture
 from e_taxis.transpile.adapters.fence import LandrunFence
 from e_taxis.transpile.models.ports import CapturePort
@@ -372,6 +375,14 @@ class Deps:
     async def _resolve_promote(self) -> PlanePromote:
         return PlanePromote(await self.resolve(PlaneRun), await self.resolve(SandboxPort), await self._common_lock())
 
+    async def _resolve_schedule(self) -> ScheduleService:
+        """The units dir from the settings; the binary the one this process was started as — absolute, not resolved
+        through symlinks, so a unit keeps pointing at the stable entrypoint (`~/.local/bin/taxis`), never at PATH."""
+        units = (await self.resolve(TaxisSettings)).taxis_schedule_units.expanduser()
+        return ScheduleService(
+            UserSystemd(await self.resolve(RunnerPort), units), Path(await anyio.Path(sys.argv[0]).absolute())
+        )
+
     ############################################################
 
     ##### PUBLIC #####
@@ -407,6 +418,7 @@ class Deps:
             SandboxPort: _resolve_sandbox,
             PlaneRun: _resolve_plane,
             PlanePromote: _resolve_promote,
+            ScheduleService: _resolve_schedule,
         }
     )
 

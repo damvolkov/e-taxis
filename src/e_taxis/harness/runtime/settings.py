@@ -2,7 +2,7 @@
 TAXIS_DOWNLOAD_TIMEOUT, TAXIS_TEMP; and CLAUDE_CONFIG_DIR, Claude Code's own, read so `~/.claude` lands where
 Claude reads it. The workflow branch's knobs are `TAXIS_WORKFLOW_*` (runs, steps, the lock, the live OpenCode tree
 agents are driven from, what a read-only session may write) and `TAXIS_DISTILL_*` (reverse-distill's second core,
-its code graph and caches).
+its code graph and caches). `TAXIS_SCHEDULE_UNITS` is where `taxis schedule` writes its units.
 
 The core settings composer only discovers `core/settings/*`, which is materialized and not e-taxis's to
 edit: this scope stands alone on the same `BaseSettings` layers, and `Deps` builds it once per run."""
@@ -64,6 +64,8 @@ class TaxisSettings(BaseSettings):
     _PROBE_RUNS the sessions per routing case, _PROBE_CONCURRENCY those in flight, _PROBE_TIMEOUT one session;
     _EFFECT_SEEDS the answers per task and arm, _EFFECT_SPLIT the held-out split the A/B reads.
 
+    TAXIS_SCHEDULE_UNITS is the systemd user units dir `taxis schedule` renders its `taxis-<id>` timers into.
+
     TAXIS_HUMAN is the mandate a terminal-started `taxis` hands its children (a human command run by a workflow step
     it started); TAXIS_HEADLESS (or e-nous's OPS_GLOBAL__HEADLESS) marks a session an agent drives —
     no human command runs there, mandate or not."""
@@ -107,5 +109,6 @@ class TaxisSettings(BaseSettings):
     taxis_eval_probe_timeout: float = 180.0
     taxis_eval_effect_seeds: int = 5
     taxis_eval_effect_split: str = "test"
+    taxis_schedule_units: Path = Path("~/.config/systemd/user")
     taxis_human: bool = False
     taxis_headless: bool = Field(default=False, validation_alias=AliasChoices("TAXIS_HEADLESS", "OPS_GLOBAL__HEADLESS"))

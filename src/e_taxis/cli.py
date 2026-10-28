@@ -29,6 +29,9 @@ typo fails the gate, never a user.
     taxis enhance run TARGET [IDS ...] [--nous PATH] (--from R | --directive D | --manual) [--cadence C]
     taxis enhance graph [TARGET] · enhance promote [RUN] [--nous PATH] [--ids ...] [--all-verdicts] [--yes]
     taxis reports show [RUN] [--nous PATH] [--json]
+    taxis schedule list [--nous PATH] [--json]                            # every schedule and its timer's state
+    taxis schedule apply [--nous PATH] [--yes] [--json]                   # core → systemd user timers; dry unless --yes
+    taxis schedule run ID [--nous PATH]                                   # one now, through systemd; its result
     taxis logo NAMES [--out DIR] [--prefix P] [--background HEX] [--foreground HEX] [--force]
     taxis repo resolve URL REF                     # the commit a branch, tag or sha names
     taxis repo tree    URL REF [PATH]              # every file the remote holds at REF
@@ -63,6 +66,7 @@ GROUPS: tuple[CommandGroup, ...] = (
         path="enhance", help="The enhancer: act on a reason in a sandbox; verdicts, patches, a human promotes."
     ),
     CommandGroup(path="reports", help="Evaluation and enhancement runs, rebuilt from their ledgers."),
+    CommandGroup(path="schedule", help="Unattended runs: the core's schedules as systemd user timers taxis-<id>."),
 )
 
 CARDS: tuple[CommandCard, ...] = (
@@ -214,6 +218,21 @@ CARDS: tuple[CommandCard, ...] = (
         path="reports show",
         target="e_taxis.workflow.commands.reports:show",
         summary="A plane run's report, rebuilt from its ledger.",
+    ),
+    CommandCard(
+        path="schedule list",
+        target="e_taxis.schedule.commands.schedule:listing",
+        summary="Every schedule with its timer's state; orphans too.",
+    ),
+    CommandCard(
+        path="schedule apply",
+        target="e_taxis.schedule.commands.schedule:apply",
+        summary="Render the schedules into systemd user timers; dry unless --yes.",
+    ),
+    CommandCard(
+        path="schedule run",
+        target="e_taxis.schedule.commands.schedule:run",
+        summary="Run one now through systemd; exits 33 unless it succeeds.",
     ),
     CommandCard(path="logo", target="e_taxis.ops.logo:logo", summary="Deterministic family wordmarks into assets/."),
     CommandCard(path="repo resolve", target="e_taxis.ops.repo:resolve", summary="The commit a ref names on a remote."),

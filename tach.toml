@@ -139,3 +139,23 @@ depends_on = ["e_taxis.harness.models", "e_taxis.transpile.models"]
 path = "e_taxis.harness.models"
 layer = "models"
 depends_on = []
+
+[[modules]]
+path = "e_taxis.schedule.commands"
+layer = "cli"
+depends_on = ["e_taxis.harness.commands"]
+
+[[modules]]
+path = "e_taxis.schedule.services"
+layer = "services"
+depends_on = []
+
+[[modules]]
+path = "e_taxis.schedule.adapters"
+layer = "adapters"
+depends_on = []
+
+[[modules]]
+path = "e_taxis.schedule.models"
+layer = "models"
+depends_on = ["e_taxis.harness.models"]

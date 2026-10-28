@@ -177,6 +177,9 @@ config:
     security:
       fields:
         accepted:     {type: "map<skill, list<{fingerprint: str, file: path, why: str}>>", default: {}, doc: "scanner acceptances: internal, never rendered"}
+    schedules:
+      shape: "map<str, {doc: str, calendar: str, steps: list<Argv>, off: bool}>"
+      doc: "what runs unattended: taxis schedule apply renders each into a systemd user timer taxis-<id>; calendar is OnCalendar, steps are taxis argv run in order; internal, never rendered"
     assets: [hooks, mcp, plugins]
 
   nomos:

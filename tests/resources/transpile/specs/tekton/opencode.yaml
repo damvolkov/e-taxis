@@ -187,6 +187,7 @@ map:
       permissions.default_mode:  {reason: house, detail: "Claude's session mode; OpenCode's policy is #permission"}
       permissions.external_dirs: {reason: pending, detail: "permission.external_directory is a flat allow inside granular; whether it accepts per-path patterns is not checked"}
       security:                  {reason: internal, detail: "scanner acceptances, never rendered"}
+      schedules:                 {reason: internal, detail: "unattended runs: taxis schedule renders them into systemd timers, never the harness"}
       mcp.servers.*.note:        {reason: pending, detail: "no description field known in an OpenCode MCP entry"}
       mcp.servers.*.smoke:       {reason: internal, detail: "evaluation data (taxis eval run config)"}
     notes: >-

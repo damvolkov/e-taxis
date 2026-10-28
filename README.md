@@ -98,6 +98,14 @@ Every command, one line each — `taxis <command> --help` gives its flags. `test
 | `taxis enhance promote` | Apply an enhancement's patches to the checkout; a human command. |
 | `taxis reports show` | A plane run's report, rebuilt from its ledger. |
 
+**Schedules**
+
+| Command | Does |
+|---|---|
+| `taxis schedule list` | Every schedule with its timer's state; orphans too. |
+| `taxis schedule apply` | Render the schedules into systemd user timers; dry unless --yes. |
+| `taxis schedule run` | Run one now through systemd; exits 33 unless it succeeds. |
+
 **Tools**
 
 | Command | Does |
@@ -120,6 +128,7 @@ taxis eval run T [IDS] [--nous PATH] [--cadence C] [--only M,...] [--candidate R
 taxis enhance run T [IDS] [--nous PATH] (--from R | --directive D | --manual) # verdicts + patches, in a sandbox
 taxis enhance promote [RUN] [--nous PATH] [--ids …] [--yes]         # a human command: the patches into the checkout
 taxis eval graph|needs · enhance graph · reports show [RUN] [--nous PATH]
+taxis schedule list|apply [--nous PATH] [--yes] [--json] · run ID   # core schedules ⇄ systemd user timers taxis-<id>
 taxis map    [--target T] [--json]                                  # the catalog: targets, scope, rollout per profile
 taxis plan   --target T [--profile P | --nous PATH] [--json]        # wanted ⨝ catalog, requires order, probed
 taxis verify --target T [--profile P | --nous PATH] [--json]        # every wanted part's verify, all of them
@@ -150,13 +159,16 @@ a failed run: `taxis history undo` reverts it.
 Exit codes: `0` · nothing to undo `4` · catalog does not load `5` · bad source `6` · plan has unknown or
 blocked parts `7` · verify failed `8` · doctor found problems `9` · apply refused or failed `10` ·
 uninstall failed `11` · transpile `17`–`22` (docs/transpile.md) · nothing to distill `3` · workflow `23`–`26`, planes `27`–`30`
-(open needs and refused promotions `1`), lock held past the wait `75` (docs/workflow.md) · no e-nous checkout `31`.
+(open needs and refused promotions `1`), lock held past the wait `75` (docs/workflow.md) · no e-nous checkout `31` · schedule refused `32`, a schedule
+run that did not succeed `33`.
 The report always prints first.
 
 `TAXIS_NOUS` is the e-nous checkout read when `--nous` is not given (One system, above).
 `TAXIS_CATALOG` points at another catalog root; `TAXIS_TIMEOUT` bounds each probe (seconds, default 10).
 `TAXIS_NPM_PREFIX` is where `npm -g` installs (default: npm's own prefix); `TAXIS_DOWNLOAD_TIMEOUT` bounds
 a binary download (seconds, default 300); `TAXIS_TEMP` stages downloads (default: the system temp dir).
+`TAXIS_SCHEDULE_UNITS` is where `taxis schedule apply` writes its `taxis-<id>.service|.timer` (default
+`~/.config/systemd/user`); it only ever touches files of that name carrying its header.
 `CLAUDE_CONFIG_DIR`, when set, is where the world's `~/.claude` paths are written; the brain lands where its spec
 says (`~/.claude`).
 
