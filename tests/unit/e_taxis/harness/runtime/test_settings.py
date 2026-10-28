@@ -39,3 +39,9 @@ def test_settings_writing_knobs_from_the_environment(monkeypatch: pytest.MonkeyP
         30.0,
     )
     assert settings.claude_config_dir == tmp_path / "claude"
+
+
+def test_settings_nous_from_the_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    assert TaxisSettings().taxis_nous is None
+    monkeypatch.setenv("TAXIS_NOUS", str(tmp_path))
+    assert TaxisSettings().taxis_nous == tmp_path

@@ -48,6 +48,7 @@ from e_taxis.harness.models.ports import (
     UndoPort,
 )
 from e_taxis.harness.runtime.journal import StoreJournal
+from e_taxis.harness.runtime.locator import NousLocator
 from e_taxis.harness.runtime.settings import TaxisSettings
 from e_taxis.harness.services.apply import ApplyService
 from e_taxis.harness.services.doctor import DoctorService
@@ -138,6 +139,9 @@ class Deps:
 
     async def _resolve_settings(self) -> TaxisSettings:
         return TaxisSettings()
+
+    async def _resolve_locator(self) -> NousLocator:
+        return NousLocator(env=(await self.resolve(TaxisSettings)).taxis_nous, cwd=Path.cwd())
 
     async def _resolve_catalog(self) -> FileCatalog:
         return FileCatalog((await self.resolve(TaxisSettings)).taxis_catalog)
@@ -379,6 +383,7 @@ class Deps:
             StorePort: _resolve_store,
             StoreJournal: _resolve_store,
             TaxisSettings: _resolve_settings,
+            NousLocator: _resolve_locator,
             CatalogPort: _resolve_catalog,
             ProbePort: _resolve_probe,
             ResolverService: _resolve_resolver,

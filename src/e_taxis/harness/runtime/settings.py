@@ -44,7 +44,8 @@ class TaxisSettings(BaseSettings):
     TAXIS_NPM_PREFIX: where `npm -g` installs (unset: the user's npm prefix). TAXIS_DOWNLOAD_TIMEOUT bounds a
     whole binary download. TAXIS_TEMP stages downloads (unset: the system's temp dir). CLAUDE_CONFIG_DIR, when
     set, is where `~/.claude` resolves. TAXIS_LANDRUN is the landrun binary a trial's fence (and a read-only agent
-    session's) runs. TAXIS_LOCK is the run lock's token a parent `workflow run` hands its steps.
+    session's) runs. TAXIS_LOCK is the run lock's token a parent `workflow run` hands its steps. TAXIS_NOUS is the
+    e-nous checkout a command reads when `--nous` is not given (the ladder's second rung, `runtime.locator`).
 
     TAXIS_WORKFLOW_REPORTS: where runs live, relative to the e-nous checkout; _CONCURRENCY bounds the steps in
     flight, _TIMEOUT each step (seconds), _LOCK_WAIT how long a run waits for another; _OPENCODE is the live tree
@@ -75,6 +76,7 @@ class TaxisSettings(BaseSettings):
     claude_config_dir: Path | None = None
     taxis_landrun: Path = LANDRUN
     taxis_lock: str = ""
+    taxis_nous: Path | None = None
     taxis_workflow_reports: Path = Path(".reports")
     taxis_workflow_concurrency: int = 4
     taxis_workflow_timeout: float = 1800.0

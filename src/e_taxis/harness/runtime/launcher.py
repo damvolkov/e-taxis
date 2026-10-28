@@ -2,7 +2,8 @@
 
 cyclopts parses the global options here and hands the remaining tokens to the real tree. `parse_args`
 returns the resolved command (lazily imported by then), its bound CLI arguments and the parameters it
-declared as injected; the launcher opens the run's lifespan, injects those by type and awaits the command.
+declared as injected; the launcher opens the run's lifespan, fills every `--nous` the command declares from the
+locator (`runtime.locator`), injects the rest by type and awaits the command.
 `CliError` is caught once, here: the message goes to stderr and its class decides the exit code. Every
 mounted command is a coroutine function; the only sync callables the tree resolves are cyclopts' own
 (help on a bare group), which run as they are, outside any lifespan."""
@@ -19,7 +20,9 @@ from rich.markup import escape
 from e_taxis.harness.models.command import CommandCard
 from e_taxis.harness.models.error import CliError
 from e_taxis.harness.models.session import Session
+from e_taxis.harness.runtime.deps import Deps
 from e_taxis.harness.runtime.lifespan import lifespan
+from e_taxis.harness.runtime.locator import LOCATED, NousLocator
 
 
 ##### TYPES #####
@@ -39,6 +42,20 @@ class Launcher:
         return self._paths.get(f"{command.__module__}:{name}", name)
 
     @staticmethod
+    async def _run_locate(command: Callable[..., object], bound: BoundArguments, deps: Deps) -> None:
+        """Every `--nous` the command declares, absolute and checked; an absent one located, unless the flag it
+        yields to (`--profile`) was given instead."""
+        given, parameters = bound.arguments, inspect.signature(command).parameters
+        declared = {name: LOCATED.get(parameter.annotation) for name, parameter in parameters.items()}
+        given.update(
+            {
+                name: await (await deps.resolve(NousLocator)).locate(given.get(name))
+                for name, unless in declared.items()
+                if unless is not None and given.get(unless) is None
+            }
+        )
+
+    @staticmethod
     async def _run_command(
         command: Callable[..., Coroutine[Any, Any, None]],
         bound: BoundArguments,
@@ -48,6 +65,7 @@ class Launcher:
         """One run: the lifespan around the awaited command, its injected parameters resolved, the error boundary."""
         try:
             async with lifespan(session) as deps:
+                await Launcher._run_locate(command, bound, deps)
                 await command(*bound.args, **bound.kwargs, **await deps.inject(injected))
         except CliError as exc:
             ### messages quote user input and regexes: escaped, or rich would read `[a-z]` as markup and eat it.

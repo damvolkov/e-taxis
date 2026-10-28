@@ -484,6 +484,8 @@ async def cores(tmp_path: Path, git, tree, commit) -> tuple[Path, Path, Path, st
         {
             "core/tekton/skills/lang-py-datamodel/references/lib.md": "| x | msgspec |\n",
             "core/tekton/config/mcp.yaml": "serena: {}\n",
+            "core/schema.yaml": "{}\n",
+            "specs/base.yaml": "{}\n",
         },
     )
     await git(tmp_path, "init", "-q", "-b", "main", str(project))

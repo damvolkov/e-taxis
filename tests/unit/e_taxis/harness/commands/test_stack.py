@@ -25,8 +25,8 @@ def test_stack_plan_nous_json(taxis, on_catalog, nous_root: Path) -> None:
     )
 
 
-def test_stack_plan_needs_exactly_one_source(taxis, on_catalog) -> None:
-    code, _, err = taxis("plan", "--target", "claudecode")
+def test_stack_plan_needs_exactly_one_source(taxis, on_catalog, nous_root: Path) -> None:
+    code, _, err = taxis("plan", "--target", "claudecode", "--profile", "house", "--nous", str(nous_root))
     assert code == 6
     assert "exactly one source" in err
 

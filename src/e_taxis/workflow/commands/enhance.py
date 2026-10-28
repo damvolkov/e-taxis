@@ -8,7 +8,6 @@ promote — and never runs inside a session an agent drives (`TAXIS_HEADLESS`, `
 not. It asks before writing unless `--yes`; a closed stdin is a no."""
 
 import sys
-from pathlib import Path
 from typing import Annotated
 
 import anyio
@@ -16,6 +15,7 @@ from cyclopts import Parameter
 from rich.console import Console
 
 from e_taxis.harness.runtime.deps import Inject
+from e_taxis.harness.runtime.locator import UNSET, Nous
 from e_taxis.harness.runtime.settings import TaxisSettings
 from e_taxis.workflow.commands.eval import render_close, render_live
 from e_taxis.workflow.models.error import HumanError, RefusedError
@@ -60,7 +60,7 @@ async def human_confirm(question: str, *, yes: bool) -> bool:
 async def run(
     target: Target,
     *ids: str,
-    nous: Path,
+    nous: Nous = UNSET,
     source: Annotated[str, Parameter(name="--from")] = "",
     directive: str = "",
     manual: bool = False,
@@ -111,7 +111,7 @@ async def graph(target: Target | None = None, *, runner: Inject[PlaneRun], conso
 async def promote(
     run: str = LATEST,
     *,
-    nous: Path,
+    nous: Nous = UNSET,
     ids: tuple[str, ...] = (),
     all_verdicts: bool = False,
     yes: bool = False,

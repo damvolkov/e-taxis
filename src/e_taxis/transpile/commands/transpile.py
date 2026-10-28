@@ -15,6 +15,7 @@ from rich.markup import escape
 from rich.table import Table
 
 from e_taxis.harness.runtime.deps import Inject
+from e_taxis.harness.runtime.locator import UNSET, Nous
 from e_taxis.transpile.adapters.nous import GitNous
 from e_taxis.transpile.models.error import CheckError, TrialError
 from e_taxis.transpile.models.ports import CapturePort
@@ -59,7 +60,7 @@ def render_report(report: Report, console: Console) -> None:
 ##### COMMANDS #####
 async def check(
     *,
-    nous: Path,
+    nous: Nous = UNSET,
     ref: str = "HEAD",
     worktree: bool = False,
     json: bool = False,
@@ -91,7 +92,7 @@ async def check(
 async def run(
     *,
     target: str,
-    nous: Path,
+    nous: Nous = UNSET,
     out: Path | None = None,
     home: Path | None = None,
     ref: str = "HEAD",
@@ -153,7 +154,7 @@ async def run(
 async def trial(
     *,
     target: str,
-    nous: Path,
+    nous: Nous = UNSET,
     ref: str = "HEAD",
     worktree: bool = False,
     json: bool = False,
@@ -200,7 +201,7 @@ async def trial(
 async def reverse(
     *,
     target: str,
-    nous: Path,
+    nous: Nous = UNSET,
     home: Path | None = None,
     ref: str = "HEAD",
     worktree: bool = False,

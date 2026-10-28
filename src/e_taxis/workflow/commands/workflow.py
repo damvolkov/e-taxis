@@ -6,12 +6,12 @@ step failed or broke — after the report, never instead of it. `list` shows eve
 steps; `check` holds every workflow (or the ones named) to its static law and writes nothing."""
 
 import sys
-from pathlib import Path
 
 from rich.console import Console
 from rich.markup import escape
 
 from e_taxis.harness.runtime.deps import Inject
+from e_taxis.harness.runtime.locator import UNSET, Nous
 from e_taxis.transpile.adapters.nous import GitNous
 from e_taxis.workflow.engine.reader import WorkflowReader
 from e_taxis.workflow.models.error import RunFailedError, WorkflowError
@@ -65,7 +65,9 @@ def check_workflow(reader: WorkflowReader, ident: str) -> tuple[bool, str]:
 
 
 ##### COMMANDS #####
-async def run(workflow: str, *param: str, nous: Path, runner: Inject[WorkflowRun], console: Inject[Console]) -> None:
+async def run(
+    workflow: str, *param: str, nous: Nous = UNSET, runner: Inject[WorkflowRun], console: Inject[Console]
+) -> None:
     """Run WORKFLOW from an e-nous checkout: command steps and agent steps, in parallel where the graph allows.
 
     Args:
@@ -84,7 +86,7 @@ async def run(workflow: str, *param: str, nous: Path, runner: Inject[WorkflowRun
             raise RunFailedError(msg)
 
 
-async def listing(*, nous: Path, console: Inject[Console]) -> None:
+async def listing(*, nous: Nous = UNSET, console: Inject[Console]) -> None:
     """List every workflow of an e-nous checkout with its parameters and steps.
 
     Args:
@@ -94,7 +96,7 @@ async def listing(*, nous: Path, console: Inject[Console]) -> None:
     _ = [console.out(render_workflow(reader, ident), highlight=False) for ident in reader.ids()]
 
 
-async def check(*workflow: str, nous: Path, console: Inject[Console]) -> None:
+async def check(*workflow: str, nous: Nous = UNSET, console: Inject[Console]) -> None:
     """Hold every WORKFLOW (all when none is named) to its static law: steps, agents, hooks, ports, loop, cycles.
 
     Args:

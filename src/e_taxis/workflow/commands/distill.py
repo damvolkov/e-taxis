@@ -15,6 +15,7 @@ import msgspec
 from rich.console import Console
 
 from e_taxis.harness.runtime.deps import Inject
+from e_taxis.harness.runtime.locator import UNSET, Nous
 from e_taxis.harness.runtime.settings import TaxisSettings
 from e_taxis.transpile.adapters.nous import GitNous
 from e_taxis.transpile.models.nous import NousTree
@@ -124,7 +125,7 @@ async def intake(*, rundir: Path, command: Inject[CommandPort], console: Inject[
 
 async def index(
     *,
-    nous: Path,
+    nous: Nous = UNSET,
     rundir: Path,
     command: Inject[CommandPort],
     settings: Inject[TaxisSettings],
@@ -179,7 +180,7 @@ async def drift(*, rundir: Path, command: Inject[CommandPort], console: Inject[C
 
 async def inventory(
     *,
-    nous: Path,
+    nous: Nous = UNSET,
     rundir: Path,
     command: Inject[CommandPort],
     settings: Inject[TaxisSettings],
@@ -205,7 +206,7 @@ async def inventory(
 
 async def grade(
     *,
-    nous: Path,
+    nous: Nous = UNSET,
     rundir: Path,
     command: Inject[CommandPort],
     settings: Inject[TaxisSettings],
@@ -245,7 +246,9 @@ async def grade(
     say_artifact(console, path, f"{len(grades)} candidates · {live} go to the judge · {len(grades) - live} stopped")
 
 
-async def report(*, nous: Path, rundir: Path, settings: Inject[TaxisSettings], console: Inject[Console]) -> None:
+async def report(
+    *, nous: Nous = UNSET, rundir: Path, settings: Inject[TaxisSettings], console: Inject[Console]
+) -> None:
     """Join verdicts and reviews to the graded candidates; write report.json, report.md and the briefs.
 
     Args:
@@ -291,7 +294,7 @@ async def report(*, nous: Path, rundir: Path, settings: Inject[TaxisSettings], c
 
 async def ship(
     *,
-    nous: Path,
+    nous: Nous = UNSET,
     rundir: Path,
     command: Inject[CommandPort],
     settings: Inject[TaxisSettings],
@@ -314,7 +317,7 @@ async def ship(
 
 
 async def schemas(
-    *, nous: Path, check: bool = False, settings: Inject[TaxisSettings], console: Inject[Console]
+    *, nous: Nous = UNSET, check: bool = False, settings: Inject[TaxisSettings], console: Inject[Console]
 ) -> None:
     """Write the JSON Schema of every reverse-distill port into the workflow's `schemas/`; --check only compares.
 

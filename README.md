@@ -29,6 +29,13 @@ One triumvirate, all Greek — the mind decides, the archetypes hold the forms, 
 | [e-arkhetypo](https://github.com/damvolkov/e-arkhetypo) | the archetypes — project blueprints, stacks, CI sources; data only | templates |
 | **e-taxis** | the order — the deterministic engine that turns archetypes into running things and installs the mind into each harness | tools |
 
+**One system.** `make taxis` in e-nous or e-arkhetypo puts this CLI on the PATH, and `taxis` finds the brain from
+any shell — no `--nous` to type. The first rung holding a valid e-nous checkout (`core/schema.yaml` and
+`specs/base.yaml`) wins: `--nous PATH` (an invalid one fails, it never falls through) · `TAXIS_NOUS` · the nearest
+ancestor of the cwd · `<git toplevel of the cwd, or the cwd>/../e-nous`, so e-arkhetypo and e-taxis find the
+checkout beside them. None → exit `31`, naming every rung. `plan`, `verify` and `apply` stay profile-first: with
+`--profile` nothing is located.
+
 ##### COMMANDS #####
 
 Every command, one line each — `taxis <command> --help` gives its flags. `tests/unit/e_taxis/test_cli.py` fails when a command is missing here.
@@ -103,22 +110,22 @@ Every command, one line each — `taxis <command> --help` gives its flags. `test
 ##### RUN #####
 
 ```bash
-taxis install --target T --nous PATH [--profile P] [--ref REF | --worktree] [--yes]
-              [--accept-licence ID] [--confirm ID] [--json]      # brain, then world: one run, one undo
+taxis install --target T [--nous PATH] [--profile P] [--ref REF | --worktree] [--yes]
+              [--accept-licence ID] [--confirm ID] [--json]         # brain, then world: one run, one undo
 taxis transpile check|run|reverse|trial …                           # the brain alone: docs/transpile.md
-taxis workflow run ID --nous PATH [name=value ...]                  # a corpus workflow, end to end: docs/workflow.md
-taxis workflow list --nous PATH · check [ID ...] --nous PATH        # every workflow; its static law
+taxis workflow run ID [--nous PATH] [name=value ...]                # a corpus workflow, end to end: docs/workflow.md
+taxis workflow list [--nous PATH] · check [ID ...] [--nous PATH]    # every workflow; its static law
 taxis distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas --rundir DIR [--nous PATH] …
-taxis eval run T [IDS] --nous PATH [--cadence C] [--only M,...] [--candidate RUN]  # the evaluator, read-only
-taxis enhance run T [IDS] --nous PATH (--from R | --directive D | --manual)   # verdicts + patches, in a sandbox
-taxis enhance promote [RUN] --nous PATH [--ids …] [--yes]           # a human command: the patches into the checkout
-taxis eval graph|needs · enhance graph · reports show [RUN] --nous PATH
+taxis eval run T [IDS] [--nous PATH] [--cadence C] [--only M,...] [--candidate RUN] # the evaluator, read-only
+taxis enhance run T [IDS] [--nous PATH] (--from R | --directive D | --manual) # verdicts + patches, in a sandbox
+taxis enhance promote [RUN] [--nous PATH] [--ids …] [--yes]         # a human command: the patches into the checkout
+taxis eval graph|needs · enhance graph · reports show [RUN] [--nous PATH]
 taxis map    [--target T] [--json]                                  # the catalog: targets, scope, rollout per profile
-taxis plan   --target T (--profile P | --nous PATH) [--json]    # wanted ⨝ catalog, requires order, probed
-taxis verify --target T (--profile P | --nous PATH) [--json]    # every wanted part's verify, all of them
+taxis plan   --target T [--profile P | --nous PATH] [--json]        # wanted ⨝ catalog, requires order, probed
+taxis verify --target T [--profile P | --nous PATH] [--json]        # every wanted part's verify, all of them
 taxis doctor [--json]                                               # schema, ids, requires DAG, primitives, owners
-taxis apply  --target T (--profile P | --nous PATH) [--only id,...] [--dry-run] [--yes]
-             [--accept-licence ID] [--confirm ID] [--json]              # carry the plan out; dry unless --yes
+taxis apply  --target T [--profile P | --nous PATH] [--only id,...] [--dry-run] [--yes]
+             [--accept-licence ID] [--confirm ID] [--json]          # carry the plan out; dry unless --yes
 taxis uninstall ID --target T [--cascade] [--yes]                   # one part (and its dependents) out; dry unless --yes
 taxis history list · undo                                           # every run that wrote; revert the last one
 taxis logo NAMES [--out DIR] · repo resolve|tree|extract URL REF …  # wordmarks; deterministic git reads on a remote
@@ -143,8 +150,10 @@ a failed run: `taxis history undo` reverts it.
 Exit codes: `0` · nothing to undo `4` · catalog does not load `5` · bad source `6` · plan has unknown or
 blocked parts `7` · verify failed `8` · doctor found problems `9` · apply refused or failed `10` ·
 uninstall failed `11` · transpile `17`–`22` (docs/transpile.md) · nothing to distill `3` · workflow `23`–`26`, planes `27`–`30`
-(open needs and refused promotions `1`), lock held past the wait `75` (docs/workflow.md). The report always prints first.
+(open needs and refused promotions `1`), lock held past the wait `75` (docs/workflow.md) · no e-nous checkout `31`.
+The report always prints first.
 
+`TAXIS_NOUS` is the e-nous checkout read when `--nous` is not given (One system, above).
 `TAXIS_CATALOG` points at another catalog root; `TAXIS_TIMEOUT` bounds each probe (seconds, default 10).
 `TAXIS_NPM_PREFIX` is where `npm -g` installs (default: npm's own prefix); `TAXIS_DOWNLOAD_TIMEOUT` bounds
 a binary download (seconds, default 300); `TAXIS_TEMP` stages downloads (default: the system temp dir).

@@ -7,11 +7,11 @@ stands. `graph` prints the evaluator's graphs (e-taxis's own: no checkout read).
 needs, of one owner when named, and exits 1 while any is open — what a bounded loop's `until` check reads."""
 
 import sys
-from pathlib import Path
 
 from rich.console import Console
 
 from e_taxis.harness.runtime.deps import Inject
+from e_taxis.harness.runtime.locator import UNSET, Nous
 from e_taxis.harness.runtime.settings import TaxisSettings
 from e_taxis.workflow.models.error import NeedsOpenError, RunFailedError
 from e_taxis.workflow.models.metrics import Owner
@@ -51,7 +51,7 @@ def render_close(report: PlaneReport, console: Console) -> None:
 async def run(
     target: Target,
     *ids: str,
-    nous: Path,
+    nous: Nous = UNSET,
     cadence: Cadence | None = None,
     candidate: str = "",
     keep: bool = False,
@@ -96,7 +96,7 @@ async def graph(target: Target | None = None, *, runner: Inject[PlaneRun], conso
 async def needs(
     target: Target,
     *,
-    nous: Path,
+    nous: Nous = UNSET,
     run: str = LATEST,
     owner: Owner | None = None,
     runner: Inject[PlaneRun],
