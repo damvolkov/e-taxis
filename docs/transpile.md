@@ -34,12 +34,14 @@ GitNous (core + specs at one ref) ─▶ CoreModel · SpecModel (compiled) ─�
 ## 3. Commands
 
 ```
-taxis transpile check   --nous PATH [--ref REF | --worktree] [--json]          # schema + every spec's law
-taxis transpile run     --target T|all --nous PATH [--ref …] [--out DIR] [--yes] [--json]   # T1–T3
-taxis transpile reverse --target T|all --nous PATH [--ref …] [--json]                       # T4
-taxis transpile trial   --target T --nous PATH [--ref …] [--json]          # the real harness, fenced, on the render
-                                                                           # OpenCode: the pinned v2.2.0, served probes (2026-10-28)
+taxis transpile check   [--nous PATH] [--ref REF | --worktree] [--json]          # schema + every spec's law
+taxis transpile run     --target T|all [--nous PATH] [--ref …] [--out DIR] [--yes] [--json]   # T1–T3
+taxis transpile reverse --target T|all [--nous PATH] [--ref …] [--json]                       # T4
+taxis transpile trial   --target T [--nous PATH] [--ref …] [--json]          # the real harness, fenced, on the render
+                                                                             # OpenCode: the pinned v2.2.0, served probes (2026-10-28)
 ```
+
+Without `--nous`, the checkout is located: the ladder is the README's "One system".
 
 `check` exits 20 on any blocking finding. Kinds are `specs/base.yaml · report.kinds`; `signal` (upstream moved
 past the verified version) informs, every other kind blocks. The stamp carries the checkout, the commit read and

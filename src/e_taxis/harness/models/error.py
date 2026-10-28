@@ -45,6 +45,12 @@ class SourceError(CliError):
     exit_code: ClassVar[int] = 6
 
 
+class NousLocatorError(CliError):
+    """No e-nous checkout: an explicit `--nous` that is not one, or every rung of the ladder came up empty."""
+
+    exit_code: ClassVar[int] = 31
+
+
 class PlanError(CliError):
     """The plan names parts it cannot install: unknown to the catalog, or blocked on a gate."""
 

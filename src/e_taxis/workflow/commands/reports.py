@@ -2,12 +2,11 @@
 its ledger (the ledger is the truth; `report.md` is a copy). A workflow run's report is its own `report.md` under
 `<nous>/.reports/workflows/<id>/<run>/`."""
 
-from pathlib import Path
-
 import msgspec
 from rich.console import Console
 
 from e_taxis.harness.runtime.deps import Inject
+from e_taxis.harness.runtime.locator import UNSET, Nous
 from e_taxis.workflow.services.plane import PlaneRun
 
 ##### DEFAULTS #####
@@ -16,7 +15,7 @@ LATEST: str = "latest"
 
 ##### COMMANDS #####
 async def show(
-    run: str = LATEST, *, nous: Path, json: bool = False, runner: Inject[PlaneRun], console: Inject[Console]
+    run: str = LATEST, *, nous: Nous = UNSET, json: bool = False, runner: Inject[PlaneRun], console: Inject[Console]
 ) -> None:
     """Print RUN's report, rebuilt from its ledger.
 

@@ -1,11 +1,10 @@
 """commands.stack: driving adapter for one target's stack — `plan` what apply would do, `verify` what is there.
 
 Both are read-only. The source is a flag: `--profile NAME` (shipped with the catalog) or `--nous PATH`
-(an e-nous checkout). A plan with unknown or blocked parts, or a verify with a failure, exits non-zero
+(an e-nous checkout, located when neither is given). A plan with unknown or blocked parts, or a verify with a failure, exits non-zero
 after printing the full report."""
 
 from collections.abc import Mapping
-from pathlib import Path
 from types import MappingProxyType
 from typing import Final
 
@@ -17,6 +16,7 @@ from e_taxis.harness.models.catalog import Target
 from e_taxis.harness.models.error import PlanError, VerifyError
 from e_taxis.harness.models.plan import PlanAction
 from e_taxis.harness.runtime.deps import Inject
+from e_taxis.harness.runtime.locator import ProfileNous
 from e_taxis.harness.runtime.settings import TaxisSettings
 from e_taxis.harness.runtime.source import FlagSource
 from e_taxis.harness.services.plan import PlanService
@@ -41,7 +41,7 @@ async def plan(
     *,
     target: Target,
     profile: str | None = None,
-    nous: Path | None = None,
+    nous: ProfileNous = None,
     json: bool = False,
     planner: Inject[PlanService],
     settings: Inject[TaxisSettings],
@@ -76,7 +76,7 @@ async def verify(
     *,
     target: Target,
     profile: str | None = None,
-    nous: Path | None = None,
+    nous: ProfileNous = None,
     json: bool = False,
     verifier: Inject[VerifyService],
     settings: Inject[TaxisSettings],

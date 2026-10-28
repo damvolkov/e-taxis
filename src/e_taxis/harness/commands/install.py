@@ -25,6 +25,7 @@ from e_taxis.harness.models.catalog import Target
 from e_taxis.harness.models.error import ApplyError, UninstallError
 from e_taxis.harness.models.uninstall import UninstallStatus
 from e_taxis.harness.runtime.deps import Inject
+from e_taxis.harness.runtime.locator import UNSET, Nous, ProfileNous
 from e_taxis.harness.runtime.settings import TaxisSettings
 from e_taxis.harness.runtime.source import FlagSource
 from e_taxis.harness.services.apply import ApplyService
@@ -61,7 +62,7 @@ async def apply(
     *,
     target: Target,
     profile: str | None = None,
-    nous: Path | None = None,
+    nous: ProfileNous = None,
     only: str = "",
     dry_run: bool = False,
     yes: bool = False,
@@ -160,7 +161,7 @@ async def uninstall(
 async def install(
     *,
     target: Target,
-    nous: Path,
+    nous: Nous = UNSET,
     profile: str | None = None,
     ref: str = "HEAD",
     worktree: bool = False,

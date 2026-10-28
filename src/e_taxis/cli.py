@@ -10,25 +10,25 @@ row in `GROUPS`, parents before children. `tests/unit/e_taxis/test_cli.py` resol
 typo fails the gate, never a user.
 
     taxis map      [--target T] [--json]
-    taxis plan     --target T (--profile P | --nous PATH) [--json]
-    taxis verify   --target T (--profile P | --nous PATH) [--json]
+    taxis plan     --target T [--profile P | --nous PATH] [--json]
+    taxis verify   --target T [--profile P | --nous PATH] [--json]
     taxis doctor   [--json]
-    taxis install  --target T --nous PATH [--profile P] [--ref REF | --worktree] [--yes]
+    taxis install  --target T [--nous PATH] [--profile P] [--ref REF | --worktree] [--yes]
                    [--accept-licence ID] [--confirm ID] [--json]
-    taxis apply    --target T (--profile P | --nous PATH) [--only id,...] [--dry-run] [--yes]
+    taxis apply    --target T [--profile P | --nous PATH] [--only id,...] [--dry-run] [--yes]
                    [--accept-licence ID] [--confirm ID] [--json]
     taxis uninstall ID --target T [--cascade] [--yes]
     taxis history  list · undo
-    taxis transpile check --nous PATH [--ref REF | --worktree] [--json]   # schema + spec law; writes nothing
-    taxis transpile run   --target T --nous PATH --out DIR [--ref REF | --worktree] [--json]   # pure export
-    taxis workflow run ID --nous PATH [name=value ...]                  # a corpus workflow, end to end
-    taxis workflow list --nous PATH · check [ID ...] --nous PATH
-    taxis distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas --nous PATH --rundir DIR …
-    taxis eval run TARGET [IDS ...] --nous PATH [--cadence C] [--candidate RUN]   # the evaluator, read-only
-    taxis eval graph [TARGET] · eval needs TARGET --nous PATH [--run R] [--owner O]
-    taxis enhance run TARGET [IDS ...] --nous PATH (--from R | --directive D | --manual) [--cadence C]
-    taxis enhance graph [TARGET] · enhance promote [RUN] --nous PATH [--ids ...] [--all-verdicts] [--yes]
-    taxis reports show [RUN] --nous PATH [--json]
+    taxis transpile check [--nous PATH] [--ref REF | --worktree] [--json]   # schema + spec law; writes nothing
+    taxis transpile run   --target T [--nous PATH] --out DIR [--ref REF | --worktree] [--json]   # pure export
+    taxis workflow run ID [--nous PATH] [name=value ...]                  # a corpus workflow, end to end
+    taxis workflow list [--nous PATH] · check [ID ...] [--nous PATH]
+    taxis distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas [--nous PATH] --rundir DIR …
+    taxis eval run TARGET [IDS ...] [--nous PATH] [--cadence C] [--candidate RUN]   # the evaluator, read-only
+    taxis eval graph [TARGET] · eval needs TARGET [--nous PATH] [--run R] [--owner O]
+    taxis enhance run TARGET [IDS ...] [--nous PATH] (--from R | --directive D | --manual) [--cadence C]
+    taxis enhance graph [TARGET] · enhance promote [RUN] [--nous PATH] [--ids ...] [--all-verdicts] [--yes]
+    taxis reports show [RUN] [--nous PATH] [--json]
     taxis logo NAMES [--out DIR] [--prefix P] [--background HEX] [--foreground HEX] [--force]
     taxis repo resolve URL REF                     # the commit a branch, tag or sha names
     taxis repo tree    URL REF [PATH]              # every file the remote holds at REF

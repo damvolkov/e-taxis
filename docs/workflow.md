@@ -33,25 +33,26 @@ legacy `importlib` loader is gone. graphlib (stdlib, already this repo's DAG too
 ## 2. Commands
 
 ```
-taxis workflow run ID --nous PATH [name=value ...]     # run; live rows on stderr, report on stdout; 24 if a step failed
-taxis workflow list --nous PATH                        # every workflow: parameters, steps, when, after
-taxis workflow check [ID ...] --nous PATH              # static law of every (or the named) workflow; 23 if one fails
+taxis workflow run ID [--nous PATH] [name=value ...]     # run; live rows on stderr, report on stdout; 24 if a step failed
+taxis workflow list [--nous PATH]                        # every workflow: parameters, steps, when, after
+taxis workflow check [ID ...] [--nous PATH]              # static law of every (or the named) workflow; 23 if one fails
 
 taxis distill guard     --rundir DIR --project P [--branches "a b"] [--since REF] [--work TEXT]   # 3: nothing to do
 taxis distill intake    --rundir DIR
-taxis distill index     --nous PATH --rundir DIR
+taxis distill index     [--nous PATH] --rundir DIR
 taxis distill scan      --rundir DIR
 taxis distill drift     --rundir DIR
-taxis distill inventory --nous PATH --rundir DIR
-taxis distill grade     --nous PATH --rundir DIR
-taxis distill report    --nous PATH --rundir DIR
-taxis distill ship      --nous PATH --rundir DIR
-taxis distill schemas   --nous PATH [--check]
+taxis distill inventory [--nous PATH] --rundir DIR
+taxis distill grade     [--nous PATH] --rundir DIR
+taxis distill report    [--nous PATH] --rundir DIR
+taxis distill ship      [--nous PATH] --rundir DIR
+taxis distill schemas   [--nous PATH] [--check]
 ```
 
-`--nous` is taken only where the step reads e-nous. Exit codes: `3` nothing to distill · `23` a workflow that
-cannot be read or bound · `24` a run with a failed or broken step · `25` a distill artifact missing or misfit ·
-`26` a command that failed · `75` the lock held past the wait.
+`--nous` is taken only where the step reads e-nous; without it the checkout is located (the README's "One system"
+ladder). Exit codes: `3` nothing to distill · `23` a workflow that cannot be read or bound · `24` a run with a
+failed or broken step · `25` a distill artifact missing or misfit · `26` a command that failed · `75` the lock held
+past the wait.
 
 Settings (`TaxisSettings`, environment): `TAXIS_WORKFLOW_REPORTS` (`.reports`, relative to the checkout),
 `_CONCURRENCY` (4), `_TIMEOUT` (1800 s per step), `_LOCK_WAIT` (600 s), `_OPENCODE` (`~/.config/opencode`, the live

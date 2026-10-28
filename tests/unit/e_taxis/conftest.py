@@ -100,10 +100,11 @@ def workdir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 @pytest.fixture(autouse=True)
 def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """HOME and CLAUDE_CONFIG_DIR inside the test's temp dir: nothing a test runs can reach the real ones."""
+    """HOME and CLAUDE_CONFIG_DIR inside the test's temp dir, TAXIS_NOUS unset: nothing a test runs can reach the real ones."""
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
     monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "claude"))
     monkeypatch.delenv("TAXIS_NPM_PREFIX", raising=False)
+    monkeypatch.delenv("TAXIS_NOUS", raising=False)
     (tmp_path / "home").mkdir()
     return tmp_path / "home"
 
