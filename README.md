@@ -17,7 +17,7 @@ joint — it projects one into the other, and grows past transpilation into the 
 maintenance of whole systems. The mark is the word itself in the house square font, on a banner that hugs
 it — same glyphs and colors across the family, one deterministic svg per name (`taxis logo`).
 
-One triumvirate, all Greek — the mind decides, the archetypes hold the forms, the order executes:
+The Triad, all Greek — the will decides (e-nous), the body holds the forms (e-arkhetypo), the hand executes (e-taxis):
 
 <p align="center">
   <img src="assets/triumvirate.svg" alt="e-nous · e-arkhetypo · e-taxis" height="230" />
@@ -25,9 +25,9 @@ One triumvirate, all Greek — the mind decides, the archetypes hold the forms, 
 
 | Pillar | Is | Changes here |
 |---|---|---|
-| [e-nous](https://github.com/damvolkov/e-nous) | the mind — persona, skills, agents, commands, workflows, evals, specs; data only | doctrine |
-| [e-arkhetypo](https://github.com/damvolkov/e-arkhetypo) | the archetypes — project blueprints, stacks, CI sources; data only | templates |
-| **e-taxis** | the order — all the code: turns archetypes into running things, transpiles, evaluates and enhances the mind, runs its workflows | tools |
+| [e-nous](https://github.com/damvolkov/e-nous) | the will — persona, skills, agents, commands, workflows, evals, specs; data only | doctrine |
+| [e-arkhetypo](https://github.com/damvolkov/e-arkhetypo) | the body — project blueprints, stacks, CI sources; data only | templates |
+| **e-taxis** | the hand — all the code: turns archetypes into running things, transpiles, evaluates and enhances the will, runs its workflows | tools |
 
 **One system.** `make taxis` in e-nous or e-arkhetypo puts this CLI on the PATH, and `taxis` finds the brain from
 any shell — no `--nous` to type. The first rung holding a valid e-nous checkout (`core/schema.yaml` and

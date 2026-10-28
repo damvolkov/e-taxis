@@ -87,6 +87,7 @@ map:
       - {from: family,      to: "SOUL.md#Family"}
       - {from: attunement,  to: "SOUL.md#Attunement"}
       - {from: unity,       to: "SOUL.md#One mind, two materials"}
+      - {from: triad,       to: "SOUL.md#The Triad"}
       - {from: stance,      to: "SOUL.md#Outlook"}
       - {from: worldview,   to: "SOUL.md#Worldview"}
       - {from: lineage,     to: "SOUL.md#Lineage"}

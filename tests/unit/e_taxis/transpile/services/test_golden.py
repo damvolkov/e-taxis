@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 ### v2 on purpose: total ownership models every settings key; #81 retired the reminder hook and tree-sitter, pinned
 ### Serena and guided codebase-memory in OpenCode only; the fixture holds four instances, not the corpus.
 CHANGED = {"settings.json", "opencode.jsonc"}
-### v2 adds whole sections to the persona (## Plans, ## Agents, 2026-10-27): compared once those are cut out.
+### v2 adds ## Plans, ## Agents (2026-10-27) and renamed ## The three pillars ## The Triad (2026-10-28): cut on both sides.
 PERSONA = {"CLAUDE.md", "AGENTS.md"}
 ### where v1 rendered the golden: its `{out}`, replaced on both sides before comparing.
 GOLDEN_OUT = "/tmp/e-nous-golden-v1"  # noqa: S108 — a recorded path inside fixture bytes, never written to
@@ -36,8 +36,10 @@ async def test_golden_files_match_byte_for_byte(
     mismatched = [
         path
         for path in shared
-        if (golden / path).read_bytes().replace(f"{GOLDEN_OUT}/{backend}".encode(), b"OUT")
-        != (without_added if path in PERSONA else bytes)(projection.files[path]).replace(str(out).encode(), b"OUT")
+        if (cut := without_added if path in PERSONA else bytes)((golden / path).read_bytes()).replace(
+            f"{GOLDEN_OUT}/{backend}".encode(), b"OUT"
+        )
+        != cut(projection.files[path]).replace(str(out).encode(), b"OUT")
     ]
     assert len(shared) >= 10
     assert mismatched == []
@@ -71,13 +73,19 @@ async def test_golden_settings_keep_every_v1_key(nous_root: Path, tmp_path: Path
     ids=["hermes", "openhuman"],
 )
 async def test_golden_nomos_documents_match(
-    nous_root: Path, tmp_path: Path, golden_root: Path, backend: str, tree: str, files: list[str]
+    nous_root: Path,
+    tmp_path: Path,
+    golden_root: Path,
+    backend: str,
+    tree: str,
+    files: list[str],
+    without_added: Callable[[bytes], bytes],
 ) -> None:
     live = tmp_path / "live" / tree
     (live / "memory/openhuman").mkdir(parents=True)
     (live / "memory/openhuman/active_user.toml").write_text('user_id = "6abd6edb6e176e3e56822476"\n')
     projection = await RunService(CheckService()).run(GitNous(nous_root, None), backend, tmp_path / backend, live=live)
-    assert {path: projection.files[path] for path in files} == {
+    assert {path: without_added(projection.files[path]) for path in files} == {
         path: (golden_root / backend / path).read_bytes() for path in files
     }
 
