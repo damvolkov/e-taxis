@@ -10,3 +10,5 @@ slots:
   pillars: {source: persona/world/pillars.md}
   rules: {source: persona/techne/rules.md}
   skills: {source: persona/praxis/skills.md}
+  plans: {source: persona/praxis/plans.md}
+  agents: {source: persona/praxis/agents.md}

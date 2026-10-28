@@ -13,18 +13,21 @@ from e_taxis.transpile.services.check import CheckService
 from e_taxis.transpile.services.run import RunService
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
 
 ### v2 on purpose: total ownership models every settings key; #81 retired the reminder hook and tree-sitter, pinned
 ### Serena and guided codebase-memory in OpenCode only; the fixture holds four instances, not the corpus.
 CHANGED = {"settings.json", "opencode.jsonc"}
+### v2 adds whole sections to the persona (## Plans, ## Agents, 2026-10-27): compared once those are cut out.
+PERSONA = {"CLAUDE.md", "AGENTS.md"}
 ### where v1 rendered the golden: its `{out}`, replaced on both sides before comparing.
 GOLDEN_OUT = "/tmp/e-nous-golden-v1"  # noqa: S108 — a recorded path inside fixture bytes, never written to
 
 
 @pytest.mark.parametrize("backend", ["claudecode", "opencode"])
 async def test_golden_files_match_byte_for_byte(
-    nous_root: Path, tmp_path: Path, golden_root: Path, backend: str
+    nous_root: Path, tmp_path: Path, golden_root: Path, backend: str, without_added: Callable[[bytes], bytes]
 ) -> None:
     out = tmp_path / backend
     projection = await RunService(CheckService()).run(GitNous(nous_root, None), backend, out)
@@ -34,7 +37,7 @@ async def test_golden_files_match_byte_for_byte(
         path
         for path in shared
         if (golden / path).read_bytes().replace(f"{GOLDEN_OUT}/{backend}".encode(), b"OUT")
-        != projection.files[path].replace(str(out).encode(), b"OUT")
+        != (without_added if path in PERSONA else bytes)(projection.files[path]).replace(str(out).encode(), b"OUT")
     ]
     assert len(shared) >= 10
     assert mismatched == []

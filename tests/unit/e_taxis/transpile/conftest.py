@@ -4,6 +4,7 @@
 instance of each entity, copied from e-nous: the law must find nothing blocking in it. `edit` rewrites one YAML
 file of the copy in place, so a test states only the mutation it makes."""
 
+import re
 import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -170,3 +171,10 @@ def core_model(nous_tree: NousTree) -> CoreModel:
 @pytest.fixture
 def spec_model(nous_tree: NousTree) -> SpecModel:
     return SpecModel(nous_tree.base)
+
+
+@pytest.fixture
+def without_added() -> Callable[[bytes], bytes]:
+    """A persona render with the sections v2 added on purpose cut out: what is left must be v1's, byte for byte."""
+    added = re.compile(rb"\n\n## (Plans|Agents)\n.*?(?=\n\n## |\Z)", re.DOTALL)
+    return lambda text: added.sub(b"", text)

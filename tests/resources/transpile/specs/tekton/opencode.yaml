@@ -14,10 +14,10 @@ foreign:
   - {path: skills/opencode-skill-creator, why: "shipped by the opencode-skill-creator plugin, which keeps it current"}
 
 upstream:
-  version: 1.19.4                                               # npm @latest — read 2026-10-26 (GitHub latest agrees)
-  channel: https://registry.npmjs.org/opencode-ai/latest
-  read: "2026-10-26"
-  verified: {version: null, date: "2026-10-02"}                 # checked that day without recording a version: the next re-check pins it
+  version: 2.2.0                                                # GitHub releases — the first non-prerelease 2.x (npm @latest still 1.19.4); read 2026-10-28
+  channel: https://github.com/anomalyco/opencode/releases
+  read: "2026-10-28"
+  verified: {version: 2.2.0, date: "2026-10-28"}                # the fenced trial holds on 2.2.0 (3/3): persona, skills, agents, commands; the v1-shaped config is normalized by 2.x
 
 sources:
   - {url: "https://registry.npmjs.org/opencode-ai/latest", kind: npm, covers: [upstream]}
@@ -43,6 +43,10 @@ targets:
   tui.json:             {format: json}
   package.json:         {format: json}
   mcp/playwright.json:  {format: file}
+  hooks/plans.mjs:      {format: file}                                  # the one plans check, shared with Claude Code
+  plugins/plans.js:     {format: file}                                  # the plans law as a v2 plugin (session.idle → prompt)
+  plugins/autolearn.js: {format: file}                                  # autolearn's v2 shell (upstream autolearn-v2.js, pinned in stack.yaml)
+  plugins/autolearn-core.mjs: {format: file}                            # its core — Claude Code's autolearn hook imports the same file
   mcp/codegraph.md:     {format: file}                                  # codebase-memory's guide, loaded through #instructions (OpenCode only)
 
 map:
@@ -64,6 +68,7 @@ map:
       - {from: critique,    to: "#Voice", glue: "\n"}
       - {from: prudence,    to: "#Method: prudence before action", glue: "\n"}
       - {from: method,      to: "#Method: prudence before action", glue: "\n"}
+      - {from: plans,       to: "#Plans"}
       - {from: honesty,     to: "#Honesty"}
       - {from: soul,        to: "#Engineering soul"}
       - {from: knowledge,   to: "#Knowledge architecture"}
@@ -73,6 +78,7 @@ map:
       - {from: conduct,     to: "#Operating contract", glue: "\n"}
       - {from: contract,    to: "#Operating contract", glue: "\n"}
       - {from: skills,      to: "#Skills"}
+      - {from: agents,      to: "#Agents"}
     unmapped:
       about:   {reason: house, detail: "bond slot: human-hemisphere content; the tekton harness renders doctrine, not bond"}
       profile: {reason: house, detail: "user memory seed: only the nomos harnesses plant it"}
@@ -152,6 +158,7 @@ map:
       - {from: main.model.small,     to: "#small_model", via: tier}
       - {from: agents,               to: "#agent", via: agents_registry}
       - {from: plugins.opencode,     to: "#plugin"}
+      - {value: false,               to: "#autoupdate"}              # pinned (stack.yaml): a self-update would leave the verified version
       - {from: main.instructions,    to: "#instructions", via: instructions_opencode}
       - {from: mcp.servers,          to: "#mcp", via: mcp_opencode}
       - {from: permissions.granular, to: "#permission"}
@@ -162,12 +169,16 @@ map:
     assets:
       - {from: mcp/playwright.json, to: mcp/playwright.json}
       - {from: mcp/codegraph.md,    to: mcp/codegraph.md}
+      - {from: hooks/plans.mjs,     to: hooks/plans.mjs}
+      - {from: hooks/plans-opencode.js, to: plugins/plans.js}
+      - {from: plugins/autolearn.js,      to: plugins/autolearn.js}
+      - {from: plugins/autolearn-core.mjs, to: plugins/autolearn-core.mjs}
     unmapped:
       main.model.alias:          {reason: house, detail: "the session alias of a backend that sees no tiers (Claude's)"}
       main.effort:               {reason: pending, detail: "no global effort key known; per-model reasoning rides in the tier options (thinking budget) — confirm a global equivalent in the config schema"}
       main.display:              {reason: pending, detail: "Claude's fullscreen TUI; no equivalent key checked in tui.json"}
       telemetry:                 {reason: pending, detail: "OpenCode's OpenTelemetry surface not checked against the config schema"}
-      hooks:                     {reason: absent, detail: "an OpenCode hook is a JS/TS plugin (API v1): code, not data — no deterministic projection from argv hooks (docs/plugins, checked 2026-10-02)"}
+      hooks:                     {reason: absent, detail: "an OpenCode hook is a JS/TS plugin: code, not data — no deterministic projection from argv hooks (docs/plugins, checked 2026-10-02); the plans law ships as its own plugin asset instead (plugins/plans.js, 2026-10-27)"}
       plugins.claudecode:        {reason: house, detail: "Claude Code marketplace plugins"}
       models.providers.*.openai_url: {reason: internal, detail: "the OpenAI-compatible twin tools without an Anthropic client use (SkillSpector)"}
       models.tiers.*.note:       {reason: internal, detail: "cost documentation"}
@@ -176,7 +187,7 @@ map:
       permissions.external_dirs: {reason: pending, detail: "permission.external_directory is a flat allow inside granular; whether it accepts per-path patterns is not checked"}
       security:                  {reason: internal, detail: "scanner acceptances, never rendered"}
       mcp.servers.*.note:        {reason: pending, detail: "no description field known in an OpenCode MCP entry"}
-      mcp.servers.*.smoke:       {reason: internal, detail: "evaluation data (op eval run config)"}
+      mcp.servers.*.smoke:       {reason: internal, detail: "evaluation data (taxis eval run config)"}
     notes: >-
       Every target is owned whole. Not governed, hence the harness's:
       plugins/ (the autolearn runtime, installed by e-taxis — listing it in
@@ -216,14 +227,29 @@ trial:
     XDG_CACHE_HOME: ${home}/.cache
     OPENCODE_DISABLE_CLAUDE_CODE: "1"
     OPENCODE_DISABLE_AUTOUPDATE: "1"
-    OPENCODE_CONFIG_CONTENT: '{"enabled_providers":["ghost"],"provider":{"ghost":{"npm":"@ai-sdk/openai-compatible","name":"ghost","options":{"baseURL":"${llm}/v1","apiKey":"ghost"},"models":{"x":{"name":"x"}}}},"model":"ghost/x","small_model":"ghost/x","mcp":${mcp}}'
+    OPENCODE_DISABLE_MODELS_FETCH: "1"     # 2.x fetches the models catalog at start: fenced, it waits — the ghost needs none
+    OPENCODE_DISABLE_LSP_DOWNLOAD: "1"
+    OPENCODE_DISABLE_DEFAULT_PLUGINS: "1"
+    OPENCODE_SERVER_PASSWORD: ghost         # the served probe's server demands one; its clients send it
+    OPENCODE_PASSWORD: ghost
+    OPENCODE_CONFIG_CONTENT: '{"enabled_providers":["ghost"],"providers":{"ghost":{"name":"ghost","package":"@opencode/ai/providers/openai-compatible","settings":{"baseURL":"${llm}/v1","apiKey":"ghost"},"models":{"x":{"name":"x","capabilities":{"tools":true,"input":["text"],"output":["text"]},"limit":{"context":200000,"output":8192}}}}},"model":"ghost/x","small_model":"ghost/x","plugin":[],"mcp":${mcp}}'
+  overlays:                             # 2.x serve reads no OPENCODE_CONFIG_CONTENT: the sandbox copy itself carries the ghost
+    - path: ${home}/.config/opencode/opencode.jsonc
+      format: json
+      set:
+        providers: {ghost: {name: ghost, package: "@opencode/ai/providers/openai-compatible", settings: {baseURL: "${llm}/v1", apiKey: ghost}, models: {x: {name: x, capabilities: {tools: true, input: [text], output: [text]}, limit: {context: 200000, output: 8192}}}}}
+        enabled_providers: [ghost]
+        model: ghost/x
+        small_model: ghost/x
+        plugin: []
+        mcp: {}
   probes:
-    - {name: session, kind: capture, argv: [opencode, run, --pure, ghost]}
-    - {name: config,  kind: command, argv: [opencode, debug, config, --pure]}
-    - {name: skills,  kind: command, argv: [opencode, debug, skill, --pure]}
+    - {name: session,  kind: capture, serve: [opencode, serve, --hostname, 127.0.0.1, --port, "${port}"], ready: [opencode, api, --server, "http://127.0.0.1:${port}", agent.list], argv: [opencode, run, --server, "http://127.0.0.1:${port}", --model, ghost/x, ghost]}
+    - {name: agents,   kind: command, serve: [opencode, serve, --hostname, 127.0.0.1, --port, "${port}"], ready: [opencode, api, --server, "http://127.0.0.1:${port}", agent.list], argv: [opencode, api, --server, "http://127.0.0.1:${port}", agent.list]}
+    - {name: commands, kind: command, serve: [opencode, serve, --hostname, 127.0.0.1, --port, "${port}"], ready: [opencode, api, --server, "http://127.0.0.1:${port}", agent.list], argv: [opencode, api, --server, "http://127.0.0.1:${port}", command.list]}
   sees:
     persona: [session]                  # AGENTS.md in the system message
-    skill: [session, skills]
-    agent: [config]                     # primary agents never reach the prompt: the resolved config holds them all
-    command: [config]
-  notes: "Inline config (OPENCODE_CONFIG_CONTENT) layers a ghost provider above the global one, and enables it: the render's enabled_providers would otherwise hide it (ProviderModelNotFoundError); the rendered tree is never edited. Proven on 1.19.4, 2026-10-26 (taxis transpile trial). The 2.x prerelease line drops --pure and `debug skill`: this trial does not run there. --pure on every probe: without it OpenCode installs the tree's plugins from npm and, offline, hangs retrying. The session fails with 400 on purpose (a 500 is retried with backoff). ${mcp} switches the tree's MCP servers off: offline they would hold the session until their timeout."
+    skill: [session]
+    agent: [agents]                     # primary agents never reach the prompt: the server's agent list holds them all
+    command: [commands]
+  notes: "OpenCode 2.x (pinned v2.2.0, stack.yaml): `run`/`api` always talk to an HTTP server, and a standalone one binds a random port the fence will not allow — so every probe serves `opencode serve` on the declared ${port} (password-protected in 2.x: OPENCODE_SERVER_PASSWORD / OPENCODE_PASSWORD) and connects with --server. `serve` reads no OPENCODE_CONFIG_CONTENT: the overlay bends the sandbox copy of opencode.jsonc instead — a v2 `providers` ghost answered by the fake, no plugins, no MCP (offline they hold the session). OPENCODE_DISABLE_MODELS_FETCH: the models catalog fetch would wait on the fence and leave the server 503. `run --model ghost/x`: the built-in build agent's own model would win over `model`. The session fails with 400 on purpose (a 500 is retried with backoff). Skills are seen in the session, agents and commands in the server's agent.list / command.list. Proven 3/3 on v2.2.0, 2026-10-28 (taxis transpile trial); the 1.x trial (--pure, debug skill) is history."

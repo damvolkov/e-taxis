@@ -184,7 +184,7 @@ map:
       mcp.servers.*.oauth:      {reason: pending, detail: "Hermes MCP OAuth support not checked"}
       mcp.servers.*.pinned:     {reason: pending, detail: "no always-on tool surface checked"}
       mcp.servers.*.consent:    {reason: house, detail: "the secret file belongs to the watcher (make mcp), never to the render"}
-      mcp.servers.*.smoke:      {reason: internal, detail: "evaluation data (op eval run config)"}
+      mcp.servers.*.smoke:      {reason: internal, detail: "evaluation data (taxis eval run config)"}
     notes: >-
       config.yaml is owned whole: a key Hermes adds on its start migration is
       drift until modeled or declared foreign — the v0.22.x re-check settles

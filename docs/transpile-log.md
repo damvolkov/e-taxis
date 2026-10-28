@@ -252,3 +252,23 @@ Green after, with a round trip render → read → the same fragments.
 
 **Decided alone.** Any indent opens a fence, not CommonMark's three spaces: a fence nested in a list item is still a
 fence. Rejected: a Markdown parser dependency for one splitter.
+
+## 2026-10-28 · OpenCode 2.x — pinned, trialled, measured
+
+**Done.** The machine's OpenCode is pinned to **v2.2.0** (GitHub's first non-prerelease 2.x; npm `latest` is still
+1.19.4): headless `run` 3/3 and skill loads 3/3 where the 2.0.28 prerelease hung. The brain pins it (`stack.yaml`
+`pin: v2.2.0`, render `autoupdate: false`). The trial moved to 2.x: `run`/`api` always talk to an HTTP server and a
+standalone one binds a random port the fence refuses, so every probe serves `opencode serve` on the declared
+`${port}` (2.x wants `OPENCODE_SERVER_PASSWORD`; clients send `OPENCODE_PASSWORD`) and connects with `--server`;
+`serve` reads no `OPENCODE_CONFIG_CONTENT`, so an overlay writes a v2 `providers` ghost into the sandbox copy;
+`OPENCODE_DISABLE_MODELS_FETCH` stops the fenced server waiting on the catalog (it answered 503); `--model ghost/x`
+because the built-in build agent's model wins. Held 3/3: persona 24/24, skills 33/33, agents 16/16, commands 8/8.
+
+**Also.** MCP env references in OpenCode's syntax (`${NAME}` → `{env:NAME}`, #24) — e-gnosis' owner token reaches
+both coders from the core. The OpenCode probe reads 2.x's skill `id` (#23). The golden test now compares the persona
+with the sections v2 added on purpose (`## Plans`, `## Agents`) cut out: what is left is v1's, byte for byte. The e2e
+trial gates on the 2.x line. The README lists every command; a test fails when one is missing.
+
+**Open.** The activation probe's OpenCode sandbox (eval, not trial) still hangs: it runs `opencode run` without a
+served port, the same 2.x constraint the trial now meets — next: the same served-probe pattern in the coder adapter.
+

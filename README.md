@@ -29,6 +29,77 @@ One triumvirate, all Greek — the mind decides, the archetypes hold the forms, 
 | [e-arkhetypo](https://github.com/damvolkov/e-arkhetypo) | the archetypes — project blueprints, stacks, CI sources; data only | templates |
 | **e-taxis** | the order — the deterministic engine that turns archetypes into running things and installs the mind into each harness | tools |
 
+##### COMMANDS #####
+
+Every command, one line each — `taxis <command> --help` gives its flags. `tests/unit/e_taxis/test_cli.py` fails when a command is missing here.
+
+**Brain — transpile**
+
+| Command | Does |
+|---|---|
+| `taxis transpile check` | Hold a checkout to its schema and every spec's law. |
+| `taxis transpile run` | Project a core for one backend; --out for a pure export. |
+| `taxis transpile reverse` | Read the live tree back: who moved each fragment since the last landing. |
+| `taxis transpile trial` | Raise the real harness fenced on the render; check what it loaded. |
+
+**World — catalog, install, undo**
+
+| Command | Does |
+|---|---|
+| `taxis map` | The catalog, per target and profile. |
+| `taxis plan` | What apply would do; writes nothing. |
+| `taxis verify` | Run every wanted part's verify. |
+| `taxis doctor` | Check the catalog's integrity. |
+| `taxis apply` | Carry the plan out; dry unless --yes. |
+| `taxis install` | Brain, then systems; dry unless --yes. |
+| `taxis uninstall` | Take one part out; dry unless --yes. |
+| `taxis history list` | Every recorded run. |
+| `taxis history undo` | Revert the last recorded run. |
+
+**Workflows**
+
+| Command | Does |
+|---|---|
+| `taxis workflow run` | Run a workflow; exits 24 when a step failed. |
+| `taxis workflow list` | Every workflow, its parameters and steps. |
+| `taxis workflow check` | Hold workflows to their static law; writes nothing. |
+
+**reverse-distill steps**
+
+| Command | Does |
+|---|---|
+| `taxis distill guard` | Fix the scope; exit 3 when nothing is past the base. |
+| `taxis distill intake` | The range's commits and touched files. |
+| `taxis distill index` | e-nous, e-arkhetypo and the project into the code graph. |
+| `taxis distill scan` | The range's changed files and impacted symbols. |
+| `taxis distill drift` | The project's own drift checks, read. |
+| `taxis distill inventory` | Every plane, without a model: what the cores do not say. |
+| `taxis distill grade` | Merge the miners, propagate contradictions, weigh. |
+| `taxis distill report` | Join verdicts and reviews; write report.md and briefs. |
+| `taxis distill ship` | Run the commands that apply the musts. |
+| `taxis distill schemas` | Write (or --check) every port's JSON Schema. |
+
+**Evaluation and enhancement**
+
+| Command | Does |
+|---|---|
+| `taxis eval run` | Measure a target's subjects; exits 24 only when a node broke. |
+| `taxis eval graph` | Print and prove the evaluator's graphs. |
+| `taxis eval needs` | An evaluation's open needs; exits 1 while any is open. |
+| `taxis enhance run` | Enhance on a reason, in a sandbox; verdicts and patches. |
+| `taxis enhance graph` | Print and prove the enhancer's graphs. |
+| `taxis enhance promote` | Apply an enhancement's patches to the checkout; a human command. |
+| `taxis reports show` | A plane run's report, rebuilt from its ledger. |
+
+**Tools**
+
+| Command | Does |
+|---|---|
+| `taxis logo` | Deterministic family wordmarks into assets/. |
+| `taxis repo resolve` | The commit a ref names on a remote. |
+| `taxis repo tree` | Every file under a path at a ref. |
+| `taxis repo extract` | Unpack a path at a ref into a directory. |
+
 ##### RUN #####
 
 ```bash
@@ -38,7 +109,7 @@ taxis transpile check|run|reverse|trial …                           # the brai
 taxis workflow run ID --nous PATH [name=value ...]                  # a corpus workflow, end to end: docs/workflow.md
 taxis workflow list --nous PATH · check [ID ...] --nous PATH        # every workflow; its static law
 taxis distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas --rundir DIR [--nous PATH] …
-taxis eval run T [IDS] --nous PATH [--cadence C] [--candidate RUN] # the evaluator, read-only: needs per subject
+taxis eval run T [IDS] --nous PATH [--cadence C] [--only M,...] [--candidate RUN]  # the evaluator, read-only
 taxis enhance run T [IDS] --nous PATH (--from R | --directive D | --manual)   # verdicts + patches, in a sandbox
 taxis enhance promote [RUN] --nous PATH [--ids …] [--yes]           # a human command: the patches into the checkout
 taxis eval graph|needs · enhance graph · reports show [RUN] --nous PATH
@@ -50,6 +121,7 @@ taxis apply  --target T (--profile P | --nous PATH) [--only id,...] [--dry-run] 
              [--accept-licence ID] [--confirm ID] [--json]              # carry the plan out; dry unless --yes
 taxis uninstall ID --target T [--cascade] [--yes]                   # one part (and its dependents) out; dry unless --yes
 taxis history list · undo                                           # every run that wrote; revert the last one
+taxis logo NAMES [--out DIR] · repo resolve|tree|extract URL REF …  # wordmarks; deterministic git reads on a remote
 ```
 
 `T` is `claudecode`, `opencode`, `openhuman` or `system`. `--profile` reads a profile shipped with the catalog

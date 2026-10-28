@@ -48,6 +48,8 @@ async def test_trial_names_what_the_harness_did_not_show(trial: TrialService, fe
 
 async def test_trial_command_probe_reads_stdout(trial: TrialService, fence, capture, nous_root: Path) -> None:
     fence.stdout = msgspec.json.encode({"agent": {"builder": {}}, "command": {"ship": {}}}).decode()
+    ### OpenCode 2.x probes are served: each one's `ready` answers, then the probe runs.
+    fence.codes = [0] * 6
     report = await trial.run(GitNous(nous_root, None), "opencode", capture)
     sights = {sight.entity: sight for sight in report.sights}
     assert sights["agent"].held
