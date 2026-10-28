@@ -1,0 +1,13 @@
+# soa — a mini plane: two topics, a voice for all of them, one for memory only, links by topic.
+brief: Agentic systems, watched.
+window: 2
+topics:
+  memory:        {keywords: [agent memory, knowledge graph]}
+  observability: {keywords: [agent tracing, OpenTelemetry]}
+authors:
+  ada:   {name: Ada Ledger, url: "https://www.linkedin.com/in/adavoice", kind: linkedin_profile, topics: ["*"]}
+  blog:  {name: A Blog, url: "https://blog.example/feed/", kind: atom_feed, topics: [memory]}
+links:
+  otel:  {url: "https://opentelemetry.io/docs/specs/semconv/gen-ai/", topics: [observability]}
+  all:   {url: "https://example.org/agents", topics: ["*"]}
+discord: {webhook: ""}

@@ -23,6 +23,7 @@ typo fails the gate, never a user.
     taxis transpile run   --target T [--nous PATH] --out DIR [--ref REF | --worktree] [--json]   # pure export
     taxis workflow run ID [--nous PATH] [name=value ...]                  # a corpus workflow, end to end
     taxis workflow list [--nous PATH] · check [ID ...] [--nous PATH]
+    taxis workflow soa-sweep frame|ledger|fetch|ground|fit|report|deliver|schemas [--nous PATH] --rundir DIR …
     taxis distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas [--nous PATH] --rundir DIR …
     taxis eval run TARGET [IDS ...] [--nous PATH] [--cadence C] [--candidate RUN]   # the evaluator, read-only
     taxis eval graph [TARGET] · eval needs TARGET [--nous PATH] [--run R] [--owner O]
@@ -52,6 +53,9 @@ GROUPS: tuple[CommandGroup, ...] = (
     ),
     CommandGroup(
         path="workflow", help="Corpus workflows: graphs of command and agent steps, run from an e-nous checkout."
+    ),
+    CommandGroup(
+        path="workflow soa-sweep", help="soa-sweep's deterministic steps, one per workflow node: --nous, --rundir."
     ),
     CommandGroup(
         path="distill", help="reverse-distill's deterministic steps, one per workflow node: --nous, --rundir."
@@ -129,6 +133,46 @@ CARDS: tuple[CommandCard, ...] = (
         path="workflow check",
         target="e_taxis.workflow.commands.workflow:check",
         summary="Hold workflows to their static law; writes nothing.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep frame",
+        target="e_taxis.workflow.commands.sweep:frame",
+        summary="Fix the frame from soa.yaml; an unknown topic fails here.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep ledger",
+        target="e_taxis.workflow.commands.sweep:ledger",
+        summary="The seen ledger, for the frame's voices.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep fetch",
+        target="e_taxis.workflow.commands.sweep:fetch",
+        summary="Every voice and entry page inside the window.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep ground",
+        target="e_taxis.workflow.commands.sweep:ground",
+        summary="Merge the findings; keep what a fetched page holds.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep fit",
+        target="e_taxis.workflow.commands.sweep:fit",
+        summary="Mark each finding have, considered or new.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep report",
+        target="e_taxis.workflow.commands.sweep:report",
+        summary="Write report.md and report.json; record the ledger.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep deliver",
+        target="e_taxis.workflow.commands.sweep:deliver",
+        summary="Post the summary and report.md to Discord.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep schemas",
+        target="e_taxis.workflow.commands.sweep:schemas",
+        summary="Write (or --check) every soa-sweep port's JSON Schema.",
     ),
     CommandCard(
         path="distill guard",

@@ -64,6 +64,8 @@ class TaxisSettings(BaseSettings):
     _PROBE_RUNS the sessions per routing case, _PROBE_CONCURRENCY those in flight, _PROBE_TIMEOUT one session;
     _EFFECT_SEEDS the answers per task and arm, _EFFECT_SPLIT the held-out split the A/B reads.
 
+    TAXIS_SOA_STATE is soa-sweep's state, its seen ledger (`ledger.json`) — never config, never the checkout.
+
     TAXIS_HUMAN is the mandate a terminal-started `taxis` hands its children (a human command run by a workflow step
     it started); TAXIS_HEADLESS (or e-nous's OPS_GLOBAL__HEADLESS) marks a session an agent drives —
     no human command runs there, mandate or not."""
@@ -107,5 +109,6 @@ class TaxisSettings(BaseSettings):
     taxis_eval_probe_timeout: float = 180.0
     taxis_eval_effect_seeds: int = 5
     taxis_eval_effect_split: str = "test"
+    taxis_soa_state: Path = Path("~/.local/state/e-taxis/soa")
     taxis_human: bool = False
     taxis_headless: bool = Field(default=False, validation_alias=AliasChoices("TAXIS_HEADLESS", "OPS_GLOBAL__HEADLESS"))

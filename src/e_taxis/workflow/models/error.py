@@ -99,3 +99,7 @@ class IdleError(PlaneError):
 
 class ProviderError(PlaneError):
     """A tier, alias or key the checkout's models config does not resolve, or an endpoint that answered no message."""
+
+
+class SweepError(DistillError):
+    """A soa-sweep step that cannot go on: an unknown topic, a page that does not answer, no webhook to deliver to."""

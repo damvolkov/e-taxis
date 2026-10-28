@@ -1,6 +1,6 @@
 """models.ports: what the workflow engine asks of the world — run a command, drive an agent, keep a ledger, run a step;
 and for the planes, a git sandbox, a scanner, the evaluator's ledgers, a house tier's endpoint, a bare completion,
-a coder under measurement, and a node over one subject.
+a coder under measurement, and a node over one subject; for soa-sweep, the open web.
 
 The context is part of the contract: a run's resources (manifest, paths, ledger) are fixed when it starts; the
 evidence lives only in the ledger, append-only and typed. A step reads upstream evidence through its context."""
@@ -176,6 +176,16 @@ class EvalsPort(Protocol):
     async def queries(self, nous: Path, skill: str) -> tuple[QuerySet | None, str]: ...
 
     async def tasks(self, nous: Path, skill: str) -> tuple[TaskSet | None, str]: ...
+
+
+@runtime_checkable
+class WebPort(Protocol):
+    """The open web, as a browser reads it: `get` a page's text (redirects followed), `post` a multipart form —
+    `fields` as text parts, `files` as (filename, bytes). A page that does not answer 2xx raises SweepError."""
+
+    async def get(self, url: str) -> str: ...
+
+    async def post(self, url: str, *, fields: Mapping[str, str], files: Mapping[str, tuple[str, bytes]]) -> None: ...
 
 
 ##### PLANE CONTEXT #####

@@ -74,7 +74,8 @@ from e_taxis.workflow.adapters.provider import HouseProvider
 from e_taxis.workflow.adapters.runner import AnthropicRunner
 from e_taxis.workflow.adapters.sandbox import GitSandbox
 from e_taxis.workflow.adapters.scanner import SkillspectorScanner
-from e_taxis.workflow.models.ports import AgentPort, CommandPort, PlaneNodePort, SandboxPort
+from e_taxis.workflow.adapters.web import WreqWeb
+from e_taxis.workflow.models.ports import AgentPort, CommandPort, PlaneNodePort, SandboxPort, WebPort
 from e_taxis.workflow.plane.activation import PlaneActivation
 from e_taxis.workflow.plane.brief import PlaneBrief
 from e_taxis.workflow.plane.candidate import PlaneCandidate
@@ -284,6 +285,9 @@ class Deps:
             reports=settings.taxis_workflow_reports,
         )
 
+    async def _resolve_web(self) -> WreqWeb:
+        return WreqWeb()
+
     async def _resolve_sandbox(self) -> GitSandbox:
         return GitSandbox(await self.resolve(CommandPort))
 
@@ -405,6 +409,7 @@ class Deps:
             AgentPort: _resolve_agent,
             WorkflowRun: _resolve_workflow,
             SandboxPort: _resolve_sandbox,
+            WebPort: _resolve_web,
             PlaneRun: _resolve_plane,
             PlanePromote: _resolve_promote,
         }

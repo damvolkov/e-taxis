@@ -24,13 +24,13 @@ FOLDER: str = "distill"
 
 ##### TYPES #####
 class DistillStore:
-    """The run's artifacts, by name, as models."""
+    """The run's artifacts, by name, as models, in the run's `folder` (another workflow keeps its own: `soa`)."""
 
     __slots__ = ("_folder", "_paths")
 
-    def __init__(self, rundir: Path) -> None:
+    def __init__(self, rundir: Path, folder: str = FOLDER) -> None:
         self._paths = RunPaths(rundir)
-        self._folder = rundir / FOLDER
+        self._folder = rundir / folder
 
     ##### PUBLIC #####
 

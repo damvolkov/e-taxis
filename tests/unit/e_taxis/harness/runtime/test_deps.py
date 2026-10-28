@@ -21,8 +21,9 @@ from e_taxis.harness.services.verify import VerifyService
 from e_taxis.transpile.adapters.capture import HttpCapture
 from e_taxis.transpile.models.ports import CapturePort
 from e_taxis.transpile.services.trial import TrialService
+from e_taxis.workflow.adapters.web import WreqWeb
 from e_taxis.workflow.models.plane import Plane
-from e_taxis.workflow.models.ports import CommandPort
+from e_taxis.workflow.models.ports import CommandPort, WebPort
 from e_taxis.workflow.services.plane import PlaneRun
 from e_taxis.workflow.services.promote import PlanePromote
 
@@ -78,6 +79,11 @@ async def test_deps_real_runner_and_downloader_outside_the_sandbox() -> None:
         deps = Deps(stack, _state())
         assert isinstance(await Deps._resolve_runner(deps), ProcessRunner)
         assert isinstance(await Deps._resolve_downloader(deps), WreqDownloader)
+
+
+async def test_deps_binds_the_web() -> None:
+    async with AsyncExitStack() as stack:
+        assert isinstance(await Deps(stack, _state()).resolve(WebPort), WreqWeb)
 
 
 async def test_deps_binds_the_planes() -> None:
