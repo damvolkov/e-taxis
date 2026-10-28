@@ -1,4 +1,5 @@
 id: soa-assess
+domains: [tekton]
 description: The agents named only by the models their ports write — weigh-it, judge and attack here.
 parameters:
   tech: {doc: "the technology"}

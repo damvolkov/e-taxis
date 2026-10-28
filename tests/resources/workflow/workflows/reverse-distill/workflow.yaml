@@ -1,4 +1,5 @@
 id: reverse-distill
+domains: [tekton]
 description: The miners, the judge and the adversary — named only by the models their ports write.
 parameters:
   project: {doc: "the project's path"}

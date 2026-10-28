@@ -142,6 +142,8 @@ map:
     unmapped:
       output:   {reason: covered, detail: "the graph combinator's output block"}
       loop:     {reason: covered, detail: "the graph combinator's loop block"}
+      domains:     {reason: house, detail: "read by the renderer: an instance reaches only the harnesses of its domains"}
+      family:      {reason: covered, detail: "expanded at load (adapters.ontology): its kwargs, output and nodes are in the instance"}
       triggers: {reason: house, detail: "eng-grammar phrases read by the channel hooks (e-metaxy), not by the coder"}
     notes: >-
       The lead agent (/workflow) walks the graph and delegates each node with
@@ -189,6 +191,7 @@ map:
       security:                  {reason: internal, detail: "scanner acceptances, never rendered"}
       schedules:                 {reason: internal, detail: "unattended runs: taxis schedule renders them into systemd timers, never the harness"}
       soa:                       {reason: internal, detail: "soa-sweep's frame, read by taxis workflow soa-sweep, never the harness"}
+      workflows:                 {reason: internal, detail: "the workflows' kwargs ontology and families, expanded by taxis at load"}
       mcp.servers.*.note:        {reason: pending, detail: "no description field known in an OpenCode MCP entry"}
       mcp.servers.*.smoke:       {reason: internal, detail: "evaluation data (taxis eval run config)"}
     notes: >-

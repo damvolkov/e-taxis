@@ -15,9 +15,10 @@ import msgspec
 
 from e_taxis.workflow.engine.executor import DagExecutor
 from e_taxis.workflow.engine.reader import WorkflowReader
-from e_taxis.workflow.models.error import CommandError, RunFailedError
+from e_taxis.workflow.models.error import CommandError, RunFailedError, WorkflowError
 from e_taxis.workflow.models.ports import RunState
 from e_taxis.workflow.models.run import RunManifest, RunPaths, RunReport
+from e_taxis.workflow.models.workflow import ParamType, Workflow
 from e_taxis.workflow.services.step import LEAD, AnsweredStep, WorkflowStep
 
 if TYPE_CHECKING:
@@ -67,6 +68,21 @@ class WorkflowRun:
         except CommandError:
             return ""
 
+    async def _common_project(self, decl: Workflow, given: dict[str, str], cwd: Path) -> dict[str, str]:
+        """`given` with every empty `project` kwarg made the git root of `cwd` — the terminal's project."""
+        empty = [name for name, param in decl.params.items() if param.type is ParamType.PROJECT and not given.get(name)]
+        match empty:
+            case []:
+                return given
+            case _:
+                pass
+        try:
+            root = (await self._command.run("git", "-C", str(cwd), "rev-parse", "--show-toplevel", limit=GIT)).strip()
+        except CommandError as outside:
+            msg = f"{decl.id}: {', '.join(empty)} is empty and {cwd} is in no git project — pass {empty[0]}=PATH"
+            raise WorkflowError(msg) from outside
+        return given | dict.fromkeys(empty, root)
+
     async def _one_manifest(self, paths: RunPaths, manifest: RunManifest) -> RunManifest:
         """The run's manifest: the one its folder holds, else this one, written once — the first step opens the run."""
         await anyio.Path(paths.root).mkdir(parents=True, exist_ok=True)
@@ -86,12 +102,18 @@ class WorkflowRun:
         return root / self._reports
 
     async def run(
-        self, source: NousPort, ident: str, given: dict[str, str], notify: Callable[[NodeRun], None] | None = None
+        self,
+        source: NousPort,
+        ident: str,
+        given: dict[str, str],
+        notify: Callable[[NodeRun], None] | None = None,
+        *,
+        cwd: Path | None = None,
     ) -> RunReport:
         tree = await source.load()
         reader = WorkflowReader(tree)
         graph, decl = reader.read(ident)
-        params = reader.bind(decl, given)
+        params = reader.bind(decl, await self._common_project(decl, given, cwd or Path.cwd()))
         root = Path(tree.root)
         base = await self._run_head(root)
         now = dt.datetime.now(dt.UTC)
@@ -121,6 +143,7 @@ class WorkflowRun:
         *,
         answer: Path | None = None,
         token: str = "",
+        cwd: Path | None = None,
     ) -> NodeRun:
         """One step of a run a harness walks: `rundir` holds the run; its first step opens it with `given`. With
         `answer`, the step is a semantic one the harness's agent already answered."""
@@ -139,7 +162,7 @@ class WorkflowRun:
                 base_sha=base,
                 started=dt.datetime.now(dt.UTC),
                 graph=graph,
-                params=reader.bind(decl, given),
+                params=reader.bind(decl, await self._common_project(decl, given, cwd or Path.cwd())),
             ),
         )
         ledger = await self._ledgers(paths.ledger)
@@ -159,7 +182,7 @@ class WorkflowRun:
         tree = await source.load()
         reader = WorkflowReader(tree)
         graph, decl = reader.read(ident)
-        params = reader.bind(decl, given)
+        params = reader.bind(decl, await self._common_project(decl, given, cwd))
         now = dt.datetime.now(dt.UTC)
         rundir = self._reports / "workflows" / ident / f"{now:%Y%m%dT%H%M%SZ}-{ident}"
         paths = RunPaths(cwd / rundir)

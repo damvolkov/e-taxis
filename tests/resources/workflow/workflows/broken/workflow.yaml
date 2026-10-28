@@ -1,4 +1,5 @@
 id: broken
+domains: [tekton]
 description: A step that names an agent the core does not hold.
 nodes:
   - {id: a, actor: nobody, instruction: "do it"}

@@ -9,7 +9,7 @@ stays acyclic, and every copy after an ending `until` check stays idle."""
 
 import graphlib
 from functools import reduce
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
 import msgspec
@@ -18,7 +18,7 @@ from e_taxis.workflow.models.error import PlaneError, WorkflowError
 from e_taxis.workflow.models.graph import GraphSpec, LoopDecl, StepSpec
 from e_taxis.workflow.models.graphs import GRAPHS
 from e_taxis.workflow.models.plane import NodeSpec, PlaneGraph
-from e_taxis.workflow.models.workflow import Node, Workflow
+from e_taxis.workflow.models.workflow import Node, Param, ParamType, Workflow
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -31,6 +31,7 @@ ENTITY: str = "workflow"
 AGENT: str = "agent"
 HOOKS: str = "hooks"
 SCHEMAS: str = "schemas"
+BOOLS: frozenset[str] = frozenset({"true", "false"})
 
 
 ##### TYPES #####
@@ -164,14 +165,39 @@ class WorkflowReader:
         unrolled = self._read_unroll(steps, decl.loop) if decl.loop else steps
         return GraphSpec(summary=" ".join(decl.description.split()), steps=unrolled), decl
 
-    @staticmethod
-    def bind(decl: Workflow, given: dict[str, str]) -> dict[str, str]:
-        """The run's parameters: only declared names; the undeclared are refused, the omitted take their default."""
+    def _bind_check(self, name: str, param: Param, value: str) -> str:
+        """Why `value` does not fit its parameter's type, or empty: a bool is true or false, an enum one of its values,
+        a topic a key of soa.yaml, a path one that exists. Empty is always allowed: the default stands for it."""
+        topics = (self._tree.config.get("tekton", {}).get("soa") or {}).get("topics") or {}
+        match (param.type, value):
+            case (_, ""):
+                return ""
+            case (ParamType.BOOL, bad) if bad not in BOOLS:
+                return f"{name}={bad} is not true or false"
+            case (_, bad) if param.values and bad not in param.values:
+                return f"{name}={bad} is not one of {', '.join(param.values)}"
+            case (ParamType.TOPIC, bad) if bad not in topics:
+                return f"{name}={bad} is not a topic of soa.yaml ({', '.join(topics)})"
+            case (ParamType.PATH | ParamType.PROJECT, bad) if not Path(bad).expanduser().exists():
+                return f"{name}={bad} does not exist"
+            case _:
+                return ""
+
+    def bind(self, decl: Workflow, given: dict[str, str]) -> dict[str, str]:
+        """The run's parameters: only declared names, each checked against its type; the undeclared are refused, the
+        omitted take their default."""
         match sorted(set(given) - set(decl.parameters)):
             case []:
-                return {name: given.get(name, param.default) for name, param in decl.params.items()}
+                pass
             case unknown:
                 msg = f"{decl.id}: undeclared parameter(s) {', '.join(unknown)}"
+                raise WorkflowError(msg)
+        bound = {name: given.get(name) or param.default for name, param in decl.params.items()}
+        match [bad for name, param in decl.params.items() if (bad := self._bind_check(name, param, bound[name]))]:
+            case []:
+                return bound
+            case problems:
+                msg = f"{decl.id}: {'; '.join(problems)}"
                 raise WorkflowError(msg)
 
 

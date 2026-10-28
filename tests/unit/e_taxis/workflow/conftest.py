@@ -192,7 +192,9 @@ def flow() -> Callable[..., Workflow]:
     """A workflow from node dicts, as the manifest would declare it."""
 
     def build(*nodes: dict[str, Any], **extra: Any) -> Workflow:
-        return msgspec.convert({"id": "w", "description": "d", "nodes": list(nodes), **extra}, Workflow)
+        return msgspec.convert(
+            {"id": "w", "description": "d", "domains": ["tekton"], "nodes": list(nodes), **extra}, Workflow
+        )
 
     return build
 

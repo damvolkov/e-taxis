@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any
 import anyio
 import eserde
 
+from e_taxis.transpile.adapters.ontology import WorkflowOntology
 from e_taxis.transpile.models.error import NousError
 from e_taxis.transpile.models.nous import NousTree
 
@@ -30,6 +31,9 @@ CORE: str = "core"
 WORKTREE: str = "worktree"
 MARKDOWN: str = ".md"
 YAML: frozenset[str] = frozenset({".yaml", ".yml"})
+### the entity a facet's `workflows` config module makes whole at load (adapters.ontology).
+WORKFLOW: str = "workflow"
+WORKFLOWS: str = "workflows"
 
 
 ##### TYPES #####
@@ -149,6 +153,11 @@ class GitNous:
     def _load_tree(cls, root: Path, commit: str, origin: str) -> NousTree:
         schema = cls._load_yaml(root / SCHEMA)
         layers = {layer for chain in schema["facets"].values() for layer in chain}
+        config = cls._load_config(root, schema)
+        entities = cls._load_entities(root, schema)
+        facet = schema.get("entities", {}).get(WORKFLOW, {}).get("facet", "")
+        ontology = WorkflowOntology(config.get(facet, {}).get(WORKFLOWS) or {})
+        workflows = {ident: ontology.expand(ident, raw) for ident, raw in entities.get(WORKFLOW, {}).items()}
         return NousTree(
             root=origin,
             commit=commit,
@@ -162,8 +171,8 @@ class GitNous:
                 layer: cls._load_manifest(root / schema["persona"]["file"].replace("<layer>", layer))
                 for layer in sorted(layers)
             },
-            entities=cls._load_entities(root, schema),
-            config=cls._load_config(root, schema),
+            entities={**entities, **({WORKFLOW: workflows} if WORKFLOW in entities else {})},
+            config=config,
             assets=cls._load_assets(root, schema),
             blobs=cls._load_blobs(root, schema),
         )

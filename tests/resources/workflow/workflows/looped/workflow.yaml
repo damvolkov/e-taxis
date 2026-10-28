@@ -1,4 +1,5 @@
 id: looped
+domains: [tekton]
 description: A bounded loop whose check closes on its second pass.
 parameters: {}
 nodes:

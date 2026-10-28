@@ -23,5 +23,6 @@ async def subjects(plane_nous: Path) -> NousSubject:
 def declare() -> Callable[..., Workflow]:
     """A workflow declaration from its nodes as plain mappings, the way a manifest reads."""
     return lambda nodes, **rest: msgspec.convert(
-        {"id": "w", "description": "Draw it: the rest is detail.", "nodes": nodes, **rest}, Workflow
+        {"id": "w", "description": "Draw it: the rest is detail.", "domains": ["tekton"], "nodes": nodes, **rest},
+        Workflow,
     )

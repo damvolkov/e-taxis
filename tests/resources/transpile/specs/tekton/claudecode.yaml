@@ -166,6 +166,8 @@ map:
       parameters:  {reason: covered, detail: "claude_workflow: the args defaults"}
       nodes:       {reason: covered, detail: "claude_workflow: one gated promise per node (the row's own from)"}
       loop:        {reason: covered, detail: "claude_workflow: the loop's copies, in order"}
+      domains:     {reason: house, detail: "read by the renderer: an instance reaches only the harnesses of its domains"}
+      family:      {reason: covered, detail: "expanded at load (adapters.ontology): its kwargs, output and nodes are in the instance"}
       output:      {reason: house, detail: "taxis workflow run --harness verifies it on disk; the script returns the rundir"}
       triggers:    {reason: house, detail: "eng-grammar phrases read by the channel hooks (e-metaxy), not by the coder"}
     notes: >-
@@ -210,6 +212,7 @@ map:
       security:              {reason: internal, detail: "scanner acceptances, never rendered"}
       schedules:             {reason: internal, detail: "unattended runs: taxis schedule renders them into systemd timers, never the harness"}
       soa:                   {reason: internal, detail: "soa-sweep's frame, read by taxis workflow soa-sweep, never the harness"}
+      workflows:             {reason: internal, detail: "the workflows' kwargs ontology and families, expanded by taxis at load"}
       mcp.servers.*.note:    {reason: pending, detail: "no description field known in Claude's MCP entry; confirm against mcp.md"}
       mcp.servers.*.smoke:   {reason: internal, detail: "evaluation data (taxis eval run config)"}
     notes: >-

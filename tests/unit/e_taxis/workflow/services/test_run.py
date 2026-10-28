@@ -35,7 +35,7 @@ async def test_run_demo_end_to_end(workflow_run: WorkflowRun, nous: Path, agent)
     assert "| last | idle | — |" in (folder / "report.md").read_text()
     assert msgspec.json.decode((folder / "run.json").read_bytes(), type=RunManifest).params == {
         "value": value,
-        "apply": "",
+        "apply": "false",
     }
 
 
@@ -102,3 +102,17 @@ async def test_run_launch_fails_without_the_declared_output(
 ) -> None:
     with pytest.raises(RunFailedError, match="without the declared output"):
         await workflow_run.launch(GitNous(nous, None), "demo", {}, standing, cwd=tmp_path)
+
+
+async def test_run_project_empty_is_the_git_root(workflow_run: WorkflowRun, nous: Path, tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    (repo / "deep").mkdir(parents=True)
+    await anyio.run_process(["git", "init", "-q", str(repo)])
+    report = await workflow_run.run(GitNous(nous, None), "rooted", {}, cwd=repo / "deep")
+    folder = nous / ".reports" / "workflows" / "rooted" / report.manifest.run_id
+    assert (folder / "project.txt").read_text() == str(repo)
+
+
+async def test_run_project_outside_git_is_refused(workflow_run: WorkflowRun, nous: Path, tmp_path: Path) -> None:
+    with pytest.raises(WorkflowError, match="is in no git project"):
+        await workflow_run.run(GitNous(nous, None), "rooted", {}, cwd=tmp_path)

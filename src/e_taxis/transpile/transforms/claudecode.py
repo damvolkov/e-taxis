@@ -36,7 +36,7 @@ const NOUS = P.nous ? ` --nous ${Q(P.nous)}` : ''
 const KV = Object.entries(P).filter(([k]) => k !== 'rundir' && k !== 'nous').map(([k, v]) => ' ' + Q(`${k}=${v}`)).join('')
 const STEP = {type: 'object', required: ['node', 'status'], properties: {node: {type: 'string'}, status: {type: 'string'}, reason: {type: 'string'}, out: {type: 'string'}}}
 const green = r => Boolean(r) && (r.status === 'ok' || r.status === 'idle')
-const bind = s => s.replace(/\\{\\{(\\w+)\\}\\}/g, (m, k) => k === 'rundir' ? RUNDIR : k in P ? String(P[k]) : m)
+const bind = s => s.replace(/\\{\\{(\\w+)\\}\\}/g, (m, k) => k === 'rundir' ? RUNDIR : k === 'workflow' ? WORKFLOW : k in P ? String(P[k]) : m)
 
 async function run(id, phase) {
   return agent(`Run exactly this one command with the Bash tool and nothing else. Whatever its exit code, answer with the JSON object printed on its last stdout line.\\n\\ntaxis workflow step ${Q(id)} --workflow ${Q(WORKFLOW)} --rundir ${Q(RUNDIR)}${NOUS}${KV}`, {label: id, phase, model: PLUMBING, effort: 'low', schema: STEP})

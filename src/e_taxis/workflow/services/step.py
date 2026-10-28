@@ -58,6 +58,7 @@ class WorkflowStep:
         return manifest.params | {
             "iteration": str(spec.iteration) if spec.iteration else "",
             "run": manifest.run_id,
+            "workflow": manifest.workflow,
             "rundir": str(context.state.paths.root),
             "nous": manifest.nous,
         }

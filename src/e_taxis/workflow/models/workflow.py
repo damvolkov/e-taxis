@@ -33,11 +33,22 @@ class AgentMode(StrEnum):
 
 
 class ParamType(StrEnum):
-    """A parameter's shape; every value still reaches a step as text (`{{name}}`)."""
+    """A parameter's shape; every value still reaches a step as text (`{{name}}`). `project` is a path that, left empty,
+    is the git root of the directory the run was launched from; `topic` a key of soa.yaml's topics."""
 
     STR = "str"
     BOOL = "bool"
     LIST = "list"
+    PATH = "path"
+    TOPIC = "topic"
+    PROJECT = "project"
+
+
+class Domain(StrEnum):
+    """The hemisphere a workflow serves; the transpiler renders it only into that hemisphere's harnesses."""
+
+    TEKTON = "tekton"
+    NOMOS = "nomos"
 
 
 class Param(msgspec.Struct, frozen=True, kw_only=True, forbid_unknown_fields=True):
@@ -97,6 +108,8 @@ class Workflow(msgspec.Struct, frozen=True, kw_only=True, forbid_unknown_fields=
 
     id: str
     description: str
+    domains: tuple[Domain, ...]
+    family: str = ""
     parameters: dict[str, str | Param] = {}
     nodes: tuple[Node, ...] = ()
     loop: LoopDecl | None = None
