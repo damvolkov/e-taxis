@@ -32,7 +32,9 @@ CONFIG: dict[str, Any] = {
 )
 async def test_ontology_kwargs(parameters: Any, expected: dict[str, Any]) -> None:
     manifest = {"id": "w", "nodes": [], "parameters": parameters}
-    assert WorkflowOntology(CONFIG).expand("w", manifest)["parameters"] == expected
+    whole = WorkflowOntology(CONFIG).expand("w", manifest)["parameters"]
+    assert {name: entry for name, entry in whole.items() if name != "query"} == expected
+    assert "a small model reads" in whole["query"]["doc"]
 
 
 async def test_ontology_family_joins_kwargs_output_and_nodes() -> None:
@@ -43,7 +45,7 @@ async def test_ontology_family_joins_kwargs_output_and_nodes() -> None:
         "nodes": [{"use": "stats", "depends": ["a"]}, {"use": "stats", "id": "again"}, {"id": "a", "run": "x"}],
     }
     whole = WorkflowOntology(CONFIG).expand("w", manifest)
-    assert list(whole["parameters"]) == ["topic", "bench"]
+    assert list(whole["parameters"]) == ["topic", "bench", "query"]
     assert whole["output"] == {"type": "report", "path": "<rundir>/soa/w.json"}
     assert whole["nodes"] == [
         {"run": "taxis workflow {{workflow}} stats", "instruction": "interval", "id": "stats", "depends": ["a"]},

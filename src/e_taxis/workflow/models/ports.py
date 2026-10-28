@@ -9,7 +9,7 @@ from collections.abc import Mapping, Sequence
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from e_taxis.transpile.models.ports import CapturePort, NousPort
 from e_taxis.transpile.models.trial import TrialReport, TrialRun
@@ -102,6 +102,15 @@ class NodePort(Protocol):
     """A step: one async call from its context to an outcome. Never raises for a verdict."""
 
     async def run(self, context: NodeContext) -> Outcome: ...
+
+
+@runtime_checkable
+class ChatPort(Protocol):
+    """One structured completion on an endpoint: the object the schema forces, and its tokens."""
+
+    async def structured(
+        self, endpoint: Endpoint, system: str, user: str, schema: Mapping[str, Any]
+    ) -> tuple[dict[str, Any], int]: ...
 
 
 @runtime_checkable

@@ -36,6 +36,7 @@ async def test_run_demo_end_to_end(workflow_run: WorkflowRun, nous: Path, agent)
     assert msgspec.json.decode((folder / "run.json").read_bytes(), type=RunManifest).params == {
         "value": value,
         "apply": "false",
+        "query": "",
     }
 
 
@@ -116,3 +117,11 @@ async def test_run_project_empty_is_the_git_root(workflow_run: WorkflowRun, nous
 async def test_run_project_outside_git_is_refused(workflow_run: WorkflowRun, nous: Path, tmp_path: Path) -> None:
     with pytest.raises(WorkflowError, match="is in no git project"):
         await workflow_run.run(GitNous(nous, None), "rooted", {}, cwd=tmp_path)
+
+
+async def test_run_reads_query_into_the_unsaid_kwargs(reading_run: WorkflowRun, nous: Path, chat) -> None:
+    chat.answers["local"] = {"value": "from the query", "apply": ""}
+    report = await reading_run.run(GitNous(nous, None), "demo", {"query": "write from the query"})
+    first = report.runs[0]
+    assert (first.node, first.runner, first.tokens, first.reason) == ("kwargs", "local", 7, "read value from query")
+    assert report.manifest.params["value"] == "from the query"

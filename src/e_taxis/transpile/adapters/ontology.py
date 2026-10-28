@@ -1,6 +1,6 @@
 """adapters.ontology: a workflow manifest made whole from the facet's `workflows` config — at load, once.
 
-`kwargs` is the one typed vocabulary of parameters: a workflow names the ones it takes (`parameters: [project, query]`)
+`kwargs` is the one typed vocabulary of parameters, and `query` is in every workflow: a workflow names the ones it takes (`parameters: [project, query]`)
 and may refine an entry (`{query: {doc: …}}`); a name the vocabulary lacks must be declared in full where it is used.
 `families` groups workflows that share a philosophy: the family's kwargs join every member's, its output stands for
 a member that declares none (`{name}` is the member's id), and its nodes are written once and used as
@@ -13,6 +13,10 @@ from e_taxis.transpile.models.error import NousError
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+
+##### DEFAULTS #####
+### every workflow takes it: the request in words, read into the kwargs the caller left unsaid (services.kwargs).
+QUERY: str = "query"
 
 
 class WorkflowOntology:
@@ -30,6 +34,8 @@ class WorkflowOntology:
         """One parameter: the vocabulary's entry, a string refining its doc, or a mapping over it."""
         base = self._kwargs.get(name)
         match (base, refined):
+            case (None, None) if name == QUERY:
+                return {"doc": "the request in your words; a small model reads the kwargs left unsaid out of it"}
             case (None, None):
                 msg = f"workflow {ident}: kwarg {name!r} is in no vocabulary and declared nowhere"
                 raise NousError(msg)
@@ -42,7 +48,7 @@ class WorkflowOntology:
 
     def _expand_params(self, ident: str, declared: Any, family: Mapping[str, Any]) -> dict[str, Any]:
         named = dict.fromkeys(declared) if isinstance(declared, list) else dict(declared or {})
-        wanted = {**dict.fromkeys(family.get("kwargs") or ()), **named}
+        wanted = {**dict.fromkeys(family.get("kwargs") or ()), **named, QUERY: named.get(QUERY)}
         return {name: self._expand_kwarg(ident, name, refined) for name, refined in wanted.items()}
 
     @staticmethod

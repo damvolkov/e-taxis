@@ -45,7 +45,7 @@ from e_taxis.workflow.models.case import ProbeMode, ProbeResult
 from e_taxis.workflow.models.distill import Candidate, Change, HarnessPart, HarnessTarget, Relation, Target
 from e_taxis.workflow.models.endpoint import Endpoint
 from e_taxis.workflow.models.entity import Entity
-from e_taxis.workflow.models.error import AgentError, CommandError, SweepError
+from e_taxis.workflow.models.error import AgentError, CommandError, ProviderError, SweepError
 from e_taxis.workflow.models.graph import GraphSpec, StepSpec
 from e_taxis.workflow.models.plane import Cadence, NodeCard, NodeSpec, Plane, PlaneGraph, PlaneManifest, PlanePaths
 from e_taxis.workflow.models.plane import Target as PlaneTarget
@@ -77,6 +77,7 @@ from e_taxis.workflow.plane.signals import PlaneSignals
 from e_taxis.workflow.plane.snapshot import PlaneSnapshot
 from e_taxis.workflow.plane.speckeeper import PlaneSpeckeeper
 from e_taxis.workflow.plane.tasks import PlaneTasks
+from e_taxis.workflow.services.kwargs import WorkflowKwargs
 from e_taxis.workflow.services.plane import PlaneRun
 from e_taxis.workflow.services.promote import PlanePromote
 from e_taxis.workflow.services.run import WorkflowRun
@@ -1105,3 +1106,56 @@ def walking(workflow_run: WorkflowRun, nous: Path) -> WalkingHarness:
 @pytest.fixture
 def standing(workflow_run: WorkflowRun, nous: Path) -> WalkingHarness:
     return WalkingHarness(workflow_run, nous, idle=True)
+
+
+##### KWARGS #####
+class FakeChat:
+    """ChatPort: `answers` per tier (the model name); a tier in `down` raises; every request kept."""
+
+    def __init__(self) -> None:
+        self.answers: dict[str, dict[str, Any]] = {}
+        self.down: set[str] = set()
+        self.asked: list[tuple[str, str, str, Mapping[str, Any]]] = []
+
+    async def structured(
+        self, endpoint: Endpoint, system: str, user: str, schema: Mapping[str, Any]
+    ) -> tuple[dict[str, Any], int]:
+        self.asked.append((endpoint.model, system, user, schema))
+        if endpoint.model in self.down:
+            msg = f"{endpoint.model} is down"
+            raise ProviderError(msg)
+        return self.answers.get(endpoint.model, {}), 7
+
+
+@pytest.fixture
+def chat() -> FakeChat:
+    return FakeChat()
+
+
+@pytest.fixture
+def kwargs_reader(chat: FakeChat, provider: FakeProvider) -> WorkflowKwargs:
+    return WorkflowKwargs(chat, provider, ("local", "scout"))
+
+
+@pytest.fixture
+def declare() -> Callable[..., Workflow]:
+    """A workflow declaration from its nodes as plain mappings, the way a manifest reads."""
+    return lambda nodes, **rest: msgspec.convert(
+        {"id": "w", "description": "Draw it: the rest is detail.", "domains": ["tekton"], "nodes": nodes, **rest},
+        Workflow,
+    )
+
+
+@pytest.fixture
+def reading_run(command: ShellCommand, agent: FakeAgent, lock: FlockLock, kwargs_reader: WorkflowKwargs) -> WorkflowRun:
+    """The workflow runner with a small model reading `query` (the fake chat answers per tier)."""
+    return WorkflowRun(
+        command,
+        agent,
+        lock,
+        JsonlLedger.open,
+        concurrency=4,
+        limit=30.0,
+        reports=Path(".reports"),
+        kwargs=kwargs_reader,
+    )

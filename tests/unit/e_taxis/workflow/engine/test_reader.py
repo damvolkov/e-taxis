@@ -76,7 +76,7 @@ async def test_reader_bind_refuses_undeclared_and_defaults_the_rest(reader: Work
     _, decl = reader.read("demo")
     with pytest.raises(WorkflowError, match="undeclared parameter"):
         reader.bind(decl, {"nope": "x"})
-    assert reader.bind(decl, {"value": "v"}) == {"value": "v", "apply": "false"}
+    assert reader.bind(decl, {"value": "v"}) == {"value": "v", "apply": "false", "query": ""}
 
 
 ##### PLANES #####

@@ -69,6 +69,7 @@ from e_taxis.transpile.services.run import RunService
 from e_taxis.transpile.services.trial import TrialService
 from e_taxis.workflow.adapters.agent import ClaudeAgent, ModeAgent, OpencodeAgent
 from e_taxis.workflow.adapters.api import WreqApi
+from e_taxis.workflow.adapters.chat import WreqChat
 from e_taxis.workflow.adapters.coder import ClaudeCoder, OpencodeCoder
 from e_taxis.workflow.adapters.command import ShellCommand
 from e_taxis.workflow.adapters.evals import NousEvals
@@ -112,6 +113,7 @@ from e_taxis.workflow.plane.signals import PlaneSignals
 from e_taxis.workflow.plane.snapshot import PlaneSnapshot
 from e_taxis.workflow.plane.speckeeper import PlaneSpeckeeper
 from e_taxis.workflow.plane.tasks import PlaneTasks
+from e_taxis.workflow.services.kwargs import WorkflowKwargs
 from e_taxis.workflow.services.plane import PlaneRun
 from e_taxis.workflow.services.promote import PlanePromote
 from e_taxis.workflow.services.run import WorkflowRun
@@ -322,6 +324,11 @@ class Deps:
             concurrency=settings.taxis_workflow_concurrency,
             limit=settings.taxis_workflow_timeout,
             reports=settings.taxis_workflow_reports,
+            kwargs=WorkflowKwargs(
+                WreqChat(settings.taxis_workflow_kwargs_limit),
+                HouseProvider(os.environ),
+                settings.taxis_workflow_kwargs_tiers,
+            ),
         )
 
     async def _resolve_web(self) -> WreqWeb:

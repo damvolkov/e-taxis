@@ -17,20 +17,23 @@ from e_taxis.workflow.engine.executor import DagExecutor
 from e_taxis.workflow.engine.reader import WorkflowReader
 from e_taxis.workflow.models.error import CommandError, RunFailedError, WorkflowError
 from e_taxis.workflow.models.ports import RunState
-from e_taxis.workflow.models.run import RunManifest, RunPaths, RunReport
+from e_taxis.workflow.models.run import NodeRun, RunManifest, RunPaths, RunReport, Status
 from e_taxis.workflow.models.workflow import ParamType, Workflow
 from e_taxis.workflow.services.step import LEAD, AnsweredStep, WorkflowStep
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
+    from e_taxis.transpile.models.nous import NousTree
     from e_taxis.transpile.models.ports import NousPort
     from e_taxis.workflow.models.ports import AgentPort, CommandPort, HarnessPort, LedgerPort, LockPort
-    from e_taxis.workflow.models.run import NodeRun
+    from e_taxis.workflow.services.kwargs import WorkflowKwargs
 
 ##### DEFAULTS #####
 LOCK: str = ".lock"
 LOCK_ENV: str = "TAXIS_LOCK"
+### the step a small model reads the query in, before the graph: recorded like any other.
+KWARGS: str = "kwargs"
 GIT: float = 30.0
 
 
@@ -38,7 +41,7 @@ GIT: float = 30.0
 class WorkflowRun:
     """Every port is injected; `reports` is relative to the checkout unless absolute."""
 
-    __slots__ = ("_agent", "_command", "_concurrency", "_ledgers", "_limit", "_lock", "_reports")
+    __slots__ = ("_agent", "_command", "_concurrency", "_kwargs", "_ledgers", "_limit", "_lock", "_reports")
 
     def __init__(
         self,
@@ -50,7 +53,9 @@ class WorkflowRun:
         concurrency: int,
         limit: float,
         reports: Path,
+        kwargs: WorkflowKwargs | None = None,
     ) -> None:
+        self._kwargs = kwargs
         self._command = command
         self._agent = agent
         self._lock = lock
@@ -83,6 +88,44 @@ class WorkflowRun:
             raise WorkflowError(msg) from outside
         return given | dict.fromkeys(empty, root)
 
+    async def _common_params(
+        self, tree: NousTree, decl: Workflow, given: dict[str, str], cwd: Path
+    ) -> tuple[dict[str, str], tuple[str, int, tuple[str, ...]]]:
+        """The run's kwargs: the project resolved, what `query` states read by a small model, then the typed bind;
+        and how they were read — the tier, its tokens and the kwargs it filled (empty when no model was asked)."""
+        rooted = await self._common_project(decl, given, cwd)
+        topics = tuple((tree.config.get("tekton", {}).get("soa") or {}).get("topics") or {})
+        filled, tier, tokens = (
+            await self._kwargs.fill(decl, rooted, Path(tree.root), topics) if self._kwargs else (rooted, "", 0)
+        )
+        read = tuple(name for name in filled if name not in rooted)
+        return WorkflowReader(tree).bind(decl, filled), (tier, tokens, read)
+
+    @staticmethod
+    async def _common_record(ledger: LedgerPort, run_id: str, read: tuple[str, int, tuple[str, ...]]) -> None:
+        """The `kwargs` step in the ledger, when a model read the query."""
+        tier, tokens, names = read
+        match tier:
+            case "":
+                return
+            case _:
+                now = dt.datetime.now(dt.UTC)
+                reason = f"read {', '.join(names) or 'nothing'} from query"
+                await ledger.append(
+                    NodeRun(
+                        run_id=run_id,
+                        node=KWARGS,
+                        status=Status.OK,
+                        started=now,
+                        ended=now,
+                        input_hash="",
+                        output_hash="",
+                        reason=reason,
+                        tokens=tokens,
+                        runner=tier,
+                    )
+                )
+
     async def _one_manifest(self, paths: RunPaths, manifest: RunManifest) -> RunManifest:
         """The run's manifest: the one its folder holds, else this one, written once — the first step opens the run."""
         await anyio.Path(paths.root).mkdir(parents=True, exist_ok=True)
@@ -113,7 +156,7 @@ class WorkflowRun:
         tree = await source.load()
         reader = WorkflowReader(tree)
         graph, decl = reader.read(ident)
-        params = reader.bind(decl, await self._common_project(decl, given, cwd or Path.cwd()))
+        params, read = await self._common_params(tree, decl, given, cwd or Path.cwd())
         root = Path(tree.root)
         base = await self._run_head(root)
         now = dt.datetime.now(dt.UTC)
@@ -125,11 +168,13 @@ class WorkflowRun:
         await anyio.Path(paths.root).mkdir(parents=True, exist_ok=True)
         await anyio.Path(paths.manifest).write_bytes(msgspec.json.format(msgspec.json.encode(manifest)))
         ledger = await self._ledgers(paths.ledger)
+        await self._common_record(ledger, run_id, read)
         async with self._lock.hold(self.reports(root) / LOCK, f"workflow run {run_id}") as token:
             step = WorkflowStep(self._command, self._agent, limit=self._limit, env={LOCK_ENV: token})
             state = RunState(manifest=manifest, paths=paths, ledger=ledger)
             runs = await DagExecutor(step, self._concurrency, notify).run(state)
-        report = RunReport(manifest=manifest, runs=runs, folder=str(paths.root))
+        read_runs = tuple(run for run in ledger.runs() if run.node == KWARGS)
+        report = RunReport(manifest=manifest, runs=(*read_runs, *runs), folder=str(paths.root))
         await anyio.Path(paths.report).write_text(report.markdown)
         return report
 
@@ -153,6 +198,8 @@ class WorkflowRun:
         root = Path(tree.root)
         base = await self._run_head(root)
         paths = RunPaths(Path(await anyio.Path(rundir).resolve()))
+        opened = await anyio.Path(paths.manifest).is_file()
+        params, read = ({}, ("", 0, ())) if opened else await self._common_params(tree, decl, given, cwd or Path.cwd())
         manifest = await self._one_manifest(
             paths,
             RunManifest(
@@ -162,10 +209,11 @@ class WorkflowRun:
                 base_sha=base,
                 started=dt.datetime.now(dt.UTC),
                 graph=graph,
-                params=reader.bind(decl, await self._common_project(decl, given, cwd or Path.cwd())),
+                params=params,
             ),
         )
         ledger = await self._ledgers(paths.ledger)
+        await self._common_record(ledger, manifest.run_id, read)
         port = (
             AnsweredStep(answer)
             if answer
@@ -182,11 +230,12 @@ class WorkflowRun:
         tree = await source.load()
         reader = WorkflowReader(tree)
         graph, decl = reader.read(ident)
-        params = reader.bind(decl, await self._common_project(decl, given, cwd))
+        params, read = await self._common_params(tree, decl, given, cwd)
         now = dt.datetime.now(dt.UTC)
         rundir = self._reports / "workflows" / ident / f"{now:%Y%m%dT%H%M%SZ}-{ident}"
         paths = RunPaths(cwd / rundir)
         await anyio.Path(paths.root).mkdir(parents=True, exist_ok=True)
+        await self._common_record(await self._ledgers(paths.ledger), paths.root.name, read)
         actors = tuple(dict.fromkeys(step.actor or LEAD for step in graph if step.semantic))
         said = await harness.run(ident, {**params, "rundir": str(paths.root), "nous": tree.root}, actors, cwd=cwd)
         manifest = (
