@@ -72,6 +72,7 @@ from e_taxis.workflow.adapters.api import WreqApi
 from e_taxis.workflow.adapters.coder import ClaudeCoder, OpencodeCoder
 from e_taxis.workflow.adapters.command import ShellCommand
 from e_taxis.workflow.adapters.evals import NousEvals
+from e_taxis.workflow.adapters.harness import ClaudeHarness, Harness, HarnessTable, OpencodeHarness
 from e_taxis.workflow.adapters.ledger import JsonlLedger
 from e_taxis.workflow.adapters.lock import FlockLock
 from e_taxis.workflow.adapters.provider import HouseProvider
@@ -282,6 +283,31 @@ class Deps:
             ),
         )
 
+    async def _resolve_harnesses(self) -> HarnessTable:
+        """The coders that walk a whole workflow: Claude Code from `~/.claude`, OpenCode from its live tree."""
+        settings, (_, claude) = await self.resolve(TaxisSettings), await self._common_homes()
+        command, landrun = await self.resolve(CommandPort), settings.taxis_landrun.expanduser()
+        writable = tuple(path.expanduser() for path in settings.taxis_workflow_writable)
+        fence, limit = LandrunFence(landrun), settings.taxis_workflow_harness_limit
+        opencode = OpencodeAgent(
+            command,
+            fence,
+            config=settings.taxis_workflow_opencode.expanduser(),
+            landrun=landrun,
+            writable=writable,
+            environ=os.environ,
+            model=settings.taxis_workflow_model,
+        )
+        agent = ClaudeAgent(command, fence, config=claude, landrun=landrun, writable=writable, environ=os.environ)
+        return HarnessTable(
+            MappingProxyType(
+                {
+                    Harness.CLAUDE: ClaudeHarness(command, agent, limit),
+                    Harness.OPENCODE: OpencodeHarness(command, opencode, limit),
+                }
+            )
+        )
+
     async def _resolve_workflow(self) -> WorkflowRun:
         """A run waits for the checkout's lock, saying once on stderr whom it waits for."""
         settings = await self.resolve(TaxisSettings)
@@ -445,6 +471,7 @@ class Deps:
             CommandPort: _resolve_command,
             AgentPort: _resolve_agent,
             WorkflowRun: _resolve_workflow,
+            HarnessTable: _resolve_harnesses,
             SandboxPort: _resolve_sandbox,
             WebPort: _resolve_web,
             PlaneRun: _resolve_plane,

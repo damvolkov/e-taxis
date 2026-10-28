@@ -7,7 +7,7 @@ import msgspec
 import pytest
 
 from e_taxis.transpile.adapters.nous import GitNous
-from e_taxis.workflow.models.error import LockError, WorkflowError
+from e_taxis.workflow.models.error import LockError, RunFailedError, WorkflowError
 from e_taxis.workflow.models.run import RunManifest, Status
 
 if TYPE_CHECKING:
@@ -79,3 +79,26 @@ async def test_run_held_checkout_fails_after_the_wait(
     async with held(workflow_run.reports(nous) / ".lock"):
         with pytest.raises(LockError):
             await workflow_run.run(GitNous(nous, None), "demo", {})
+
+
+async def test_run_launch_rebuilds_the_report_from_what_the_harness_walked(
+    workflow_run: WorkflowRun, nous: Path, tmp_path: Path, walking
+) -> None:
+    report = await workflow_run.launch(GitNous(nous, None), "demo", {"value": "v"}, walking, cwd=tmp_path)
+    folder = tmp_path / ".reports" / "workflows" / "demo"
+    assert [(run.node, run.status) for run in report.runs] == [
+        ("first", Status.OK),
+        ("echo", Status.OK),
+        ("think", Status.OK),
+        ("last", Status.IDLE),
+    ]
+    assert walking.seen[0][2] == ("builder",)
+    assert (await anyio.Path(report.folder, "report.md").read_text()).endswith("## The harness said\n\nwalked\n")
+    assert report.folder.startswith(str(folder))
+
+
+async def test_run_launch_fails_without_the_declared_output(
+    workflow_run: WorkflowRun, nous: Path, tmp_path: Path, standing
+) -> None:
+    with pytest.raises(RunFailedError, match="without the declared output"):
+        await workflow_run.launch(GitNous(nous, None), "demo", {}, standing, cwd=tmp_path)

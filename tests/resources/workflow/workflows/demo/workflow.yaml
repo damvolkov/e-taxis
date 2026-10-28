@@ -12,3 +12,6 @@ nodes:
   - {source: nodes/echo.yaml}
   - {source: nodes/think.yaml}
   - {source: nodes/last.yaml}
+output:
+  type: value
+  path: "<rundir>/value.txt"

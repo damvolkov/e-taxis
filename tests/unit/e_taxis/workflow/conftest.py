@@ -301,13 +301,17 @@ def fake_agent_deps(monkeypatch: pytest.MonkeyPatch, agent: FakeAgent) -> FakeAg
 
 @pytest.fixture
 def opencode_tree(tmp_path: Path) -> Path:
-    """A live OpenCode tree: `builder` drivable (mode all), `scout` a subagent; global asks in the v2 list form."""
+    """A live OpenCode tree: `builder` drivable (mode all), `scout` a subagent, `orchestrator` the lead; global asks in
+    the v2 list form."""
     root = tmp_path / "opencode"
     (root / "agents").mkdir(parents=True)
     (root / "agents" / "builder.md").write_text(
         '---\nmode: all\npermission:\n  edit: allow\n  bash:\n    "*": ask\n    "ls*": allow\n---\nbody\n'
     )
     (root / "agents" / "scout.md").write_text("---\nmode: subagent\n---\nbody\n")
+    (root / "agents" / "orchestrator.md").write_text(
+        '---\nmode: primary\npermission:\n  bash:\n    "*": ask\n---\nlead\n'
+    )
     (root / "opencode.jsonc").write_text(
         '{\n  // global\n  "permissions": [\n'
         '    {"action": "edit", "resource": "*", "effect": "allow"},\n'
@@ -1066,3 +1070,36 @@ def leaky_lab(landrun: Path) -> FakeLab:
     leaky = FakeLab(landrun)
     leaky.holds = False
     return leaky
+
+
+##### HARNESS #####
+class WalkingHarness:
+    """HarnessPort that walks `demo` the way a coder would: each step through `WorkflowRun.one`, the agent's answer
+    kept as given — or, `idle`, walks nothing."""
+
+    def __init__(self, runner: WorkflowRun, nous: Path, *, idle: bool = False) -> None:
+        self.runner, self.nous, self.idle = runner, nous, idle
+        self.seen: list[tuple[str, dict[str, str], tuple[str, ...]]] = []
+
+    async def run(self, workflow: str, args: Mapping[str, str], actors: tuple[str, ...], *, cwd: Path) -> str:
+        self.seen.append((workflow, dict(args), actors))
+        rundir, source = cwd / args["rundir"], GitNous(self.nous, None)
+        given = {key: value for key, value in args.items() if key not in {"rundir", "nous"}}
+        answer = cwd / "answer.md"
+        answer.write_text("thought\n")
+        steps = () if self.idle else ("first", "echo", "think", "last")
+        _ = [
+            await self.runner.one(source, workflow, step, given, rundir, answer=answer if step == "think" else None)
+            for step in steps
+        ]
+        return "walked"
+
+
+@pytest.fixture
+def walking(workflow_run: WorkflowRun, nous: Path) -> WalkingHarness:
+    return WalkingHarness(workflow_run, nous)
+
+
+@pytest.fixture
+def standing(workflow_run: WorkflowRun, nous: Path) -> WalkingHarness:
+    return WalkingHarness(workflow_run, nous, idle=True)

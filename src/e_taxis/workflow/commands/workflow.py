@@ -16,6 +16,7 @@ from e_taxis.harness.runtime.deps import Inject
 from e_taxis.harness.runtime.locator import UNSET, Nous
 from e_taxis.harness.runtime.settings import TaxisSettings
 from e_taxis.transpile.adapters.nous import GitNous
+from e_taxis.workflow.adapters.harness import Harness, HarnessTable
 from e_taxis.workflow.engine.chart import WorkflowChart
 from e_taxis.workflow.engine.reader import WorkflowReader
 from e_taxis.workflow.models.error import NothingError, RunFailedError, WorkflowError
@@ -79,16 +80,29 @@ def raise_one(run: NodeRun) -> None:
 
 ##### COMMANDS #####
 async def run(
-    workflow: str, *param: str, nous: Nous = UNSET, runner: Inject[WorkflowRun], console: Inject[Console]
+    workflow: str,
+    *param: str,
+    nous: Nous = UNSET,
+    harness: Harness | None = None,
+    runner: Inject[WorkflowRun],
+    harnesses: Inject[HarnessTable],
+    console: Inject[Console],
 ) -> None:
-    """Run WORKFLOW from an e-nous checkout: command steps and agent steps, in parallel where the graph allows.
+    """Run WORKFLOW: command steps and agent steps, in parallel where the graph allows — by taxis's own engine, or
+    end to end by a coder harness on its transpiled form, the run folder under the current directory.
 
     Args:
         workflow: a workflow id under core/tekton/workflows/ (see `taxis workflow list`).
         param: name=value pairs for the workflow's declared parameters.
-        nous: the e-nous checkout, read as it stands; its `.reports/` holds the run.
+        nous: the e-nous checkout, read as it stands; without --harness its `.reports/` holds the run.
+        harness: claude or opencode walks the whole workflow headless; the run lands in ./.reports/.
     """
-    report = await runner.run(GitNous(nous, None), workflow, parse_params(param), render_live)
+    source, params = GitNous(nous, None), parse_params(param)
+    report = await (
+        runner.run(source, workflow, params, render_live)
+        if harness is None
+        else runner.launch(source, workflow, params, harnesses[harness], cwd=Path.cwd())
+    )
     console.out(report.markdown, highlight=False)
     console.out(f"→ {report.folder}/report.md", highlight=False)
     match report.broken:

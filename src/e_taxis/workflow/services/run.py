@@ -15,16 +15,16 @@ import msgspec
 
 from e_taxis.workflow.engine.executor import DagExecutor
 from e_taxis.workflow.engine.reader import WorkflowReader
-from e_taxis.workflow.models.error import CommandError
+from e_taxis.workflow.models.error import CommandError, RunFailedError
 from e_taxis.workflow.models.ports import RunState
 from e_taxis.workflow.models.run import RunManifest, RunPaths, RunReport
-from e_taxis.workflow.services.step import AnsweredStep, WorkflowStep
+from e_taxis.workflow.services.step import LEAD, AnsweredStep, WorkflowStep
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
     from e_taxis.transpile.models.ports import NousPort
-    from e_taxis.workflow.models.ports import AgentPort, CommandPort, LedgerPort, LockPort
+    from e_taxis.workflow.models.ports import AgentPort, CommandPort, HarnessPort, LedgerPort, LockPort
     from e_taxis.workflow.models.run import NodeRun
 
 ##### DEFAULTS #####
@@ -150,3 +150,37 @@ class WorkflowRun:
         )
         state = RunState(manifest=manifest, paths=paths, ledger=ledger)
         return await DagExecutor(port, 1).one(state, node, kept=answer is None)
+
+    async def launch(
+        self, source: NousPort, ident: str, given: dict[str, str], harness: HarnessPort, *, cwd: Path
+    ) -> RunReport:
+        """The whole workflow walked by a harness, its run folder under `cwd`'s reports: the parameters checked
+        first, the report rebuilt from the ledger the steps left, the declared output verified on disk."""
+        tree = await source.load()
+        reader = WorkflowReader(tree)
+        graph, decl = reader.read(ident)
+        params = reader.bind(decl, given)
+        now = dt.datetime.now(dt.UTC)
+        rundir = self._reports / "workflows" / ident / f"{now:%Y%m%dT%H%M%SZ}-{ident}"
+        paths = RunPaths(cwd / rundir)
+        await anyio.Path(paths.root).mkdir(parents=True, exist_ok=True)
+        actors = tuple(dict.fromkeys(step.actor or LEAD for step in graph if step.semantic))
+        said = await harness.run(ident, {**params, "rundir": str(paths.root), "nous": tree.root}, actors, cwd=cwd)
+        manifest = (
+            msgspec.json.decode(await anyio.Path(paths.manifest).read_bytes(), type=RunManifest)
+            if await anyio.Path(paths.manifest).is_file()
+            else RunManifest(
+                run_id=paths.root.name, workflow=ident, nous=tree.root, base_sha="", started=now, graph=graph
+            )
+        )
+        runs = (await self._ledgers(paths.ledger)).runs() if await anyio.Path(paths.ledger).is_file() else ()
+        report = RunReport(manifest=manifest, runs=runs, folder=str(paths.root))
+        await anyio.Path(paths.report).write_text(f"{report.markdown}\n\n## The harness said\n\n{said}\n")
+        wanted = [part.strip().replace("<rundir>", str(paths.root)) for part in decl.output.get("path", "").split("·")]
+        missing = [path for path in wanted if path and not await anyio.Path(path).exists()]
+        match missing:
+            case []:
+                return report
+            case _:
+                msg = f"{ident}: the harness ended without the declared output: {', '.join(missing)}"
+                raise RunFailedError(msg)

@@ -48,7 +48,7 @@ class TaxisSettings(BaseSettings):
     e-nous checkout a command reads when `--nous` is not given (the ladder's second rung, `runtime.locator`).
 
     TAXIS_WORKFLOW_REPORTS: where runs live, relative to the e-nous checkout; _CONCURRENCY bounds the steps in
-    flight, _TIMEOUT each step (seconds), _LOCK_WAIT how long a run waits for another; _OPENCODE is the live tree
+    flight, _TIMEOUT each step (seconds), _HARNESS_LIMIT a whole run a harness walks (`--harness`), _LOCK_WAIT how long a run waits for another; _OPENCODE is the live tree
     agents are driven from (a subagent there is driven from Claude Code's tree, CLAUDE_CONFIG_DIR), _MODEL the model
     OpenCode runs them on (empty: the tree's), _WRITABLE what a read-only session may write.
     TAXIS_DISTILL_BLUEPRINT is the e-arkhetypo checkout read at _REF; _GRAPH the code-graph CLI, _CACHE its
@@ -87,6 +87,7 @@ class TaxisSettings(BaseSettings):
     taxis_workflow_reports: Path = Path(".reports")
     taxis_workflow_concurrency: int = 4
     taxis_workflow_timeout: float = 1800.0
+    taxis_workflow_harness_limit: float = 7200.0
     taxis_workflow_lock_wait: float = 600.0
     taxis_workflow_opencode: Path = Path("~/.config/opencode")
     taxis_workflow_model: str = ""

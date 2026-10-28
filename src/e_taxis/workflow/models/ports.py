@@ -104,6 +104,13 @@ class NodePort(Protocol):
     async def run(self, context: NodeContext) -> Outcome: ...
 
 
+@runtime_checkable
+class HarnessPort(Protocol):
+    """A coder harness walking a whole workflow headless in `cwd`: its last word; the run folder holds the evidence."""
+
+    async def run(self, workflow: str, args: Mapping[str, str], actors: tuple[str, ...], *, cwd: Path) -> str: ...
+
+
 ##### PLANE PORTS #####
 @runtime_checkable
 class SandboxPort(Protocol):
