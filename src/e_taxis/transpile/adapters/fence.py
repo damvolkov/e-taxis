@@ -63,8 +63,10 @@ class LandrunFence:
         ports: Sequence[int],
         env: Mapping[str, str],
         binds: Sequence[int] = (),
+        network: bool = False,
     ) -> list[str]:
-        """The argv to run fenced: read and execute `/`, write only `writable`, connect only to `ports`, listen on `binds`."""
+        """The argv to run fenced: read and execute `/`, write only `writable`, connect only to `ports` (any port when
+        `network`), listen on `binds`."""
         return [
             str(self._binary),
             "--best-effort",
@@ -74,6 +76,7 @@ class LandrunFence:
             *(flag for path in (*map(str, writable), *DEVICES) for flag in ("--rw", path)),
             *(flag for port in ports for flag in ("--connect-tcp", str(port))),
             *(flag for port in binds for flag in ("--bind-tcp", str(port))),
+            *(("--unrestricted-network",) if network else ()),
             "--",
             ENV,
             "-i",
@@ -118,11 +121,12 @@ class LandrunFence:
         writable: Sequence[Path],
         ports: Sequence[int],
         limit: float,
+        network: bool = False,
     ) -> TrialRun:
         """One process with exactly `env`, resolved on the PATH `env` declares; never raises — the run says how it ended."""
         started = time.monotonic()
         binary = shutil.which(argv[0], path=env.get("PATH")) or argv[0]
-        wrapped = self.wrap([binary, *argv[1:]], writable=writable, ports=ports, env=env)
+        wrapped = self.wrap([binary, *argv[1:]], writable=writable, ports=ports, env=env, network=network)
         process = await asyncio.create_subprocess_exec(
             *wrapped,
             env={},

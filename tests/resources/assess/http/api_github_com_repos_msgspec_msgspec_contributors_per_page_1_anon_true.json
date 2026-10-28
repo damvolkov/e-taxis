@@ -1,0 +1,24 @@
+[
+ {
+  "login": "jcrist",
+  "id": 2783717,
+  "node_id": "MDQ6VXNlcjI3ODM3MTc=",
+  "avatar_url": "https://avatars.githubusercontent.com/u/2783717?v=4",
+  "gravatar_id": "",
+  "url": "https://api.github.com/users/jcrist",
+  "html_url": "https://github.com/jcrist",
+  "followers_url": "https://api.github.com/users/jcrist/followers",
+  "following_url": "https://api.github.com/users/jcrist/following{/other_user}",
+  "gists_url": "https://api.github.com/users/jcrist/gists{/gist_id}",
+  "starred_url": "https://api.github.com/users/jcrist/starred{/owner}{/repo}",
+  "subscriptions_url": "https://api.github.com/users/jcrist/subscriptions",
+  "organizations_url": "https://api.github.com/users/jcrist/orgs",
+  "repos_url": "https://api.github.com/users/jcrist/repos",
+  "events_url": "https://api.github.com/users/jcrist/events{/privacy}",
+  "received_events_url": "https://api.github.com/users/jcrist/received_events",
+  "type": "User",
+  "user_view_type": "public",
+  "site_admin": false,
+  "contributions": 724
+ }
+]

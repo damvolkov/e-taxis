@@ -1,0 +1,47 @@
+{
+  "$ref": "#/$defs/Upstream",
+  "$defs": {
+    "Upstream": {
+      "title": "Upstream",
+      "description": "upstream: the candidate as its own sources describe it — claims, not evidence.",
+      "type": "object",
+      "properties": {
+        "what": {
+          "type": "string"
+        },
+        "install": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "docs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "what",
+        "install",
+        "requires",
+        "claims",
+        "docs"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

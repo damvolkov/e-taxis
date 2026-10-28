@@ -99,3 +99,10 @@ class IdleError(PlaneError):
 
 class ProviderError(PlaneError):
     """A tier, alias or key the checkout's models config does not resolve, or an endpoint that answered no message."""
+
+
+class AssessError(WorkflowError):
+    """A soa-assess step that cannot go on: nothing resolvable, a missing or malformed artifact, a fence that does not
+    hold."""
+
+    exit_code: ClassVar[int] = 33

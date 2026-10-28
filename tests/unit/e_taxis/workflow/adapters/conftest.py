@@ -48,6 +48,16 @@ class MessagesHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(self.server.answer)
 
+    def do_GET(self) -> None:
+        """A public API's page: the answer, paginated by a `Link` header — soa-assess's reader."""
+        self.server.seen.append((self.path, dict(self.headers.items()), None))
+        self.send_response(200)
+        self.send_header("content-type", "application/json")
+        self.send_header("link", '<http://x/?page=3>; rel="last"')
+        self.send_header("content-length", str(len(self.server.answer)))
+        self.end_headers()
+        self.wfile.write(self.server.answer)
+
     def log_message(self, format: str, *args: object) -> None:  # noqa: A002 — the stdlib's own signature
         return
 

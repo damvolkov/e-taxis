@@ -10,7 +10,7 @@ edit: this scope stands alone on the same `BaseSettings` layers, and `Deps` buil
 from importlib.resources import files
 from pathlib import Path
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, SecretStr
 
 from e_taxis.core.settings.base import BaseSettings
 from e_taxis.workflow.models.plane import Cadence
@@ -64,6 +64,11 @@ class TaxisSettings(BaseSettings):
     _PROBE_RUNS the sessions per routing case, _PROBE_CONCURRENCY those in flight, _PROBE_TIMEOUT one session;
     _EFFECT_SEEDS the answers per task and arm, _EFFECT_SPLIT the held-out split the A/B reads.
 
+    soa-assess (`taxis workflow soa-assess`): TAXIS_ASSESS_WORKFLOW is the workflow whose ports name the agents'
+    answers, _TIMEOUT bounds one public-API request (seconds), _LIMIT one fenced process of the bench; TAXIS_SOA_STATE
+    is the soa state dir (the `assessed.json` index soa-sweep's fit reads); GH_TOKEN, when set, authenticates the
+    GitHub API (unset: 60 requests an hour).
+
     TAXIS_HUMAN is the mandate a terminal-started `taxis` hands its children (a human command run by a workflow step
     it started); TAXIS_HEADLESS (or e-nous's OPS_GLOBAL__HEADLESS) marks a session an agent drives —
     no human command runs there, mandate or not."""
@@ -91,6 +96,11 @@ class TaxisSettings(BaseSettings):
     taxis_distill_cache: Path = Path("~/.cache/reverse-distill")
     taxis_distill_scope: tuple[str, ...] = ("core", "specs/tekton")
     taxis_distill_candidates: int = 12
+    taxis_assess_workflow: str = "soa-assess"
+    taxis_assess_timeout: float = 20.0
+    taxis_assess_limit: float = 900.0
+    taxis_soa_state: Path = Path("~/.local/state/e-taxis/soa")
+    gh_token: SecretStr | None = None
     taxis_eval_backend: str = "opencode"
     taxis_eval_concurrency: int = 4
     taxis_eval_cadence: Cadence = Cadence.MANUAL

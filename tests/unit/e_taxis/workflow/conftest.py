@@ -3,7 +3,12 @@ the real git repos reverse-distill reads (a project with a feature branch, the t
 
 `nous` is the transpiler's mini checkout (copied per test) with its `converge` replaced by the workflows under
 `tests/resources/workflow/workflows`: `demo` (every kind of step), `looped` (a bounded loop) and `broken` (an unknown
-agent). Commands run for real (bash, git); agents never do — `FakeAgent` answers, `FakeFence` decides the canary."""
+agent). Commands run for real (bash, git); agents never do — `FakeAgent` answers, `FakeFence` decides the canary.
+
+soa-assess: `RecordedApi` answers every URL of `tests/resources/assess/http/index.json` with the body recorded there
+(trimmed to the fields read; GitHub's numeric repository ids in `Link` replaced by `x/y`) and a 404 for every other —
+the contract `WreqApi` keeps: it never raises; `outage` turns chosen URLs into transport failures (status 0).
+`FakeLab` runs for real through the stand-in landrun, its canary saying what `holds` says."""
 
 import asyncio
 import datetime as dt
@@ -20,6 +25,7 @@ import pytest
 
 from e_taxis.harness.runtime.deps import Deps
 from e_taxis.transpile.adapters.capture import HttpCapture
+from e_taxis.transpile.adapters.fence import LandrunFence
 from e_taxis.transpile.adapters.nous import GitNous
 from e_taxis.transpile.models.trial import TrialReport, TrialSight
 from e_taxis.transpile.services.check import CheckService
@@ -33,6 +39,7 @@ from e_taxis.workflow.adapters.sandbox import GitSandbox
 from e_taxis.workflow.distill.grade import DistillGrade
 from e_taxis.workflow.distill.matrix import VersionMatrix
 from e_taxis.workflow.engine.reader import WorkflowReader
+from e_taxis.workflow.models.assess import Fetched
 from e_taxis.workflow.models.case import ProbeMode, ProbeResult
 from e_taxis.workflow.models.distill import Candidate, Change, HarnessPart, HarnessTarget, Relation, Target
 from e_taxis.workflow.models.endpoint import Endpoint
@@ -73,11 +80,12 @@ from e_taxis.workflow.services.run import WorkflowRun
 from e_taxis.workflow.services.step import WorkflowStep
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
+    from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 
     from pytest_resources import Resources
 
     from e_taxis.transpile.models.nous import NousTree
+    from e_taxis.transpile.models.trial import TrialRun
     from e_taxis.workflow.models.metrics import Finding
 
 
@@ -867,3 +875,86 @@ def plane_context() -> Callable[..., PlaneContext]:
 @pytest.fixture
 def scripted_plane() -> type[ScriptedPlaneNode]:
     return ScriptedPlaneNode
+
+
+##### SOA-ASSESS #####
+NOW = dt.datetime(2026, 10, 28, 15, 0, tzinfo=dt.UTC)
+MISSING = b'{"message": "Not Found"}'
+
+
+class RecordedApi:
+    """ApiPort over recorded answers; `outage` maps a URL to the transport error it fails with."""
+
+    def __init__(self, root: Path) -> None:
+        self._root = root
+        self._index: dict[str, dict[str, Any]] = msgspec.json.decode((root / "index.json").read_bytes())
+        self.outage: dict[str, str] = {}
+
+    async def get(self, url: str) -> Fetched:
+        match (self.outage.get(url), self._index.get(url)):
+            case (str() as error, _):
+                return Fetched(url=url, status=0, error=error)
+            case (None, {"status": int() as status, "file": str() as file, "link": str() as link}):
+                return Fetched(url=url, status=status, body=(self._root / file).read_bytes(), link=link)
+            case _:
+                return Fetched(url=url, status=404, body=MISSING)
+
+
+class FakeLab:
+    """LabPort: runs for real through the stand-in landrun (no fence), the canary says what `holds` says."""
+
+    def __init__(self, landrun: Path) -> None:
+        self._fence = LandrunFence(landrun)
+        self.holds = True
+
+    async def run(
+        self,
+        argv: Sequence[str],
+        *,
+        env: Mapping[str, str],
+        cwd: Path,
+        writable: Sequence[Path],
+        ports: Sequence[int],
+        limit: float,
+        network: bool = False,
+    ) -> TrialRun:
+        return await self._fence.run(
+            argv, env=env, cwd=cwd, writable=writable, ports=ports, limit=limit, network=network
+        )
+
+    async def canary(self, inside: Path, outside: Path) -> bool:
+        return self.holds
+
+
+@pytest.fixture
+def now() -> dt.datetime:
+    return NOW
+
+
+@pytest.fixture
+def api(resources: Resources) -> RecordedApi:
+    return RecordedApi(resources.path / "assess" / "http")
+
+
+@pytest.fixture
+def outage(api: RecordedApi) -> dict[str, str]:
+    """The URLs the recorded API fails to reach, each with its transport error: filled by the test."""
+    return api.outage
+
+
+@pytest.fixture
+def landrun(resources: Resources) -> Path:
+    return resources.path / "landrun" / "landrun"
+
+
+@pytest.fixture
+def lab(landrun: Path) -> FakeLab:
+    return FakeLab(landrun)
+
+
+@pytest.fixture
+def leaky_lab(landrun: Path) -> FakeLab:
+    """A lab whose canary says the fence does not hold."""
+    leaky = FakeLab(landrun)
+    leaky.holds = False
+    return leaky
