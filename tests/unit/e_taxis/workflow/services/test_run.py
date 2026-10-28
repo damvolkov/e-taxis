@@ -125,3 +125,26 @@ async def test_run_reads_query_into_the_unsaid_kwargs(reading_run: WorkflowRun, 
     first = report.runs[0]
     assert (first.node, first.runner, first.tokens, first.reason) == ("kwargs", "local", 7, "read value from query")
     assert report.manifest.params["value"] == "from the query"
+
+
+async def test_run_each_runs_one_child_per_item_and_joins(workflow_run: WorkflowRun, nous: Path) -> None:
+    report = await workflow_run.run(GitNous(nous, None), "fanned", {"items": "a b, c"})
+    folder = nous / ".reports" / "workflows" / "fanned" / report.manifest.run_id
+    children = sorted((folder / "each").iterdir())
+    assert [child.name for child in children] == ["1-a-b", "2-c"]
+    assert [(child / "item.txt").read_text() for child in children] == ["a b", "c"]
+    assert [run.node for run in report.runs] == ["1·write", "2·write"]
+    assert "| a b | ok |" in (folder / "report.md").read_text()
+
+
+async def test_run_each_with_one_item_is_a_plain_run(workflow_run: WorkflowRun, nous: Path) -> None:
+    report = await workflow_run.run(GitNous(nous, None), "fanned", {"items": "solo"})
+    folder = nous / ".reports" / "workflows" / "fanned" / report.manifest.run_id
+    assert ((folder / "item.txt").read_text(), (folder / "each").exists()) == ("solo", False)
+
+
+async def test_run_launch_each_walks_every_item(workflow_run: WorkflowRun, nous: Path, tmp_path: Path, writing) -> None:
+    report = await workflow_run.launch(GitNous(nous, None), "fanned", {"items": "x y"}, writing, cwd=tmp_path)
+    assert sorted(args["items"] for _, args, _ in writing.seen) == ["x", "y"]
+    assert [run.node for run in report.runs] == ["1·write", "2·write"]
+    assert "## each items" in (await anyio.Path(report.folder, "report.md").read_text())

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 async def test_reader_ids_are_every_workflow_folder(reader: WorkflowReader) -> None:
-    assert reader.ids() == ("broken", "demo", "looped", "reverse-distill", "rooted", "soa-assess")
+    assert reader.ids() == ("broken", "demo", "fanned", "looped", "reverse-distill", "rooted", "soa-assess")
 
 
 async def test_reader_steps_carry_what_runs_them(reader: WorkflowReader) -> None:

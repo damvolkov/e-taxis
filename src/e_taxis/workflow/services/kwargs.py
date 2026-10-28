@@ -106,7 +106,7 @@ class WorkflowKwargs:
         }
         said, tokens, tier = await self._fill_ask(nous, (self._fill_system(decl, missing), query), schema, self._tiers)
         read = {
-            name: " ".join(value) if isinstance(value, list) else str(value)
+            name: ", ".join(value) if isinstance(value, list) else str(value)
             for name, value in said.items()
             if name in missing and value not in ("", [], None)
         }

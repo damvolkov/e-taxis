@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 import msgspec
 import pytest
 
-from e_taxis.workflow.models.workflow import Node, Param, ParamType, StepKind, Workflow
+from e_taxis.workflow.models.workflow import Node, Param, ParamType, StepKind, Workflow, items_workflow
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -111,3 +111,17 @@ async def test_workflow_writers_are_the_steps_writing_a_model(flow: Callable[...
         {"id": "c", "run": "x", "outputs": [{"name": "g", "model": "Grades"}]},
     )
     assert (w.writers("Mining"), w.writers("Grades"), w.writers("Ghost")) == (("a", "b"), ("c",), ())
+
+
+async def test_workflow_each_must_name_a_list_kwarg(flow) -> None:
+    decl = flow({"id": "a", "run": "true"}, each="ghost", parameters={"k": "plain"})
+    assert "each names 'ghost', which is no list kwarg" in decl.problems((), ())
+
+
+@pytest.mark.parametrize(
+    ("value", "items"),
+    [("a b", ("a", "b")), ("auto ontology, open ontologies", ("auto ontology", "open ontologies")), ("", ())],
+    ids=["spaces", "commas", "empty"],
+)
+async def test_workflow_items_split_a_list(value: str, items: tuple[str, ...]) -> None:
+    assert items_workflow(value) == items

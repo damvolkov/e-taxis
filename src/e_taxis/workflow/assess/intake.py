@@ -4,7 +4,8 @@ A GitHub URL is the repository; its package is the one its manifest declares (`p
 `package.json`, in that order), read through the contents API, no clone — and only if the registry's entry for that
 name points back at the same repository: a name taken on the registry by someone else is a note, never the package.
 A registry URL is that entry and its source repository; a bare name is tried on PyPI, npm and crates.io, in that
-order, the first entry that exists winning. Nothing resolvable is an AssessError naming every URL tried."""
+order, the first entry that exists winning; a name none holds — or one with a space — is searched on GitHub, its exact
+name first, else the most starred hit, the choice noted. Nothing resolvable is an AssessError naming every URL tried."""
 
 import base64
 import re
@@ -27,6 +28,9 @@ if TYPE_CHECKING:
 GITHUB: Final[re.Pattern[str]] = re.compile(r"github\.com[/:]([\w.-]+)/([\w.-]+?)(?:\.git)?(?:[/#?]|$)", re.IGNORECASE)
 REPO: str = "https://api.github.com/repos/{repo}"
 CONTENTS: str = REPO + "/contents/{path}"
+### a name no registry holds — or one with a space, which no package has — is looked up on GitHub, best match first.
+SEARCH: str = "https://api.github.com/search/repositories?q={query}+in:name&sort=stars&order=desc&per_page=10"
+SEPARATORS: Final[re.Pattern[str]] = re.compile(r"[\s_]+")
 ENTRIES: Final[Mapping[Registry, str]] = MappingProxyType(
     {
         Registry.PYPI: "https://pypi.org/pypi/{name}/json",
@@ -184,7 +188,10 @@ class AssessIntake:
             notes=tuple(note for note in notes if note),
         )
 
-    async def _resolve_registry(self, tech: str, registries: tuple[Registry, ...], name: str) -> Candidate:
+    async def _resolve_registry(
+        self, tech: str, registries: tuple[Registry, ...], name: str, *, search: bool = False
+    ) -> Candidate:
+        """The first registry entry that exists — or, for a bare name (`search`), a GitHub search when none does."""
         tried = [(registry, *(await self._common_entry(registry, name))) for registry in registries]
         match next(((registry, source) for registry, fetched, source in tried if fetched.ok), None):
             case (registry, source):
@@ -194,10 +201,32 @@ class AssessIntake:
                     (f"GitHub did not answer for {source}: its name is the registry's",) if source and not repo else ()
                 )
                 return Candidate(tech=tech, name=name, repo=kept, package=name, registry=registry, notes=notes)
+            case _ if search:
+                said = ", ".join(f"{fetched.url} ({fetched.status or fetched.error})" for _, fetched, _ in tried)
+                return await self._resolve_search(tech, said)
             case _:
                 said = ", ".join(f"{fetched.url} ({fetched.status or fetched.error})" for _, fetched, _ in tried)
                 msg = f"{tech}: nothing resolvable — tried {said}"
                 raise AssessError(msg)
+
+    async def _resolve_search(self, tech: str, tried: str = "") -> Candidate:
+        """A name looked up on GitHub: the repository whose name is the name (spaces and underscores as dashes, any
+        case), else the most starred hit — the choice and its rivals said in the notes."""
+        wanted = SEPARATORS.sub("-", tech.strip().lower())
+        fetched = await self._api.get(SEARCH.format(query=quote(SEPARATORS.sub("-", tech.strip()))))
+        match (msgspec.json.decode(fetched.body) or {}).get("items") or [] if fetched.ok else []:
+            case [first, *rest]:
+                hits = [first, *rest]
+                exact = next((hit for hit in hits if str(hit.get("name", "")).lower() == wanted), None)
+                chosen = exact or first
+            case _:
+                msg = f"{tech}: nothing resolvable — tried {tried}{', ' if tried else ''}{fetched.url} ({fetched.status or fetched.error or 'no hit'})"
+                raise AssessError(msg)
+        owner, name = str(chosen["full_name"]).split("/", 1)
+        found = await self._resolve_github(tech, owner, name)
+        how = "its exact name" if exact else "the most starred hit"
+        note = f"resolved by GitHub search to {chosen['full_name']} ({how} of {len(hits)})"
+        return msgspec.structs.replace(found, notes=(note, *found.notes))
 
     def _resolve_topic(self, topic: str) -> str:
         match topic in self._topics or not topic:
@@ -220,6 +249,8 @@ class AssessIntake:
                 found = await self._resolve_github(text, hit.group(1), hit.group(2))
             case (None, (registry, name)):
                 found = await self._resolve_registry(text, (registry,), name)
+            case _ if " " in text:
+                found = await self._resolve_search(text)
             case _:
-                found = await self._resolve_registry(text, tuple(Registry), text)
+                found = await self._resolve_registry(text, tuple(Registry), text, search=True)
         return msgspec.structs.replace(found, topic=kept)

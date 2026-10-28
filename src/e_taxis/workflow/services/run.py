@@ -6,9 +6,11 @@ its folder under `<nous>/<reports>/workflows/<id>/`. Only then is the lock taken
 graph executed. The report is written from the ledger whatever happened; deciding what a broken step means for the
 exit code is the caller's."""
 
+import asyncio
 import datetime as dt
+import re
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 import anyio
 import msgspec
@@ -18,7 +20,7 @@ from e_taxis.workflow.engine.reader import WorkflowReader
 from e_taxis.workflow.models.error import CommandError, RunFailedError, WorkflowError
 from e_taxis.workflow.models.ports import RunState
 from e_taxis.workflow.models.run import NodeRun, RunManifest, RunPaths, RunReport, Status
-from e_taxis.workflow.models.workflow import ParamType, Workflow
+from e_taxis.workflow.models.workflow import ParamType, Workflow, items_workflow
 from e_taxis.workflow.services.step import LEAD, AnsweredStep, WorkflowStep
 
 if TYPE_CHECKING:
@@ -26,6 +28,7 @@ if TYPE_CHECKING:
 
     from e_taxis.transpile.models.nous import NousTree
     from e_taxis.transpile.models.ports import NousPort
+    from e_taxis.workflow.models.graph import GraphSpec
     from e_taxis.workflow.models.ports import AgentPort, CommandPort, HarnessPort, LedgerPort, LockPort
     from e_taxis.workflow.services.kwargs import WorkflowKwargs
 
@@ -34,6 +37,9 @@ LOCK: str = ".lock"
 LOCK_ENV: str = "TAXIS_LOCK"
 ### the step a small model reads the query in, before the graph: recorded like any other.
 KWARGS: str = "kwargs"
+### a fanned run keeps its children under its own folder.
+EACH: str = "each"
+SLUG: Final[re.Pattern[str]] = re.compile(r"[^A-Za-z0-9._-]+")
 GIT: float = 30.0
 
 
@@ -136,6 +142,63 @@ class WorkflowRun:
             return msgspec.json.decode(await anyio.Path(paths.manifest).read_bytes(), type=RunManifest)
         return manifest
 
+    async def _run_graph(
+        self,
+        state: tuple[RunManifest, RunPaths],
+        token: str,
+        read: tuple[str, int, tuple[str, ...]],
+        notify: Callable[[NodeRun], None] | None,
+    ) -> RunReport:
+        """One run's graph in its folder: manifest, ledger, the steps, its report."""
+        manifest, paths = state
+        await anyio.Path(paths.root).mkdir(parents=True, exist_ok=True)
+        await anyio.Path(paths.manifest).write_bytes(msgspec.json.format(msgspec.json.encode(manifest)))
+        ledger = await self._ledgers(paths.ledger)
+        await self._common_record(ledger, manifest.run_id, read)
+        step = WorkflowStep(self._command, self._agent, limit=self._limit, env={LOCK_ENV: token})
+        runs = await DagExecutor(step, self._concurrency, notify).run(
+            RunState(manifest=manifest, paths=paths, ledger=ledger)
+        )
+        read_runs = tuple(run for run in ledger.runs() if run.node == KWARGS)
+        report = RunReport(manifest=manifest, runs=(*read_runs, *runs), folder=str(paths.root))
+        await anyio.Path(paths.report).write_text(report.markdown)
+        return report
+
+    @staticmethod
+    def _run_each(
+        manifest: RunManifest, paths: RunPaths, each: str, items: tuple[str, ...]
+    ) -> list[tuple[RunManifest, RunPaths]]:
+        """One run per item: the parent's manifest with the item as the `each` kwarg, a folder of its own under the
+        parent's `each/`."""
+        return [
+            (
+                msgspec.structs.replace(
+                    manifest, run_id=f"{manifest.run_id}-{k}", params={**manifest.params, each: item}
+                ),
+                RunPaths(paths.root / EACH / f"{k}-{SLUG.sub('-', item).strip('-')[:40]}"),
+            )
+            for k, item in enumerate(items, 1)
+        ]
+
+    @staticmethod
+    def _run_join(
+        manifest: RunManifest, paths: RunPaths, each: str, children: list[RunReport]
+    ) -> tuple[RunReport, str]:
+        """The parent's report: every child's steps under its item, then one row per item and where its report is."""
+        runs = tuple(
+            msgspec.structs.replace(run, node=f"{k}·{run.node}")
+            for k, child in enumerate(children, 1)
+            for run in child.runs
+        )
+        report = RunReport(manifest=manifest, runs=runs, folder=str(paths.root))
+        rows = "\n".join(
+            f"| {child.manifest.params[each]} | {'broken' if child.broken else 'ok'} | {child.folder}/report.md |"
+            for child in children
+        )
+        return msgspec.structs.replace(
+            report, folder=str(paths.root)
+        ), f"## each {each}\n\n| {each} | run | report |\n|---|---|---|\n{rows}\n"
+
     ############################################################
 
     ##### PUBLIC #####
@@ -153,6 +216,8 @@ class WorkflowRun:
         *,
         cwd: Path | None = None,
     ) -> RunReport:
+        """One run of the graph — or, when the workflow declares `each` and its list holds several items, one run per
+        item, in parallel under one lock, joined in the parent's report."""
         tree = await source.load()
         reader = WorkflowReader(tree)
         graph, decl = reader.read(ident)
@@ -165,17 +230,21 @@ class WorkflowRun:
             run_id=run_id, workflow=ident, nous=str(root), base_sha=base, started=now, graph=graph, params=params
         )
         paths = RunPaths(self.reports(root) / "workflows" / ident / run_id)
+        items = items_workflow(params.get(decl.each, "")) if decl.each else ()
+        async with self._lock.hold(self.reports(root) / LOCK, f"workflow run {run_id}") as token:
+            match len(items) > 1:
+                case False:
+                    return await self._run_graph((manifest, paths), token, read, notify)
+                case _:
+                    async with asyncio.TaskGroup() as group:
+                        tasks = [
+                            group.create_task(self._run_graph(child, token, read, notify))
+                            for child in self._run_each(manifest, paths, decl.each, items)
+                        ]
+        report, table = self._run_join(manifest, paths, decl.each, [task.result() for task in tasks])
         await anyio.Path(paths.root).mkdir(parents=True, exist_ok=True)
         await anyio.Path(paths.manifest).write_bytes(msgspec.json.format(msgspec.json.encode(manifest)))
-        ledger = await self._ledgers(paths.ledger)
-        await self._common_record(ledger, run_id, read)
-        async with self._lock.hold(self.reports(root) / LOCK, f"workflow run {run_id}") as token:
-            step = WorkflowStep(self._command, self._agent, limit=self._limit, env={LOCK_ENV: token})
-            state = RunState(manifest=manifest, paths=paths, ledger=ledger)
-            runs = await DagExecutor(step, self._concurrency, notify).run(state)
-        read_runs = tuple(run for run in ledger.runs() if run.node == KWARGS)
-        report = RunReport(manifest=manifest, runs=(*read_runs, *runs), folder=str(paths.root))
-        await anyio.Path(paths.report).write_text(report.markdown)
+        await anyio.Path(paths.report).write_text(f"{table}\n{report.markdown}")
         return report
 
     async def one(
@@ -222,37 +291,78 @@ class WorkflowRun:
         state = RunState(manifest=manifest, paths=paths, ledger=ledger)
         return await DagExecutor(port, 1).one(state, node, kept=answer is None)
 
-    async def launch(
-        self, source: NousPort, ident: str, given: dict[str, str], harness: HarnessPort, *, cwd: Path
-    ) -> RunReport:
-        """The whole workflow walked by a harness, its run folder under `cwd`'s reports: the parameters checked
-        first, the report rebuilt from the ledger the steps left, the declared output verified on disk."""
-        tree = await source.load()
-        reader = WorkflowReader(tree)
-        graph, decl = reader.read(ident)
-        params, read = await self._common_params(tree, decl, given, cwd)
+    async def _launch_one(
+        self,
+        tree: NousTree,
+        decl: Workflow,
+        graph: GraphSpec,
+        state: tuple[dict[str, str], RunPaths, tuple[str, int, tuple[str, ...]]],
+        *,
+        harness: HarnessPort,
+        cwd: Path,
+    ) -> tuple[RunReport, list[str]]:
+        """One walk by the harness in its folder; its report, and the declared outputs it did not leave."""
+        params, paths, read = state
         now = dt.datetime.now(dt.UTC)
-        rundir = self._reports / "workflows" / ident / f"{now:%Y%m%dT%H%M%SZ}-{ident}"
-        paths = RunPaths(cwd / rundir)
         await anyio.Path(paths.root).mkdir(parents=True, exist_ok=True)
         await self._common_record(await self._ledgers(paths.ledger), paths.root.name, read)
         actors = tuple(dict.fromkeys(step.actor or LEAD for step in graph if step.semantic))
-        said = await harness.run(ident, {**params, "rundir": str(paths.root), "nous": tree.root}, actors, cwd=cwd)
+        said = await harness.run(decl.id, {**params, "rundir": str(paths.root), "nous": tree.root}, actors, cwd=cwd)
         manifest = (
             msgspec.json.decode(await anyio.Path(paths.manifest).read_bytes(), type=RunManifest)
             if await anyio.Path(paths.manifest).is_file()
             else RunManifest(
-                run_id=paths.root.name, workflow=ident, nous=tree.root, base_sha="", started=now, graph=graph
+                run_id=paths.root.name, workflow=decl.id, nous=tree.root, base_sha="", started=now, graph=graph
             )
         )
         runs = (await self._ledgers(paths.ledger)).runs() if await anyio.Path(paths.ledger).is_file() else ()
         report = RunReport(manifest=manifest, runs=runs, folder=str(paths.root))
         await anyio.Path(paths.report).write_text(f"{report.markdown}\n\n## The harness said\n\n{said}\n")
         wanted = [part.strip().replace("<rundir>", str(paths.root)) for part in decl.output.get("path", "").split("·")]
-        missing = [path for path in wanted if path and not await anyio.Path(path).exists()]
-        match missing:
+        return report, [path for path in wanted if path and not await anyio.Path(path).exists()]
+
+    async def launch(
+        self, source: NousPort, ident: str, given: dict[str, str], harness: HarnessPort, *, cwd: Path
+    ) -> RunReport:
+        """The whole workflow walked by a harness, its run folder under `cwd`'s reports: the parameters checked
+        first, the report rebuilt from the ledger the steps left, the declared output verified on disk — one walk
+        per item, in parallel, when the workflow declares `each` and its list holds several."""
+        tree = await source.load()
+        reader = WorkflowReader(tree)
+        graph, decl = reader.read(ident)
+        params, read = await self._common_params(tree, decl, given, cwd)
+        now = dt.datetime.now(dt.UTC)
+        paths = RunPaths(cwd / self._reports / "workflows" / ident / f"{now:%Y%m%dT%H%M%SZ}-{ident}")
+        items = items_workflow(params.get(decl.each, "")) if decl.each else ()
+        manifest = RunManifest(
+            run_id=paths.root.name, workflow=ident, nous=tree.root, base_sha="", started=now, graph=graph, params=params
+        )
+        children = (
+            [
+                (child.params, child_paths, read)
+                for child, child_paths in self._run_each(manifest, paths, decl.each, items)
+            ]
+            if len(items) > 1
+            else [(params, paths, read)]
+        )
+        async with asyncio.TaskGroup() as group:
+            tasks = [
+                group.create_task(self._launch_one(tree, decl, graph, state, harness=harness, cwd=cwd))
+                for state in children
+            ]
+        walked = [task.result() for task in tasks]
+        report = walked[0][0] if len(walked) == 1 else await self._launch_join(manifest, paths, decl.each, walked)
+        match [path for _, missing in walked for path in missing]:
             case []:
                 return report
-            case _:
+            case missing:
                 msg = f"{ident}: the harness ended without the declared output: {', '.join(missing)}"
                 raise RunFailedError(msg)
+
+    async def _launch_join(
+        self, manifest: RunManifest, paths: RunPaths, each: str, walked: list[tuple[RunReport, list[str]]]
+    ) -> RunReport:
+        report, table = self._run_join(manifest, paths, each, [child for child, _ in walked])
+        await anyio.Path(paths.root).mkdir(parents=True, exist_ok=True)
+        await anyio.Path(paths.report).write_text(f"{table}\n{report.markdown}")
+        return report

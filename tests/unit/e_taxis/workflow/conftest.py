@@ -1080,8 +1080,15 @@ class WalkingHarness:
     """HarnessPort that walks `demo` the way a coder would: each step through `WorkflowRun.one`, the agent's answer
     kept as given — or, `idle`, walks nothing."""
 
-    def __init__(self, runner: WorkflowRun, nous: Path, *, idle: bool = False) -> None:
-        self.runner, self.nous, self.idle = runner, nous, idle
+    def __init__(
+        self,
+        runner: WorkflowRun,
+        nous: Path,
+        *,
+        idle: bool = False,
+        steps: tuple[str, ...] = ("first", "echo", "think", "last"),
+    ) -> None:
+        self.runner, self.nous, self.idle, self.steps = runner, nous, idle, steps
         self.seen: list[tuple[str, dict[str, str], tuple[str, ...]]] = []
 
     async def run(self, workflow: str, args: Mapping[str, str], actors: tuple[str, ...], *, cwd: Path) -> str:
@@ -1090,7 +1097,7 @@ class WalkingHarness:
         given = {key: value for key, value in args.items() if key not in {"rundir", "nous"}}
         answer = cwd / "answer.md"
         answer.write_text("thought\n")
-        steps = () if self.idle else ("first", "echo", "think", "last")
+        steps = () if self.idle else self.steps
         _ = [
             await self.runner.one(source, workflow, step, given, rundir, answer=answer if step == "think" else None)
             for step in steps
@@ -1106,6 +1113,12 @@ def walking(workflow_run: WorkflowRun, nous: Path) -> WalkingHarness:
 @pytest.fixture
 def standing(workflow_run: WorkflowRun, nous: Path) -> WalkingHarness:
     return WalkingHarness(workflow_run, nous, idle=True)
+
+
+@pytest.fixture
+def writing(workflow_run: WorkflowRun, nous: Path) -> WalkingHarness:
+    """A harness walking `fanned`: its one command step."""
+    return WalkingHarness(workflow_run, nous, steps=("write",))
 
 
 ##### KWARGS #####

@@ -15,6 +15,12 @@ import msgspec
 from e_taxis.workflow.models.graph import LoopDecl
 
 
+##### UTILITIES #####
+def items_workflow(value: str) -> tuple[str, ...]:
+    """A list kwarg's items: comma-separated when any item holds a space, else whitespace-separated."""
+    return tuple(item.strip() for item in (value.split(",") if "," in value else value.split()) if item.strip())
+
+
 ##### TYPES #####
 class StepKind(StrEnum):
     """What runs a node: a command, an agent session, or the lead itself."""
@@ -110,6 +116,7 @@ class Workflow(msgspec.Struct, frozen=True, kw_only=True, forbid_unknown_fields=
     description: str
     domains: tuple[Domain, ...]
     family: str = ""
+    each: str = ""
     parameters: dict[str, str | Param] = {}
     nodes: tuple[Node, ...] = ()
     loop: LoopDecl | None = None
@@ -167,6 +174,11 @@ class Workflow(msgspec.Struct, frozen=True, kw_only=True, forbid_unknown_fields=
         ancestors = self._problems_ancestors()
         return (
             *(f"duplicate step {i}" for i in sorted({i for i in ids if ids.count(i) > 1})),
+            *(
+                [f"each names {self.each!r}, which is no list kwarg"]
+                if self.each and getattr(self.params.get(self.each), "type", None) is not ParamType.LIST
+                else []
+            ),
             *(f"{n.id}: depends on unknown step {d}" for n in self.nodes for d in n.depends if d not in known),
             *(f"{n.id}: unknown agent {n.actor}" for n in self.nodes if n.actor and n.actor not in agents),
             *(f"{n.id}: unknown hook {h}" for n in self.nodes for h in n.hooks if h not in hooks),

@@ -195,3 +195,34 @@ async def test_intake_resolve_registry_links(
     canonical = {f"{GH}/{repo}": {"full_name": repo}} if repo else {}
     found = await AssessIntake(stub({**answers, **canonical}), ()).resolve("p")
     assert (found.repo, found.notes) == (repo, ())
+
+
+SEARCHED = "https://api.github.com/search/repositories?q={q}+in:name&sort=stars&order=desc&per_page=10"
+
+
+@pytest.mark.parametrize(
+    ("tech", "hits", "repo", "how"),
+    [
+        ("auto ontology", ["big/onto", "nv/auto-ontology"], "nv/auto-ontology", "its exact name of 2"),
+        ("auto ontology", ["big/onto", "nv/other"], "big/onto", "the most starred hit of 2"),
+        ("nowhere", ["big/nowhere"], "big/nowhere", "its exact name of 1"),
+    ],
+    ids=["exact", "starred", "no-registry"],
+)
+async def test_intake_resolve_searches_a_name_on_github(
+    stub: Callable[[Mapping[str, Any]], ApiPort], tech: str, hits: list[str], repo: str, how: str
+) -> None:
+    query = tech.replace(" ", "-")
+    answers = {
+        SEARCHED.format(q=query): {"items": [{"full_name": hit, "name": hit.split("/")[1]} for hit in hits]},
+        f"{GH}/{repo}": {"full_name": repo},
+        f"{GH}/{repo}/contents/": [],
+    }
+    found = await AssessIntake(stub(answers), ()).resolve(tech)
+    assert (found.repo, found.notes[0]) == (repo, f"resolved by GitHub search to {repo} ({how})")
+
+
+async def test_intake_resolve_search_without_a_hit_is_refused(stub: Callable[[Mapping[str, Any]], ApiPort]) -> None:
+    api = stub({SEARCHED.format(q="no-such-thing"): {"items": []}})
+    with pytest.raises(AssessError, match="no such thing: nothing resolvable"):
+        await AssessIntake(api, ()).resolve("no such thing")

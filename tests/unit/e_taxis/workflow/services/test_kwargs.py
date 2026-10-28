@@ -50,7 +50,7 @@ async def test_kwargs_fill_reads_the_unsaid_and_keeps_the_given(
     )
     schema = chat.asked[-1][3]
     assert (filled, tier, tokens) == (
-        {"tech": "a b", "bench": "false", "query": "a and b", "deliver": "report"},
+        {"tech": "a, b", "bench": "false", "query": "a and b", "deliver": "report"},
         "scout",
         7,
     )
