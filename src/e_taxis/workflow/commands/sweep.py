@@ -2,7 +2,8 @@
 
 The workflow (`core/tekton/workflows/soa-sweep/`) calls these as its `run` nodes with `--rundir {{rundir}}` (and
 `--nous {{nous}}` where the step reads e-nous); each reads its parents' typed artifacts from `<rundir>/soa/` and
-writes its own there — the voices agent reads `soa/entries.json`. The agents' answers (`voices`, `search`) are
+writes its own there — the voices agent reads `soa/entries.json`, report writes `soa/report.md` beside
+`soa/report.json` (the run's own `report.md` is the engine's, rewritten when the run ends). The agents' answers (`voices`, `search`) are
 read from their `out.md`: which steps answered is the run's own manifest (`run.json`, its agent steps), never an
 id written here. `report` is the only step that writes state: the URLs it reported, into the seen ledger."""
 
@@ -37,11 +38,16 @@ WORKFLOW: str = "soa-sweep"
 FOLDER: str = "soa"
 SCHEMAS: str = "schemas"
 LEDGER: str = "ledger.json"
+MARKDOWN: str = "report.md"
 
 
 ##### UTILITIES #####
 def store_of(rundir: Path) -> DistillStore:
     return DistillStore(rundir, FOLDER)
+
+
+def markdown_of(rundir: Path) -> Path:
+    return rundir / FOLDER / MARKDOWN
 
 
 def schema_text(name: str) -> bytes:
@@ -155,7 +161,7 @@ async def fit(*, nous: Nous = UNSET, rundir: Path, settings: Inject[TaxisSetting
 
 
 async def report(*, rundir: Path, settings: Inject[TaxisSettings], console: Inject[Console]) -> None:
-    """Write report.md and soa/report.json; record the reported URLs in the seen ledger.
+    """Write soa/report.md and soa/report.json; record the reported URLs in the seen ledger.
 
     Args:
         rundir: the run's folder.
@@ -163,7 +169,7 @@ async def report(*, rundir: Path, settings: Inject[TaxisSettings], console: Inje
     store, reporter = store_of(rundir), SweepReport()
     framed, entries = await store.get("frame", Frame), await store.get("entries", Entries)
     fitted = await store.get("findings", Findings)
-    markdown = RunPaths(rundir).report
+    markdown = markdown_of(rundir)
     built = reporter.build(entries, fitted, str(markdown))
     await store.put("report", built)
     text = reporter.render(framed, built, fitted.notes)
@@ -174,7 +180,7 @@ async def report(*, rundir: Path, settings: Inject[TaxisSettings], console: Inje
 
 
 async def deliver(*, rundir: Path, web: Inject[WebPort], console: Inject[Console]) -> None:
-    """Post the report's summary to the Discord webhook soa.yaml names, report.md attached.
+    """Post the report's summary to the Discord webhook soa.yaml names, soa/report.md attached.
 
     Args:
         rundir: the run's folder.
@@ -186,7 +192,7 @@ async def deliver(*, rundir: Path, web: Inject[WebPort], console: Inject[Console
         base=nous,
         frame=await store.get("frame", Frame),
         report=await store.get("report", Report),
-        markdown=await anyio.Path(RunPaths(rundir).report).read_text(),
+        markdown=await anyio.Path(markdown_of(rundir)).read_text(),
     )
     console.out(summary, highlight=False)
 

@@ -17,14 +17,15 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def worlds(tmp_path: Path, tree) -> tuple[Path, Path, Path, Path]:
-    """(nous, live tree, reports root, this run): the corpus names Langfuse and an MCP stack; the live tree an
+    """(nous, live tree, reports root, this run): the corpus names Langfuse, an MCP server and a stack on
+    nvidia; the live tree an
     installed plugin; a past sweep named Spanline; this run's own report names everything and is not read."""
     nous, live, reports = tmp_path / "nous", tmp_path / "live", tmp_path / "nous" / ".reports"
     tree(
         nous,
         {
             "core/tekton/skills/obs-py-logging/references/lib.md": "| `langfuse` | traces |\n",
-            "core/common/stack.yaml": "services: {qdrant: {image: qdrant/qdrant}}\n",
+            "core/common/stack.yaml": "services: {qdrant: {image: qdrant/qdrant}, vllm: {runtime: nvidia}}\n",
             "core/tekton/config/mcp.yaml": "servers: {e-gnosis: {}}\n",
             "core/tekton/skills/x/SKILL.md": "Phoenix is not read: no lib.md.\n",
         },
@@ -52,7 +53,13 @@ def worlds(tmp_path: Path, tree) -> tuple[Path, Path, Path, Path]:
             FindingStatus.HAVE,
             "qdrant — core/common/stack.yaml",
         ),
-        ({"title": "X", "entities": ("e-gnosis",)}, FindingStatus.HAVE, "e gnosis — core/tekton/config/mcp.yaml"),
+        (
+            {"title": "Langfuse", "entities": ("traces", "Qdrant")},
+            FindingStatus.HAVE,
+            "langfuse (+ traces) — core/tekton/skills/obs-py-logging/references/lib.md",
+        ),
+        ({"title": "X", "entities": ("e-gnosis",)}, FindingStatus.NEW, ""),
+        ({"title": "auto ontology", "entities": ("NVIDIA", "MCP")}, FindingStatus.NEW, ""),
         ({"title": "Tracekit"}, FindingStatus.HAVE, "tracekit — {live}/plugins/installed_plugins.json"),
         (
             {"title": "Spanline"},
@@ -60,15 +67,29 @@ def worlds(tmp_path: Path, tree) -> tuple[Path, Path, Path, Path]:
             "spanline — {reports}/workflows/soa-sweep/past/soa/report.json",
         ),
         (
-            {"title": "Headlong harness", "entities": ("Headlong",)},
+            {"title": "Headlong"},
             FindingStatus.CONSIDERED,
             "headlong — {reports}/workflows/soa-assess/old/report.md",
         ),
+        ({"title": "Headlong harness", "entities": ("Headlong",)}, FindingStatus.NEW, ""),
         ({"title": "Phoenix"}, FindingStatus.NEW, ""),
         ({"title": "Arize"}, FindingStatus.NEW, ""),
         ({"title": "AI", "entities": ("ql",)}, FindingStatus.NEW, ""),
     ],
-    ids=["lib", "stack-repo", "mcp-entity", "live", "past-sweep", "past-assess", "unread", "other-workflows", "short"],
+    ids=[
+        "lib",
+        "stack-repo",
+        "entities-fill-incumbent",
+        "entity-alone",
+        "live-false-positive",
+        "live",
+        "past-sweep",
+        "past-assess",
+        "past-entity-alone",
+        "unread",
+        "other-workflows",
+        "short",
+    ],
 )
 async def test_fit_marks_each_finding(
     worlds: tuple[Path, Path, Path, Path],

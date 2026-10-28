@@ -1,7 +1,8 @@
 """sweep.fit: each finding marked have, considered or new — against what is written down, never from memory.
 
-**The names.** A finding is known by its title, its entities and the repository names its links carry (GitHub,
-GitLab, Codeberg: `owner/<name>`). Each name is folded to lower-case words — every run of anything but letters
+**The names.** A finding is known by its title and the repository names its links carry (GitHub, GitLab,
+Codeberg: `owner/<name>`); its entities never decide — "NVIDIA" or "MCP" name what a thing touches, not the thing,
+and would mark half the plane `have`. Each name is folded to lower-case words — every run of anything but letters
 and digits is one space — and a name shorter than three characters says nothing and is dropped.
 
 **The match.** A name occurs in a text when its words occur there as whole words, in order (`e-gnosis` matches
@@ -13,7 +14,8 @@ and digits is one space — and a name shorter than three characters says nothin
 - **considered** — every `report.md` and `report.json` of a past soa-sweep or soa-assess run, this run's aside;
 - **new** — none of them.
 
-`incumbent` says which name matched, and where. The first text that names the finding decides."""
+`incumbent` says which name matched, and where; the finding's entities that the same text also names are added
+to it, as context — never as a match of their own. The first text that names the finding decides."""
 
 import re
 from pathlib import Path
@@ -81,21 +83,29 @@ class SweepFit:
         return [Path(found) for pattern in patterns async for found in walk(pattern)]
 
     @classmethod
+    def _common_names(cls, names: Iterable[str]) -> tuple[str, ...]:
+        folded = (cls._common_fold(name) for name in names)
+        return tuple(dict.fromkeys(name for name in folded if len(name) >= SHORT))
+
+    @classmethod
     def _fit_names(cls, finding: Finding) -> tuple[str, ...]:
         repos = (
             parts[2]
             for link in finding.links
             if urlsplit(link).netloc.removeprefix("www.") in FORGES and len(parts := urlsplit(link).path.split("/")) > 2  # noqa: PLR2004 — "", owner, name
         )
-        names = (cls._common_fold(name) for name in (finding.title, *finding.entities, *repos))
-        return tuple(dict.fromkeys(name for name in names if len(name) >= SHORT))
+        return cls._common_names((finding.title, *repos))
 
     def _fit_one(self, finding: Finding) -> Finding:
         names = self._fit_names(finding)
-        found = ((status, where, name) for status, where, text in self._texts for name in names if f" {name} " in text)
+        found = (
+            (status, where, text, name) for status, where, text in self._texts for name in names if f" {name} " in text
+        )
         match next(found, None):
-            case (status, where, name):
-                return msgspec.structs.replace(finding, status=status, incumbent=f"{name} — {where}")
+            case (status, where, text, name):
+                also = [entity for entity in self._common_names(finding.entities) if f" {entity} " in text]
+                said = f"{name} (+ {', '.join(also)})" if also else name
+                return msgspec.structs.replace(finding, status=status, incumbent=f"{said} — {where}")
             case _:
                 return msgspec.structs.replace(finding, status=FindingStatus.NEW, incumbent="")
 

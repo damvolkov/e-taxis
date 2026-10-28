@@ -1,6 +1,6 @@
 """sweep.report: the sweep as written — per voice how it read, the findings ranked, the commands that assess them.
 
-`Report` is the answer (`soa/report.json`); `report.md` is a view of it, rendered without a model. A finding fit
+`Report` is the answer (`soa/report.json`); `soa/report.md` is a view of it, rendered without a model. A finding fit
 marked `new` and worth ASSESS or more ends with the exact command that assesses it, its primary link quoted for a
 shell. `seen` is what the ledger records of this run, each URL under the voice it came through (the open web's
 under `search`), dated the frame's last day: every entry read in the window, every link a finding cites."""

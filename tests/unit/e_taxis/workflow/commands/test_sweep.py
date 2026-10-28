@@ -147,7 +147,9 @@ def test_sweep_ground_fit_report_deliver(
     assert code == 0
     assert built.assess == (f"taxis workflow run soa-assess tech={REPO}",)
     assert built.findings[0].status is FindingStatus.NEW
-    assert (rundir / "report.md").read_text().startswith("# soa-sweep — observability")
+    assert (rundir / "soa" / "report.md").read_text().startswith("# soa-sweep — observability")
+    assert built.path == str(rundir / "soa" / "report.md")
+    assert not (rundir / "report.md").exists()
     assert "ledger: 1 URLs recorded · 1 to assess" in out
     assert REPO in json.loads((sweep_env / "ledger.json").read_text())["seen"]["ada"]
     soa = soa_nous / "core" / "tekton" / "config" / "soa.yaml"
@@ -155,7 +157,9 @@ def test_sweep_ground_fit_report_deliver(
     tree(soa_nous, {"hook": "https://discord.com/api/webhooks/1/x"})
     code, out, _ = taxis("workflow", "soa-sweep", "deliver", "--rundir", str(rundir))
     assert (code, out.startswith("**soa-sweep** · observability")) == (0, True)
-    assert web_deps.posted[0][0] == "https://discord.com/api/webhooks/1/x"
+    url, _, files = web_deps.posted[0]
+    assert url == "https://discord.com/api/webhooks/1/x"
+    assert files["files[0]"][1] == (rundir / "soa" / "report.md").read_bytes()
 
 
 def test_sweep_ground_refuses_a_malformed_answer(
@@ -178,7 +182,7 @@ def test_sweep_ground_without_a_manifest(taxis: Taxis, web_deps, rundir: Path) -
 def test_sweep_deliver_without_a_webhook(taxis: Taxis, web_deps, rundir: Path, manifest: RunManifest, put) -> None:
     put("frame", FRAME)
     put("report", Report(path="", voices=(), findings=(), assess=()))
-    (rundir / "report.md").write_text("# R\n")
+    (rundir / "soa" / "report.md").write_text("# R\n")
     code, _, err = taxis("workflow", "soa-sweep", "deliver", "--rundir", str(rundir))
     assert code == 25
     assert "names no webhook file" in err

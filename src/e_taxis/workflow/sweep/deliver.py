@@ -1,4 +1,4 @@
-"""sweep.deliver: the sweep posted to Discord — a short summary as the message, report.md attached.
+"""sweep.deliver: the sweep posted to Discord — a short summary as the message, soa/report.md attached.
 
 The webhook URL is a secret, so soa.yaml never holds it: its `discord.webhook` names the file that does (`~`
 expanded; a relative path is read from the e-nous checkout). No name, no file, or an empty one stops the step
