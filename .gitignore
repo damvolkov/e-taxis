@@ -4,6 +4,7 @@ src/e_taxis/processors/
 # ops shares its folder with the project's own light tools (logo, repo): the generated files, never the folder
 src/e_taxis/ops/crypto.py
 src/e_taxis/ops/file.py
+src/e_taxis/ops/hash.py
 src/e_taxis/ops/image.py
 src/e_taxis/ops/registry.py
 src/e_taxis/ops/wrappers.py
