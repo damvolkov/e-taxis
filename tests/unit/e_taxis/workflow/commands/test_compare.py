@@ -1,4 +1,4 @@
-"""tests/unit/e_taxis/workflow/commands/compare: `taxis workflow soa-compare <step>` through the real app, step after
+"""tests/unit/e_taxis/workflow/commands/compare: `taxis workflow radar-stack <step>` through the real app, step after
 step — the agents' answers read from the steps the workflow's ports name (`hunt`, `plan-it`, `judge`, `attack` here)."""
 
 from typing import TYPE_CHECKING, Any
@@ -32,13 +32,13 @@ if TYPE_CHECKING:
     from e_taxis.workflow.models.assess import Plan
 
 type Taxis = Callable[..., tuple[int, str, str]]
-STEP = ("workflow", "soa-compare")
+STEP = ("workflow", "radar-stack")
 MSGSPEC = Subject(name="msgspec", repo="msgspec/msgspec", package="msgspec", registry=Registry.PYPI)
 BARE = Subject(name="homegrown")
 
 
 def read(rundir: Path, name: str, kind: Any) -> Any:
-    return msgspec.json.decode((rundir / "soa" / f"{name}.json").read_bytes(), type=kind)
+    return msgspec.json.decode((rundir / "radar" / f"{name}.json").read_bytes(), type=kind)
 
 
 def test_compare_steps_end_to_end(
@@ -95,11 +95,11 @@ def test_compare_rank_that_keeps_everything_reports_and_exits_3(
     taxis(*STEP, "health", *run, *at)
     code, out, _ = taxis(*STEP, "rank", *run, *at)
     assert (code, "msgspec — keep" in out) == (3, True)
-    assert (rundir / "soa" / "report.md").is_file()
+    assert (rundir / "radar" / "report.md").is_file()
 
 
 def test_compare_schemas_write_then_check(taxis: Taxis, nous: Path) -> None:
-    folder = nous / "core" / "tekton" / "workflows" / "soa-compare" / "schemas"
+    folder = nous / "core" / "tekton" / "workflows" / "radar-stack" / "schemas"
     (folder / "Stack.json").write_text("{}")
     code, _, err = taxis(*STEP, "schemas", "--nous", str(nous), "--check")
     assert (code, "stale schemas" in err, "Stack" in err) == (35, True, True)

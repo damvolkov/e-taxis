@@ -22,10 +22,10 @@ async def test_reader_ids_are_every_workflow_folder(reader: WorkflowReader) -> N
         "demo",
         "fanned",
         "looped",
+        "radar-stack",
+        "radar-tech",
         "reverse-distill",
         "rooted",
-        "soa-assess",
-        "soa-compare",
     )
 
 
@@ -124,7 +124,7 @@ async def test_reader_plane_describes_one_target() -> None:
     [
         ({"type": "bool"}, "maybe", "k=maybe is not true or false"),
         ({"values": ["a", "b"]}, "c", "k=c is not one of a, b"),
-        ({"type": "topic"}, "ghost", "k=ghost is not a topic of soa.yaml"),
+        ({"type": "topic"}, "ghost", "k=ghost is not a topic of radar.yaml"),
         ({"type": "path"}, "/no/such/path", "k=/no/such/path does not exist"),
     ],
     ids=["bool", "enum", "topic", "path"],

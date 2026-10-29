@@ -1,7 +1,7 @@
-"""commands.compare: `taxis workflow soa-compare <step>` — soa-compare's deterministic steps, one command per node.
+"""commands.compare: `taxis workflow radar-stack <step>` — radar-stack's deterministic steps, one command per node.
 
-The workflow (`core/tekton/workflows/soa-compare/`) calls these as its `run` nodes with `--rundir {{rundir}}`; each
-reads its parents' typed artifacts from `<rundir>/soa/` and writes its own. The agent steps between them (rivals,
+The workflow (`core/tekton/workflows/radar-stack/`) calls these as its `run` nodes with `--rundir {{rundir}}`; each
+reads its parents' typed artifacts from `<rundir>/radar/` and writes its own. The agent steps between them (rivals,
 weigh, verdict, adversary) answer in JSON blocks, read back through their models; which steps those are is read from
 the workflow's own output ports (`Rivals`, `Plans`, `Verdicts`, `Reviews`), never from an id written here. The rank
 that keeps every incumbent writes the final report itself and exits 3: nothing downstream is paid for."""
@@ -63,13 +63,13 @@ def schema_compare(name: str) -> bytes:
 
 
 async def write_compare(rundir: Path, settings: TaxisSettings, built: Any, console: Console) -> None:
-    """soa/report.md and soa/compare.json, and the verdicts indexed in the state's compared.json."""
+    """radar/report.md and radar/compare.json, and the verdicts indexed in the state's compared.json."""
     reporter = CompareReport()
     text = reporter.render(built)
     ### never <rundir>/report.md: the engine writes its own run report there when the run ends.
     await anyio.Path(rundir / FOLDER / REPORT).write_text(text)
     await AssessStore(rundir).put("compare", built)
-    index = await reporter.record(Path(await anyio.Path(settings.taxis_soa_state).expanduser()), built)
+    index = await reporter.record(Path(await anyio.Path(settings.taxis_radar_state).expanduser()), built)
     console.out(f"{text}\nindexed: {index}", highlight=False)
 
 
@@ -86,11 +86,11 @@ async def intake(
     """Read what the repository declares: every dependency, its version, its manifest, where it is imported.
 
     Args:
-        nous: the e-nous checkout (its soa.yaml names the topics).
+        nous: the e-nous checkout (its radar.yaml names the topics).
         rundir: the run's folder.
         project: the repository.
         query: what to compare, as Damien wrote it.
-        topic: a soa.yaml topic; empty = none.
+        topic: a radar.yaml topic; empty = none.
     """
     found = await CompareIntake(await topics_of(nous)).read(project, query, topic)
     path = await AssessStore(rundir).put("stack", found)
@@ -157,7 +157,7 @@ async def bench(
     settings: Inject[TaxisSettings],
     console: Inject[Console],
 ) -> None:
-    """Every shortlisted pair benched as soa-assess benches one: fenced, interleaved, raw samples kept.
+    """Every shortlisted pair benched as radar-tech benches one: fenced, interleaved, raw samples kept.
 
     Args:
         nous: the e-nous checkout (its workflow names the step that wrote the plans).
@@ -188,7 +188,7 @@ async def stats(*, nous: Nous = UNSET, rundir: Path, settings: Inject[TaxisSetti
 async def report(
     *, nous: Nous = UNSET, rundir: Path, settings: Inject[TaxisSettings], console: Inject[Console]
 ) -> None:
-    """Write soa/report.md and soa/compare.json: per incumbent, the verdict as it stood after the adversary.
+    """Write radar/report.md and radar/compare.json: per incumbent, the verdict as it stood after the adversary.
 
     Args:
         nous: the e-nous checkout (its workflow names the steps that answered).
@@ -214,7 +214,7 @@ async def report(
 async def schemas(
     *, nous: Nous = UNSET, check: bool = False, settings: Inject[TaxisSettings], console: Inject[Console]
 ) -> None:
-    """Write the JSON Schema of every soa-compare port into the workflow's `schemas/`; --check only compares.
+    """Write the JSON Schema of every radar-stack port into the workflow's `schemas/`; --check only compares.
 
     Args:
         nous: the e-nous checkout.
@@ -234,7 +234,7 @@ async def schemas(
         case (_, []):
             console.out(f"schemas: {len(PORTS)} in sync in {folder}", highlight=False)
         case (True, _):
-            msg = f"stale schemas in {folder}: {', '.join(stale)} — run `taxis workflow soa-compare schemas --nous {nous}`"
+            msg = f"stale schemas in {folder}: {', '.join(stale)} — run `taxis workflow radar-stack schemas --nous {nous}`"
             raise CompareError(msg)
         case _:
             await anyio.Path(folder).mkdir(parents=True, exist_ok=True)

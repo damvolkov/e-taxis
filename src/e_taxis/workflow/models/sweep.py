@@ -1,6 +1,6 @@
-"""models.sweep: soa-sweep's data — the frame a sweep looks through, what the voices published, the findings.
+"""models.sweep: radar-field's data — the frame a sweep looks through, what the voices published, the findings.
 
-**The frame.** `SoaConfig` is e-nous's `core/tekton/config/soa.yaml` (the plane, its topics, the voices heard first);
+**The frame.** `RadarConfig` is e-nous's `core/tekton/config/radar.yaml` (the plane, its topics, the voices heard first);
 `Frame` is one run of it: a topic, its keywords, the window as two dates, the voices and the links that speak to it.
 
 **The chain.** `Seen` (the ledger: every URL already reported, per voice) → `Entries` (what each voice published in
@@ -57,37 +57,37 @@ class FindingStatus(StrEnum):
 
 
 ##### THE CONFIG #####
-class SoaTopic(msgspec.Struct, frozen=True, kw_only=True):
+class RadarTopic(msgspec.Struct, frozen=True, kw_only=True):
     keywords: tuple[str, ...] = ()
 
 
-class SoaAuthor(msgspec.Struct, frozen=True, kw_only=True):
+class RadarAuthor(msgspec.Struct, frozen=True, kw_only=True):
     name: str = ""
     url: str
     kind: VoiceKind
     topics: tuple[str, ...] = ()
 
 
-class SoaLink(msgspec.Struct, frozen=True, kw_only=True):
+class RadarLink(msgspec.Struct, frozen=True, kw_only=True):
     url: str
     topics: tuple[str, ...] = ()
 
 
-class SoaDiscord(msgspec.Struct, frozen=True, kw_only=True):
+class RadarDiscord(msgspec.Struct, frozen=True, kw_only=True):
     """`webhook` names the file holding the URL, never the URL."""
 
     webhook: str = ""
 
 
-class SoaConfig(msgspec.Struct, frozen=True, kw_only=True):
-    """e-nous's `core/tekton/config/soa.yaml`, as its schema entry (`tekton.soa`) declares it."""
+class RadarConfig(msgspec.Struct, frozen=True, kw_only=True):
+    """e-nous's `core/tekton/config/radar.yaml`, as its schema entry (`tekton.radar`) declares it."""
 
     brief: str
     window: int
-    topics: dict[str, SoaTopic]
-    authors: dict[str, SoaAuthor] = {}
-    links: dict[str, SoaLink] = {}
-    discord: SoaDiscord = SoaDiscord()
+    topics: dict[str, RadarTopic]
+    authors: dict[str, RadarAuthor] = {}
+    links: dict[str, RadarLink] = {}
+    discord: RadarDiscord = RadarDiscord()
 
 
 ##### THE PORTS #####
@@ -199,7 +199,7 @@ class Report(msgspec.Struct, frozen=True, kw_only=True):
 ### The search agent's findings come through no voice: the ledger keeps their links under this key.
 SEARCH: Final[str] = "search"
 
-### Every artifact passed between soa-sweep's steps, by the model name its ports declare.
+### Every artifact passed between radar-field's steps, by the model name its ports declare.
 PORTS: Final[Mapping[str, object]] = MappingProxyType(
     {"Frame": Frame, "Seen": Seen, "Entries": Entries, "Findings": Findings, "Report": Report}
 )

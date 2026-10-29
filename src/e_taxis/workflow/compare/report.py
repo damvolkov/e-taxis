@@ -153,7 +153,7 @@ class CompareReport:
             for item in report.settled
         )
         head = (
-            f"# soa-compare · {report.project}\n\n> {report.query}\n\n{report.date}\n\n"
+            f"# radar-stack · {report.project}\n\n> {report.query}\n\n{report.date}\n\n"
             f"| incumbent | rival | verdict | why |\n|---|---|---|---|\n{rows}"
         )
         return "\n\n".join([head, *(self._render_one(item) for item in report.settled)]) + "\n"

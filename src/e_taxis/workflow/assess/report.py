@@ -1,8 +1,8 @@
-"""assess.report: the assessment as it stood after the adversary — soa/report.md, soa/assess.json, the state's index.
+"""assess.report: the assessment as it stood after the adversary — radar/report.md, radar/assess.json, the state's index.
 
 The verdict that stands is the verdict step's when the review stands, and the reviewer's own when it does not; the
-report says which, and shows both. The index (`assessed.json` in the soa state dir, a map name → {verdict, date,
-report}) is where soa-sweep's fit finds what was already judged: one row per name, the latest assessment winning."""
+report says which, and shows both. The index (`assessed.json` in the radar state dir, a map name → {verdict, date,
+report}) is where radar-field's fit finds what was already judged: one row per name, the latest assessment winning."""
 
 from typing import TYPE_CHECKING, Final
 
@@ -143,7 +143,7 @@ class AssessReport:
         )
         notes = "".join(f"\n- {note}" for note in candidate.notes)
         return (
-            f"# soa-assess · {report.name} — {report.verdict}\n\n`{candidate.tech}` · {where or 'no source'} · "
+            f"# radar-tech · {report.name} — {report.verdict}\n\n`{candidate.tech}` · {where or 'no source'} · "
             f"{report.date}\n{notes}\n\n## Verdict\n\n{self._render_verdict(report)}\n"
             f"## Against what we run\n\nIncumbent: {report.incumbent} · overlap: **{report.overlap}**\n\n"
             f"## Health\n\n{self._render_health(report.health)}\n"

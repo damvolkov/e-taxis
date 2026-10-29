@@ -11,7 +11,7 @@ a dependency is looked up by the modules it provides: a Python distribution's ow
 repository's `.venv` when one is there (`e-serde` provides `eserde`), its normalized name otherwise; a crate's name
 with `_` for `-`; an npm package's name. The first IMPORTS files are kept, sorted; `imported` counts them all.
 
-No directory, or one that declares nothing, is a CompareError; a topic soa.yaml does not hold is one too. The walk
+No directory, or one that declares nothing, is a CompareError; a topic radar.yaml does not hold is one too. The walk
 and the reads are sync and run in a worker thread, off the loop."""
 
 import itertools
@@ -233,7 +233,7 @@ MODULES: Final[Mapping[Ecosystem, Callable[[str], set[str]]]] = MappingProxyType
 
 
 class CompareIntake:
-    """Reads one repository from disk; `topics` are the soa.yaml topics a `--topic` may name."""
+    """Reads one repository from disk; `topics` are the radar.yaml topics a `--topic` may name."""
 
     __slots__ = ("_topics",)
 
@@ -347,7 +347,7 @@ class CompareIntake:
             case True:
                 return topic
             case _:
-                msg = f"topic {topic!r} is not in soa.yaml: {', '.join(sorted(self._topics)) or 'none declared'}"
+                msg = f"topic {topic!r} is not in radar.yaml: {', '.join(sorted(self._topics)) or 'none declared'}"
                 raise CompareError(msg)
 
     ############################################################

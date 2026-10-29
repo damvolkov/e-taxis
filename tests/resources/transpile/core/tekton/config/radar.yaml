@@ -1,5 +1,5 @@
-# soa — what soa-sweep watches: the plane, its topics, the voices heard first. Runs add voices and links with kwargs.
-# A voice's topics name the topics it speaks to ("*" = all). The seen ledger is state, never here (~/.local/state/e-taxis/soa/).
+# radar — what radar-field watches: the plane, its topics, the voices heard first. Runs add voices and links with kwargs.
+# A voice's topics name the topics it speaks to ("*" = all). The seen ledger is state, never here (~/.local/state/e-taxis/radar/).
 brief: >-
   State of the art in agentic systems: how agents, their memory, tools, plugins and harnesses are modelled — as
   graphs and ontologies — and run; new frameworks, OSS repositories, patterns and papers.

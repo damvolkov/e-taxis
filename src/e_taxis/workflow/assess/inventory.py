@@ -2,7 +2,7 @@
 
 Five places are read: every table row of the corpus skills' `references/lib.md`, the parts of every `core/*/stack.yaml`,
 the servers of `core/tekton/config/mcp.yaml`, the skills, agents and commands of each live transpiled tree (their
-names and front-matter descriptions), and every past soa-assess report under the reports dir. A row is kept when its
+names and front-matter descriptions), and every past radar-tech report under the reports dir. A row is kept when its
 text names one of the needles: the topic's keyword phrases and the candidate's name tokens (three characters or more),
 matched whole-word, case-insensitive. Past assessments are kept whole: what was already judged is never filtered."""
 
@@ -125,7 +125,7 @@ class AssessInventory:
 
     async def _take_assessed(self) -> tuple[str, ...]:
         """Every past report, read loosely: a report an older model wrote still says what it judged."""
-        files = await self._common_glob(self._reports, "*/soa/assess.json")
+        files = await self._common_glob(self._reports, "*/radar/assess.json")
         reports = [(path, msgspec.json.decode(await anyio.Path(path).read_bytes())) for path in files]
         return tuple(
             f"{report.get('name', '?')}: {report.get('verdict', '?')} on {report.get('date', '?')} ({path})"

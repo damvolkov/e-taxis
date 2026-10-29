@@ -1,7 +1,7 @@
-"""assess.store: soa-assess's typed artifacts in a run's folder — written and read as models, never as prose.
+"""assess.store: radar-tech's typed artifacts in a run's folder — written and read as models, never as prose.
 
-Deterministic steps write `<rundir>/soa/<name>.json` and read their parents' the same way; the report is
-`soa/assess.json`. An agent step answers with a JSON block in its `out.md`; the step after it reads that block back
+Deterministic steps write `<rundir>/radar/<name>.json` and read their parents' the same way; the report is
+`radar/assess.json`. An agent step answers with a JSON block in its `out.md`; the step after it reads that block back
 through its model — a block that does not fit fails the reading step with msgspec's message. Which step answered a
 model is the workflow's to say (its output ports), never a step id written here."""
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 ##### DEFAULTS #####
-FOLDER: str = "soa"
+FOLDER: str = "radar"
 
 
 ##### TYPES #####

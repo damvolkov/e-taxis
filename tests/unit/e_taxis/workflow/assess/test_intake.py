@@ -99,7 +99,7 @@ async def test_intake_resolve(api: ApiPort, tech: str, expected: Candidate) -> N
             r"tried https://pypi.org/pypi/no-such-thing/json \(404\), https://registry.npmjs.org/no-such",
         ),
         ("https://crates.io/crates/absent", "", r"tried https://crates.io/api/v1/crates/absent \(404\)$"),
-        ("msgspec", "cooking", r"topic 'cooking' is not in soa.yaml: memory, token-economy"),
+        ("msgspec", "cooking", r"topic 'cooking' is not in radar.yaml: memory, token-economy"),
     ],
     ids=["github", "bare", "crates-page", "topic"],
 )

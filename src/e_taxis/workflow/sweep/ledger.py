@@ -1,4 +1,4 @@
-"""sweep.ledger: what soa-sweep has already reported — state, never config (`TAXIS_SOA_STATE/ledger.json`).
+"""sweep.ledger: what radar-field has already reported — state, never config (`TAXIS_RADAR_STATE/ledger.json`).
 
 Per voice (the search agent's findings under `search`), every URL reported with the date it was first seen. The
 ledger node reads it for the frame's voices only; report is the one writer, and a URL keeps its first date. The

@@ -1,14 +1,14 @@
 # workflows — the ontology every workflow speaks: one typed vocabulary of kwargs, and the families that share nodes.
 # A workflow names the kwargs it takes (`parameters: [project, query]`) and may refine one; a family's kwargs join every
 # member's, and its nodes are written once and used as {use: <node>, depends, inputs, outputs}. taxis expands both at
-# load and binds by type: a bool is true or false, an enum one of its values, a topic a key of soa.yaml, a path one
+# load and binds by type: a bool is true or false, an enum one of its values, a topic a key of radar.yaml, a path one
 # that exists; `project` left empty is the git root of the terminal the run was launched from.
 kwargs:
   project: {type: project, doc: "the repository; empty = the root of the git project the terminal is in"}
   publish: {type: bool, default: "false", doc: "true to promote, push or open the PR at the end; false stops at the report"}
   apply:   {type: bool, default: "false", doc: "true to run the commands that apply the musts at the end"}
   bench:   {type: bool, default: "true", doc: "false judges on desk evidence alone; true installs and measures for real"}
-  topic:   {type: topic, doc: "a topic of soa.yaml; empty = the whole plane"}
+  topic:   {type: topic, doc: "a topic of radar.yaml; empty = the whole plane"}
   deliver: {type: str, values: [report, discord], default: report, doc: "report writes it; discord also posts it"}
   query:   {type: str, doc: "what you ask, in your words"}
   tech:    {type: list, doc: "technologies — repository URLs, packages or names; several separated by commas run in parallel"}
@@ -16,7 +16,7 @@ kwargs:
   ids:     {doc: "subjects, space-separated; empty = every subject of the kind"}
   backend: {type: str, values: [opencode, claudecode], doc: "a tekton backend; empty = every backend"}
 families:
-  soa:
+  radar:
     kwargs: [topic]
     nodes:
       health:

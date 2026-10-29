@@ -11,7 +11,7 @@ and digits is one space — and a name shorter than three characters says nothin
 - **have** — the corpus (`core/*/skills/*/references/lib.md`, `core/*/stack.yaml`, `core/tekton/config/mcp.yaml`)
   first, then the live trees the transpiler lands (settings and MCP JSON at their root, `mcp/`, the installed
   plugins, the skills' `lib.md`), never a session's history or a cache;
-- **considered** — every `report.md` and `report.json` of a past soa-sweep or soa-assess run, this run's aside;
+- **considered** — every `report.md` and `report.json` of a past radar-field or radar-tech run, this run's aside;
 - **new** — none of them.
 
 `incumbent` says which name matched, and where; the finding's entities that the same text also names are added
@@ -45,7 +45,7 @@ LIVE: Final[tuple[str, ...]] = (
     "plugins/*.mjs",
     "skills/*/references/lib.md",
 )
-PAST: Final[tuple[str, ...]] = ("soa-sweep", "soa-assess")
+PAST: Final[tuple[str, ...]] = ("radar-field", "radar-tech")
 REPORTS: Final[tuple[str, ...]] = ("report.md", "report.json")
 FORGES: Final[frozenset[str]] = frozenset({"github.com", "gitlab.com", "codeberg.org"})
 WORDS: Final[re.Pattern[str]] = re.compile(r"[^0-9a-z]+")

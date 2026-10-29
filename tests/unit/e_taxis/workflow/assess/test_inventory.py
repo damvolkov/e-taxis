@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 def taker(resources: Resources) -> AssessInventory:
     root = resources.path / "assess"
     trees = (root / "trees" / "opencode", root / "trees" / "claude", root / "trees" / "absent")
-    return AssessInventory(root / "nous", trees=trees, reports=root / "nous" / ".reports" / "workflows" / "soa-assess")
+    return AssessInventory(root / "nous", trees=trees, reports=root / "nous" / ".reports" / "workflows" / "radar-tech")
 
 
 @pytest.mark.parametrize(

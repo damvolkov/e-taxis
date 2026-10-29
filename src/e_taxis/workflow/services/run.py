@@ -100,7 +100,7 @@ class WorkflowRun:
         """The run's kwargs: the project resolved, what `query` states read by a small model, then the typed bind;
         and how they were read — the tier, its tokens and the kwargs it filled (empty when no model was asked)."""
         rooted = await self._common_project(decl, given, cwd)
-        topics = tuple((tree.config.get("tekton", {}).get("soa") or {}).get("topics") or {})
+        topics = tuple((tree.config.get("tekton", {}).get("radar") or {}).get("topics") or {})
         filled, tier, tokens = (
             await self._kwargs.fill(decl, rooted, Path(tree.root), topics) if self._kwargs else (rooted, "", 0)
         )

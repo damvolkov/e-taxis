@@ -24,7 +24,7 @@ FOLDER: str = "distill"
 
 ##### TYPES #####
 class DistillStore:
-    """The run's artifacts, by name, as models, in the run's `folder` (another workflow keeps its own: `soa`)."""
+    """The run's artifacts, by name, as models, in the run's `folder` (another workflow keeps its own: `radar`)."""
 
     __slots__ = ("_folder", "_paths")
 

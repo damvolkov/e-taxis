@@ -23,7 +23,7 @@ FRAME = Frame(
 
 
 async def test_ledger_read_without_a_file_is_empty(tmp_path: Path) -> None:
-    assert await SweepLedger(tmp_path / "soa" / "ledger.json").read(FRAME) == Seen()
+    assert await SweepLedger(tmp_path / "radar" / "ledger.json").read(FRAME) == Seen()
 
 
 async def test_ledger_read_keeps_the_frames_voices_and_search(tmp_path: Path) -> None:

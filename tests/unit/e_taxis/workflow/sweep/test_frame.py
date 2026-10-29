@@ -1,4 +1,4 @@
-"""tests/unit/e_taxis/workflow/sweep/frame: soa.yaml and a run's extras fixed into the sweep's frame."""
+"""tests/unit/e_taxis/workflow/sweep/frame: radar.yaml and a run's extras fixed into the sweep's frame."""
 
 import datetime as dt
 from typing import TYPE_CHECKING
@@ -15,8 +15,8 @@ if TYPE_CHECKING:
 TODAY = dt.date(2026, 10, 28)
 
 
-async def test_frame_topic_narrows_keywords_voices_and_links(soa_nous: Path) -> None:
-    frame = (await SweepFrame.load(soa_nous)).fix(topic="observability", today=TODAY)
+async def test_frame_topic_narrows_keywords_voices_and_links(radar_nous: Path) -> None:
+    frame = (await SweepFrame.load(radar_nous)).fix(topic="observability", today=TODAY)
     assert (frame.brief, frame.topic) == ("Agentic systems, watched.", "observability")
     assert frame.keywords == ("agent tracing", "OpenTelemetry")
     assert (frame.since, frame.until) == ("2026-10-26", "2026-10-28")
@@ -24,16 +24,16 @@ async def test_frame_topic_narrows_keywords_voices_and_links(soa_nous: Path) -> 
     assert frame.links == ("https://opentelemetry.io/docs/specs/semconv/gen-ai/", "https://example.org/agents")
 
 
-async def test_frame_empty_topic_is_the_whole_plane(soa_nous: Path) -> None:
-    frame = (await SweepFrame.load(soa_nous)).fix(today=TODAY)
+async def test_frame_empty_topic_is_the_whole_plane(radar_nous: Path) -> None:
+    frame = (await SweepFrame.load(radar_nous)).fix(today=TODAY)
     assert frame.keywords == ("agent memory", "knowledge graph", "agent tracing", "OpenTelemetry")
     assert [voice.id for voice in frame.voices] == ["ada", "blog"]
     assert len(frame.links) == 2
 
 
-async def test_frame_extras_join_for_the_run(soa_nous: Path) -> None:
+async def test_frame_extras_join_for_the_run(radar_nous: Path) -> None:
     extras = "https://www.linkedin.com/in/bo/ https://news.example/atom.xml https://site.example/x https://www.linkedin.com/in/adavoice"
-    frame = (await SweepFrame.load(soa_nous)).fix(
+    frame = (await SweepFrame.load(radar_nous)).fix(
         topic="memory", window="7", authors=extras, links="https://l.example https://l.example", today=TODAY
     )
     assert frame.since == "2026-10-21"
@@ -57,23 +57,23 @@ async def test_frame_extras_join_for_the_run(soa_nous: Path) -> None:
     ],
     ids=["topic", "word", "negative"],
 )
-async def test_frame_refuses(soa_nous: Path, kwargs: dict[str, str], said: str) -> None:
+async def test_frame_refuses(radar_nous: Path, kwargs: dict[str, str], said: str) -> None:
     with pytest.raises(SweepError, match=said):
-        (await SweepFrame.load(soa_nous)).fix(today=TODAY, **kwargs)
+        (await SweepFrame.load(radar_nous)).fix(today=TODAY, **kwargs)
 
 
 @pytest.mark.parametrize(
     ("text", "said"),
-    [(None, "no soa.yaml"), ("brief: x\n", "soa.yaml does not fit"), ("a: [", "soa.yaml does not fit")],
+    [(None, "no radar.yaml"), ("brief: x\n", "radar.yaml does not fit"), ("a: [", "radar.yaml does not fit")],
     ids=["missing", "shape", "yaml"],
 )
 async def test_frame_load_refuses(tmp_path: Path, text: str | None, said: str) -> None:
     config = tmp_path / "core" / "tekton" / "config"
     config.mkdir(parents=True)
-    _ = text and (config / "soa.yaml").write_text(text)
+    _ = text and (config / "radar.yaml").write_text(text)
     with pytest.raises(SweepError, match=said):
         await SweepFrame.load(tmp_path)
 
 
-async def test_frame_load_keeps_the_config(soa_nous: Path) -> None:
-    assert (await SweepFrame.load(soa_nous)).config.discord.webhook == ""
+async def test_frame_load_keeps_the_config(radar_nous: Path) -> None:
+    assert (await SweepFrame.load(radar_nous)).config.discord.webhook == ""

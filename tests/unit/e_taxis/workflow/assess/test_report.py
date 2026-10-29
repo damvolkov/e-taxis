@@ -106,7 +106,7 @@ async def test_report_build_and_render(
     text = AssessReport().render(report, plan())
     assert (report.verdict, report.proposed, report.stands) == (verdict, Ring.ADOPT, review.stands)
     assert text.startswith(
-        f"# soa-assess · r — {verdict}\n\n`t` · repo o/r · pypi r · topic memory · 2026-10-28\n\n- n1"
+        f"# radar-tech · r — {verdict}\n\n`t` · repo o/r · pypi r · topic memory · 2026-10-28\n\n- n1"
     )
     assert said in text
     assert "`taxis enhance run skill x`" in text

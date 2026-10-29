@@ -114,7 +114,7 @@ async def test_deps_command_hands_the_human_mandate(
 
 
 @pytest.mark.parametrize(("token", "signed"), [("t0k", "Bearer t0k"), ("", None)], ids=["token", "anonymous"])
-async def test_deps_binds_soa_assess(monkeypatch: pytest.MonkeyPatch, token: str, signed: str | None) -> None:
+async def test_deps_binds_radar_tech(monkeypatch: pytest.MonkeyPatch, token: str, signed: str | None) -> None:
     monkeypatch.setenv("GH_TOKEN", token)
     async with AsyncExitStack() as stack:
         deps = Deps(stack, _state())

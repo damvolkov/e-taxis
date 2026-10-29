@@ -3,7 +3,7 @@
   "$defs": {
     "PairSamples": {
       "title": "PairSamples",
-      "description": "bench: every pair's raw samples, as soa-assess's bench keeps them.",
+      "description": "bench: every pair's raw samples, as radar-tech's bench keeps them.",
       "type": "object",
       "properties": {
         "pairs": {

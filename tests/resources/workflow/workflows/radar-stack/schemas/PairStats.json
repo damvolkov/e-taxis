@@ -3,7 +3,7 @@
   "$defs": {
     "PairStats": {
       "title": "PairStats",
-      "description": "stats: every pair's paired interval against its threshold, as soa-assess's stats reads it.",
+      "description": "stats: every pair's paired interval against its threshold, as radar-tech's stats reads it.",
       "type": "object",
       "properties": {
         "pairs": {

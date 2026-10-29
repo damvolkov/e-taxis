@@ -49,7 +49,7 @@ class MessagesHandler(BaseHTTPRequestHandler):
         self.wfile.write(self.server.answer)
 
     def do_GET(self) -> None:
-        """A public API's page: the answer, paginated by a `Link` header — soa-assess's reader."""
+        """A public API's page: the answer, paginated by a `Link` header — radar-tech's reader."""
         self.server.seen.append((self.path, dict(self.headers.items()), None))
         self.send_response(200)
         self.send_header("content-type", "application/json")

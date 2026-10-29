@@ -10,9 +10,9 @@ from e_taxis.transpile.models.error import NousError
 CONFIG: dict[str, Any] = {
     "kwargs": {"bench": {"type": "bool", "default": "true", "doc": "measure"}, "topic": {"type": "topic", "doc": "t"}},
     "families": {
-        "soa": {
+        "radar": {
             "kwargs": ["topic"],
-            "output": {"type": "report", "path": "<rundir>/soa/{name}.json"},
+            "output": {"type": "report", "path": "<rundir>/radar/{name}.json"},
             "nodes": {"stats": {"run": "taxis workflow {{workflow}} stats", "instruction": "interval"}},
         }
     },
@@ -40,13 +40,13 @@ async def test_ontology_kwargs(parameters: Any, expected: dict[str, Any]) -> Non
 async def test_ontology_family_joins_kwargs_output_and_nodes() -> None:
     manifest = {
         "id": "w",
-        "family": "soa",
+        "family": "radar",
         "parameters": ["bench"],
         "nodes": [{"use": "stats", "depends": ["a"]}, {"use": "stats", "id": "again"}, {"id": "a", "run": "x"}],
     }
     whole = WorkflowOntology(CONFIG).expand("w", manifest)
     assert list(whole["parameters"]) == ["topic", "bench", "query"]
-    assert whole["output"] == {"type": "report", "path": "<rundir>/soa/w.json"}
+    assert whole["output"] == {"type": "report", "path": "<rundir>/radar/w.json"}
     assert whole["nodes"] == [
         {"run": "taxis workflow {{workflow}} stats", "instruction": "interval", "id": "stats", "depends": ["a"]},
         {"run": "taxis workflow {{workflow}} stats", "instruction": "interval", "id": "again"},
@@ -59,7 +59,7 @@ async def test_ontology_family_joins_kwargs_output_and_nodes() -> None:
     [
         ({"parameters": ["ghost"]}, "kwarg 'ghost' is in no vocabulary"),
         ({"family": "ghost"}, "family 'ghost' is not in the workflows config"),
-        ({"family": "soa", "nodes": [{"use": "ghost"}]}, "uses 'ghost', which its family does not define"),
+        ({"family": "radar", "nodes": [{"use": "ghost"}]}, "uses 'ghost', which its family does not define"),
     ],
     ids=["kwarg", "family", "use"],
 )

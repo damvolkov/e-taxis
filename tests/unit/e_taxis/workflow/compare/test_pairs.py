@@ -1,4 +1,4 @@
-"""tests/unit/e_taxis/workflow/compare/pairs: bench and stats per shortlisted pair, as soa-assess does one."""
+"""tests/unit/e_taxis/workflow/compare/pairs: bench and stats per shortlisted pair, as radar-tech does one."""
 
 import datetime as dt
 from typing import TYPE_CHECKING

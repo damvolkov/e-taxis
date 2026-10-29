@@ -1,4 +1,4 @@
-"""tests/unit/e_taxis/workflow/commands/assess: `taxis workflow soa-assess <step>` through the real app, step after step
+"""tests/unit/e_taxis/workflow/commands/assess: `taxis workflow radar-tech <step>` through the real app, step after step
 — the agents' answers read from the steps the workflow's ports name (`weigh-it`, `judge`, `attack` here)."""
 
 from typing import TYPE_CHECKING, Any
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 type Taxis = Callable[..., tuple[int, str, str]]
-STEP = ("workflow", "soa-assess")
+STEP = ("workflow", "radar-tech")
 PLAN = Plan(
     incumbent="slow",
     overlap=Overlap.REPLACES,
@@ -50,7 +50,7 @@ PLAN = Plan(
 
 
 def read(rundir: Path, name: str, kind: Any) -> Any:
-    return msgspec.json.decode((rundir / "soa" / f"{name}.json").read_bytes(), type=kind)
+    return msgspec.json.decode((rundir / "radar" / f"{name}.json").read_bytes(), type=kind)
 
 
 def test_assess_steps_end_to_end(
@@ -82,7 +82,7 @@ def test_assess_steps_end_to_end(
     code, out, _ = taxis(*STEP, "report", *at, *run)
     assert (code, read(rundir, "assess", Report).verdict) == (0, Ring.ADOPT)
     assert not (rundir / "report.md").exists()
-    assert (rundir / "soa" / "report.md").read_text().startswith("# soa-assess · rtk — adopt")
+    assert (rundir / "radar" / "report.md").read_text().startswith("# radar-tech · rtk — adopt")
     assert f"indexed: {assess_world / 'assessed.json'}" in out
     assert msgspec.json.decode((assess_world / "assessed.json").read_bytes())["rtk"]["verdict"] == "adopt"
 
@@ -129,7 +129,7 @@ def test_assess_bench_refuses_a_misfit_plan(
 
 
 def test_assess_schemas_write_then_check(taxis: Taxis, nous: Path) -> None:
-    folder = nous / "core" / "tekton" / "workflows" / "soa-assess" / "schemas"
+    folder = nous / "core" / "tekton" / "workflows" / "radar-tech" / "schemas"
     (folder / "Plan.json").unlink()
     code, _, err = taxis(*STEP, "schemas", "--nous", str(nous), "--check")
     assert (code, "stale schemas" in err, "Plan" in err) == (34, True, True)

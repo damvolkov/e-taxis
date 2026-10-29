@@ -167,8 +167,8 @@ class WorkflowReader:
 
     def _bind_check(self, name: str, param: Param, value: str) -> str:
         """Why `value` does not fit its parameter's type, or empty: a bool is true or false, an enum one of its values,
-        a topic a key of soa.yaml, a path one that exists. Empty is always allowed: the default stands for it."""
-        topics = (self._tree.config.get("tekton", {}).get("soa") or {}).get("topics") or {}
+        a topic a key of radar.yaml, a path one that exists. Empty is always allowed: the default stands for it."""
+        topics = (self._tree.config.get("tekton", {}).get("radar") or {}).get("topics") or {}
         match (param.type, value):
             case (_, ""):
                 return ""
@@ -177,7 +177,7 @@ class WorkflowReader:
             case (_, bad) if param.values and bad not in param.values:
                 return f"{name}={bad} is not one of {', '.join(param.values)}"
             case (ParamType.TOPIC, bad) if bad not in topics:
-                return f"{name}={bad} is not a topic of soa.yaml ({', '.join(topics)})"
+                return f"{name}={bad} is not a topic of radar.yaml ({', '.join(topics)})"
             case (ParamType.PATH | ParamType.PROJECT, bad) if not Path(bad).expanduser().exists():
                 return f"{name}={bad} does not exist"
             case _:

@@ -2,7 +2,7 @@
 
 A workflow may be called with nothing but `query`. Then the kwargs the caller did not give are asked of the first
 tier that answers (the local model, then the cheap hosted one): a strict JSON Schema built from the workflow's own
-declarations — a bool or an enum is a closed set, a topic one of soa.yaml's, a list an array — and every field
+declarations — a bool or an enum is a closed set, a topic one of radar.yaml's, a list an array — and every field
 required, empty meaning *not stated*, so the model fills nothing by guess. What it answers goes through the same
 typed bind as a hand-typed value; what the caller gave always wins. No query, or nothing left to fill: no call."""
 

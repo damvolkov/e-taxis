@@ -1,6 +1,6 @@
-"""sweep.deliver: the sweep posted to Discord — a short summary as the message, soa/report.md attached.
+"""sweep.deliver: the sweep posted to Discord — a short summary as the message, radar/report.md attached.
 
-The webhook URL is a secret, so soa.yaml never holds it: its `discord.webhook` names the file that does (`~`
+The webhook URL is a secret, so radar.yaml never holds it: its `discord.webhook` names the file that does (`~`
 expanded; a relative path is read from the e-nous checkout). No name, no file, or an empty one stops the step
 with the reason. The summary is one line per voice, the counts, the best findings; Discord's message limit cuts
 it, never the attachment. Mentions are disabled: a report never pings anyone."""
@@ -39,7 +39,7 @@ class SweepDeliver:
     async def _deliver_url(webhook: str, base: Path) -> str:
         match webhook:
             case "":
-                msg = "soa.yaml names no webhook file (discord.webhook is empty): nothing to deliver to"
+                msg = "radar.yaml names no webhook file (discord.webhook is empty): nothing to deliver to"
                 raise SweepError(msg)
             case _:
                 path = base / Path(await anyio.Path(webhook).expanduser())
@@ -63,7 +63,7 @@ class SweepDeliver:
     @classmethod
     def _deliver_summary(cls, frame: Frame, report: Report) -> str:
         lines = (
-            f"**soa-sweep** · {frame.topic or PLANE} · {frame.since} → {frame.until}",
+            f"**radar-field** · {frame.topic or PLANE} · {frame.since} → {frame.until}",
             *(cls._deliver_voice(row) for row in report.voices),
             f"{len(report.findings)} findings · {len(report.assess)} to assess",
             *(f"- {f.title} ({f.relevance}/5, {f.status or 'unfit'})" for f in report.findings[:TOP]),

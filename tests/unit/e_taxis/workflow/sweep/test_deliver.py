@@ -28,7 +28,7 @@ def report(finding: Callable[..., Finding]) -> Report:
             VoiceRow(id="down", status=VoiceStatus.ERROR, error="404"),
         ),
         findings=(finding("Spanline", relevance=5, status=FindingStatus.NEW), finding("B", relevance=2)),
-        assess=("taxis workflow run soa-assess tech=https://github.com/spanline/spanline",),
+        assess=("taxis workflow run radar-tech tech=https://github.com/spanline/spanline",),
     )
 
 
@@ -44,7 +44,7 @@ async def test_deliver_posts_the_summary_and_the_report(web, tmp_path: Path, rep
     assert payload["attachments"] == [{"id": 0, "filename": "report.md"}]
     assert files == {"files[0]": ("report.md", b"# R\n")}
     assert said.splitlines() == [
-        "**soa-sweep** · the whole plane · 2026-10-26 → 2026-10-28",
+        "**radar-field** · the whole plane · 2026-10-26 → 2026-10-28",
         "ok **ada** — 3 parsed · 2 in window · 1 new · 1 findings",
         "error **down** — 404",
         "2 findings · 1 to assess",

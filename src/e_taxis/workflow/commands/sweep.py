@@ -1,9 +1,9 @@
-"""commands.sweep: `taxis workflow soa-sweep <step>` — soa-sweep's deterministic steps, one command per workflow node.
+"""commands.sweep: `taxis workflow radar-field <step>` — radar-field's deterministic steps, one command per workflow node.
 
-The workflow (`core/tekton/workflows/soa-sweep/`) calls these as its `run` nodes with `--rundir {{rundir}}` (and
-`--nous {{nous}}` where the step reads e-nous); each reads its parents' typed artifacts from `<rundir>/soa/` and
-writes its own there — the voices agent reads `soa/entries.json`, report writes `soa/report.md` beside
-`soa/report.json` (the run's own `report.md` is the engine's, rewritten when the run ends). The agents' answers (`voices`, `search`) are
+The workflow (`core/tekton/workflows/radar-field/`) calls these as its `run` nodes with `--rundir {{rundir}}` (and
+`--nous {{nous}}` where the step reads e-nous); each reads its parents' typed artifacts from `<rundir>/radar/` and
+writes its own there — the voices agent reads `radar/entries.json`, report writes `radar/report.md` beside
+`radar/report.json` (the run's own `report.md` is the engine's, rewritten when the run ends). The agents' answers (`voices`, `search`) are
 read from their `out.md`: which steps answered is the run's own manifest (`run.json`, its agent steps), never an
 id written here. `report` is the only step that writes state: the URLs it reported, into the seen ledger."""
 
@@ -34,8 +34,8 @@ from e_taxis.workflow.sweep.ledger import SweepLedger
 from e_taxis.workflow.sweep.report import SweepReport
 
 ##### DEFAULTS #####
-WORKFLOW: str = "soa-sweep"
-FOLDER: str = "soa"
+WORKFLOW: str = "radar-field"
+FOLDER: str = "radar"
 SCHEMAS: str = "schemas"
 LEDGER: str = "ledger.json"
 MARKDOWN: str = "report.md"
@@ -66,7 +66,7 @@ async def manifest_of(rundir: Path) -> RunManifest:
 
 
 async def ledger_of(settings: TaxisSettings) -> SweepLedger:
-    return SweepLedger(Path(await anyio.Path(settings.taxis_soa_state).expanduser()) / LEDGER)
+    return SweepLedger(Path(await anyio.Path(settings.taxis_radar_state).expanduser()) / LEDGER)
 
 
 async def path_of(path: Path) -> Path:
@@ -84,13 +84,13 @@ async def frame(
     links: str = "",
     console: Inject[Console],
 ) -> None:
-    """Fix the frame from soa.yaml and the run's extras; an unknown topic fails here, at zero tokens.
+    """Fix the frame from radar.yaml and the run's extras; an unknown topic fails here, at zero tokens.
 
     Args:
         nous: the e-nous checkout.
         rundir: the run's folder.
-        topic: a topic of soa.yaml; empty = the whole plane.
-        window: calendar days back from today; empty = soa.yaml's.
+        topic: a topic of radar.yaml; empty = the whole plane.
+        window: calendar days back from today; empty = radar.yaml's.
         authors: extra voices for this run, space-separated URLs.
         links: extra reference links for this run, space-separated.
     """
@@ -161,7 +161,7 @@ async def fit(*, nous: Nous = UNSET, rundir: Path, settings: Inject[TaxisSetting
 
 
 async def report(*, rundir: Path, settings: Inject[TaxisSettings], console: Inject[Console]) -> None:
-    """Write soa/report.md and soa/report.json; record the reported URLs in the seen ledger.
+    """Write radar/report.md and radar/report.json; record the reported URLs in the seen ledger.
 
     Args:
         rundir: the run's folder.
@@ -180,7 +180,7 @@ async def report(*, rundir: Path, settings: Inject[TaxisSettings], console: Inje
 
 
 async def deliver(*, rundir: Path, web: Inject[WebPort], console: Inject[Console]) -> None:
-    """Post the report's summary to the Discord webhook soa.yaml names, soa/report.md attached.
+    """Post the report's summary to the Discord webhook radar.yaml names, radar/report.md attached.
 
     Args:
         rundir: the run's folder.
@@ -198,7 +198,7 @@ async def deliver(*, rundir: Path, web: Inject[WebPort], console: Inject[Console
 
 
 async def schemas(*, nous: Nous = UNSET, check: bool = False, console: Inject[Console]) -> None:
-    """Write the JSON Schema of every soa-sweep port into the workflow's `schemas/`; --check only compares.
+    """Write the JSON Schema of every radar-field port into the workflow's `schemas/`; --check only compares.
 
     Args:
         nous: the e-nous checkout.
@@ -218,9 +218,7 @@ async def schemas(*, nous: Nous = UNSET, check: bool = False, console: Inject[Co
         case (_, []):
             console.out(f"schemas: {len(PORTS)} in sync in {folder}", highlight=False)
         case (True, _):
-            msg = (
-                f"stale schemas in {folder}: {', '.join(stale)} — run `taxis workflow soa-sweep schemas --nous {nous}`"
-            )
+            msg = f"stale schemas in {folder}: {', '.join(stale)} — run `taxis workflow radar-field schemas --nous {nous}`"
             raise SweepError(msg)
         case _:
             await anyio.Path(folder).mkdir(parents=True, exist_ok=True)

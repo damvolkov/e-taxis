@@ -431,7 +431,7 @@ class Deps:
         )
 
     async def _resolve_api(self) -> WreqApi:
-        """soa-assess's public APIs; the GitHub token, when the settings hold one, signs GitHub's requests only."""
+        """radar-tech's public APIs; the GitHub token, when the settings hold one, signs GitHub's requests only."""
         settings = await self.resolve(TaxisSettings)
         token = settings.gh_token.get_secret_value() if settings.gh_token else ""
         return WreqApi(settings.taxis_assess_timeout, token)

@@ -212,7 +212,7 @@ map:
       permissions.granular:  {reason: pending, detail: "Claude's permissions.ask/deny with Tool(pattern) rules could carry the edit/bash patterns (.env*, sudo *…); the translation transform is not built and would add live prompts — a decision, not a gap to close silently"}
       security:              {reason: internal, detail: "scanner acceptances, never rendered"}
       schedules:             {reason: internal, detail: "unattended runs: taxis schedule renders them into systemd timers, never the harness"}
-      soa:                   {reason: internal, detail: "soa-sweep's frame, read by taxis workflow soa-sweep, never the harness"}
+      radar:                   {reason: internal, detail: "radar-field's frame, read by taxis workflow radar-field, never the harness"}
       workflows:             {reason: internal, detail: "the workflows' kwargs ontology and families, expanded by taxis at load"}
       mcp.servers.*.note:    {reason: pending, detail: "no description field known in Claude's MCP entry; confirm against mcp.md"}
       mcp.servers.*.smoke:   {reason: internal, detail: "evaluation data (taxis eval run config)"}

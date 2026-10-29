@@ -1,4 +1,4 @@
-"""compare.stats: every pair's paired interval, as soa-assess reads one — joined to its plan by (incumbent, rival)."""
+"""compare.stats: every pair's paired interval, as radar-tech reads one — joined to its plan by (incumbent, rival)."""
 
 from typing import TYPE_CHECKING
 
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class CompareStats:
-    """soa-assess's stats, per pair; a pair with no samples is not measured."""
+    """radar-tech's stats, per pair; a pair with no samples is not measured."""
 
     __slots__ = ("_stats",)
 

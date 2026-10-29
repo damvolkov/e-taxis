@@ -1,4 +1,4 @@
-"""models.compare: soa-compare's data — what a repository runs, against what could replace it, measured, judged.
+"""models.compare: radar-stack's data — what a repository runs, against what could replace it, measured, judged.
 
 **The chain.** `Stack` (intake: every declared dependency, its version, its manifest, where it is imported) →
 `Rivals` (the agent: the incumbents the query names, at most three rivals each) → `Healths` (assess's `Health` per
@@ -6,7 +6,7 @@ subject, plus whether its hot path is Rust or C) → `Shortlist` (one rubric; pe
 it) → `Plans` (the agent: one assess `Plan` per pair, with its migration) → `PairSamples` → `PairStats` → `Verdicts`
 → `Reviews` (the adversary) → `Report` (what stood, per incumbent).
 
-**Pairs.** A compare pair *is* an assess plan: `Plan`, `Samples`, `Stats` and `Health` are soa-assess's own, reused
+**Pairs.** A compare pair *is* an assess plan: `Plan`, `Samples`, `Stats` and `Health` are radar-tech's own, reused
 as they are; each port here is a list of them keyed by the pair (`incumbent`, `rival`) — the names the rivals'
 answer gave, the join key of every step after it.
 
@@ -106,7 +106,7 @@ class Rivals(msgspec.Struct, frozen=True, kw_only=True, forbid_unknown_fields=Tr
 
 ##### HEALTH #####
 class Vital(msgspec.Struct, frozen=True, kw_only=True):
-    """One subject's health (soa-assess's KPIs), its stars, and whether its hot path is Rust or C/C++ — `basis`
+    """One subject's health (radar-tech's KPIs), its stars, and whether its hot path is Rust or C/C++ — `basis`
     says, reading by reading, how that was decided."""
 
     name: str
@@ -184,7 +184,7 @@ class Benched(msgspec.Struct, frozen=True, kw_only=True):
 
 
 class PairSamples(msgspec.Struct, frozen=True, kw_only=True):
-    """bench: every pair's raw samples, as soa-assess's bench keeps them."""
+    """bench: every pair's raw samples, as radar-tech's bench keeps them."""
 
     pairs: tuple[Benched, ...]
 
@@ -197,7 +197,7 @@ class Measured(msgspec.Struct, frozen=True, kw_only=True):
 
 
 class PairStats(msgspec.Struct, frozen=True, kw_only=True):
-    """stats: every pair's paired interval against its threshold, as soa-assess's stats reads it."""
+    """stats: every pair's paired interval against its threshold, as radar-tech's stats reads it."""
 
     pairs: tuple[Measured, ...]
 
@@ -276,7 +276,7 @@ class Compared(msgspec.Struct, frozen=True, kw_only=True):
 
 
 ##### THE PORTS #####
-### Every artifact passed between soa-compare's steps, by the model name its ports declare: one JSON Schema each.
+### Every artifact passed between radar-stack's steps, by the model name its ports declare: one JSON Schema each.
 PORTS: Final[Mapping[str, object]] = MappingProxyType(
     {
         "Stack": Stack,
