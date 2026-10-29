@@ -95,6 +95,14 @@ async def test_check_mutation_is_caught_as_its_kind(
     )
 
 
+async def test_check_pending_section_without_rows_is_silent(
+    nous_root: Path, edit: Callable[[str, Callable[[Any], None]], None]
+) -> None:
+    edit(CC, lambda s: s["map"]["workflow"].update({"status": "pending", "rows": []}))
+    report = await CheckService().run(GitNous(nous_root, None))
+    assert [finding for finding in report.blocking if finding.where == "workflow"] == []
+
+
 async def test_check_slot_in_two_layers_is_refused(
     nous_root: Path, edit: Callable[[str, Callable[[Any], None]], None]
 ) -> None:

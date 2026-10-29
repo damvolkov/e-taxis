@@ -1,0 +1,5 @@
+servers:
+  redis-mcp:
+    command: [uvx, redis-mcp]
+  exa:
+    url: "https://mcp.exa.ai/mcp"

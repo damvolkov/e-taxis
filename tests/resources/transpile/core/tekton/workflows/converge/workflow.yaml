@@ -2,6 +2,7 @@
 # Slots y scope de referencia: core/schema.yaml
 # Dos ejecutores, una fuente: `op workflow run converge entity=skill` (determinista, nodo a nodo en vivo) o `/workflow converge`.
 id: converge
+domains: [tekton]
 description: >-
   Evaluate an entity kind, act on the needs its agents own, promote and commit, and evaluate
   again — at most three passes, until no agent need is open or the open set stops moving.

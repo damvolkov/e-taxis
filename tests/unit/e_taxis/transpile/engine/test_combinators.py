@@ -103,7 +103,14 @@ async def test_combinators_graph_renders_steps_loop_and_output(ctx: RowContext) 
     instance = ctx.per({"loop": {"nodes": ["a", "b"], "max": 2, "until": "b"}, "output": {"type": "report"}}, "w")
     text = COMBINATORS["graph"](nodes, {"output": "output", "loop": "loop", "start": "start", "done": "done"}, instance)
     assert "    start --> a\n    a --> b\n    b --> done" in text
-    assert "run: `make`\n\nbuild it" in text
+    assert (
+        "step: `taxis workflow step a --workflow w --rundir <rundir> --nous <nous> <name=value…>` — taxis runs `make`\n\nbuild it"
+        in text
+    )
+    assert (
+        "`taxis workflow put b --workflow w --rundir <rundir> --nous <nous> --file <rundir>/nodes/b/answer.md`" in text
+    )
+    assert "## walk" in text
     assert "*only when `op` is `x` or `y`*" in text
     assert "*only when `mode` is `z`*" in text
     assert "@scout look" in text

@@ -1,0 +1,9 @@
+# rendered by taxis schedule apply from core/tekton/config/schedules.yaml — do not edit
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+RandomizedDelaySec=300
+Unit=taxis-eval-spec.service
+
+[Install]
+WantedBy=timers.target

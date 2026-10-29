@@ -1,0 +1,5 @@
+services:
+  proxy:
+    image: ghcr.io/caddy/caddy:2.8@sha256:abc123
+  registry:
+    image: localhost:5000/tool

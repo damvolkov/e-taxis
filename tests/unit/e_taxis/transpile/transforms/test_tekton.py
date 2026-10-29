@@ -135,3 +135,48 @@ async def test_tekton_providers_tree_refuses_tiers_disagreeing_on_a_model(ctx: R
     tiers = {"builder": {"model": "bailian/m", "reasoning": True}, "scout": {"model": "bailian/m"}}
     with pytest.raises(RenderError, match="different settings"):
         opencode.providers_tree(ctx.config["models"] | {"tiers": tiers}, ctx)
+
+
+WORKFLOW: dict[str, Any] = {
+    "id": "w",
+    "description": "Two  lines\nof description.",
+    "parameters": {"go": "whether"},
+    "loop": {"nodes": ["poll"], "max": 2, "until": "poll"},
+    "nodes": [
+        {"id": "start", "run": "true"},
+        {"id": "poll", "depends": ["start"], "run": "true"},
+        {"id": "judge", "depends": ["poll"], "actor": "auditor", "instruction": "Read {{rundir}}."},
+        {"id": "ship", "depends": ["judge"], "run": "true", "when": {"go": ["yes"]}},
+    ],
+}
+
+
+async def test_tekton_workflow_script_gates_every_node(ctx: RowContext) -> None:
+    lines = claudecode.claude_workflow(None, ctx.per(WORKFLOW, "w")).splitlines()
+    assert lines[0] == (
+        'export const meta = {"name": "w", "description": "Two lines of description.", "phases": '
+        '[{"title": "start"}, {"title": "poll"}, {"title": "judge"}, {"title": "ship"}]}'
+    )
+    assert 'const P = Object.assign({"go": ""}, args && typeof args === \'object\' ? args : {})' in lines
+    assert '  for (let k = 1; k <= 2; k++) for (const id of ["poll"]) last = await run(`${id}_${k}`, id)' in lines
+    assert 'const n_start = gate("start", [], () => true, null)' in lines
+    assert (
+        'const n_judge = gate("judge", [n_loop], () => true, () => think("judge", "auditor", "Read {{rundir}}.", ["poll"]))'
+        in lines
+    )
+    assert 'const n_ship = gate("ship", [n_judge], () => ["yes"].includes(String(P["go"] ?? \'\')), null)' in lines
+    assert lines[-1] == (
+        "return {workflow: WORKFLOW, rundir: RUNDIR, steps: await Promise.all([n_start, n_judge, n_ship, n_loop])}"
+    )
+
+
+async def test_tekton_workflow_script_refuses_an_agent_in_a_loop(ctx: RowContext) -> None:
+    looped = {**WORKFLOW, "loop": {"nodes": ["poll", "judge"], "max": 2, "until": "poll"}}
+    with pytest.raises(RenderError, match=r"a loop with agent steps \(judge\)"):
+        claudecode.claude_workflow(None, ctx.per(looped, "w"))
+
+
+async def test_tekton_workflow_script_without_a_loop_has_none(ctx: RowContext) -> None:
+    plain = {key: value for key, value in WORKFLOW.items() if key != "loop"}
+    script = claudecode.claude_workflow(None, ctx.per(plain, "w"))
+    assert ("n_loop" in script, 'const n_poll = gate("poll", [n_start], () => true, null)' in script) == (False, True)

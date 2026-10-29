@@ -1,4 +1,4 @@
-"""commands.distill: `taxis distill <step>` — reverse-distill's deterministic steps, one command per workflow node.
+"""commands.distill: `taxis workflow reverse-distill <step>` — reverse-distill's deterministic steps, one command per workflow node.
 
 The workflow (`core/tekton/workflows/reverse-distill/`) calls these as its `run` nodes with `--rundir {{rundir}}`
 (and `--nous {{nous}}` where the step reads e-nous); each reads its parents' typed artifacts from the run's folder
@@ -339,7 +339,7 @@ async def schemas(
         case (True, []) | (False, []):
             console.out(f"schemas: {len(PORTS)} in sync in {folder}", highlight=False)
         case (True, _):
-            msg = f"stale schemas in {folder}: {', '.join(stale)} — run `taxis distill schemas --nous {nous}`"
+            msg = f"stale schemas in {folder}: {', '.join(stale)} — run `taxis workflow reverse-distill schemas --nous {nous}`"
             raise DistillError(msg)
         case _:
             await anyio.Path(folder).mkdir(parents=True, exist_ok=True)

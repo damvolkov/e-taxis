@@ -6,10 +6,13 @@ from dataclasses import dataclass
 ##### TYPES #####
 @dataclass(frozen=True, slots=True)
 class CommandGroup:
-    """One node of the tree: `project env` nests under `project`; the empty parent is the root app itself."""
+    """One node of the tree: `project env` nests under `project`; the empty parent is the root app itself.
+
+    `show` false keeps the group out of `--help`: plumbing only a workflow graph calls, never a human."""
 
     path: str
     help: str
+    show: bool = True
 
     @property
     def parent(self) -> str:

@@ -101,7 +101,10 @@ entities:
     fields:
       id:          {type: str, required: true}
       description: {type: str, required: true}
-      parameters:  {type: "map<str, str | {doc: str, type: str}>", default: {}, doc: "parameter → its doc, or {doc, type}; {{name}} in a node references it"}
+      domains:     {type: "list<enum[tekton, nomos]>", required: true, doc: "the hemispheres it serves: rendered only into their harnesses"}
+      family:      {type: str, doc: "a family of core/tekton/config/workflows.yaml: its kwargs, output and nodes ({use: node}), expanded at load"}
+      each:        {type: str, doc: "a list kwarg: one run per item, in parallel, joined in the parent's report"}
+      parameters:  {type: "map<str, str | {doc: str, type: str, default: str, values: list<str>}>", default: {}, doc: "after load: name → its entry; the manifest may name kwargs of the workflows vocabulary (a list) or refine them"}
       triggers:    {type: "list<map<str, str>>", default: [], doc: "phrases that launch it, by grammar ({eng: 'flow …'})"}
       nodes:       {type: "list<Node | {source: path}>", required: true, doc: "declaration order = render order"}
       loop:        {type: "{nodes: list<str>, max: int, until: str}", doc: "unrolled into copies <id>_<k>: the graph never cycles"}
@@ -177,6 +180,23 @@ config:
     security:
       fields:
         accepted:     {type: "map<skill, list<{fingerprint: str, file: path, why: str}>>", default: {}, doc: "scanner acceptances: internal, never rendered"}
+    soa:
+      fields:
+        brief:        {type: str, required: true, doc: "the plane soa-sweep watches"}
+        window:       {type: int, required: true, doc: "calendar days back from today"}
+        topics:       {type: "map<str, {keywords: list<str>}>", required: true}
+        authors:      {type: "map<str, {name: str, url: url, kind: enum[atom_feed, linkedin_profile, web], topics: list<str>}>", default: {}}
+        links:        {type: "map<str, {url: url, topics: list<str>}>", default: {}}
+        discord:      {type: "{webhook: str}", default: {}, doc: "webhook names the file holding the URL, never the URL"}
+    workflows:
+      fields:
+        kwargs:       {type: "map<str, {type: enum[str, bool, list, path, topic, project], doc: str, default: str, values: list<str>}>", default: {}, doc: "the one typed vocabulary of workflow parameters"}
+        families:     {type: "map<str, {kwargs: list<str>, output: {type: str, path: str}, nodes: map<str, FamilyNode>}>", default: {}, doc: "workflows that share kwargs and nodes ({use: <node>}); taxis expands them at load"}
+      structs:
+        FamilyNode: {depends: "list<str>", when: "map<str, str | list<str>>", run: str, actor: str, instruction: str, readonly: bool, steps: int, timeout: int}
+    schedules:
+      shape: "map<str, {doc: str, calendar: str, steps: list<Argv>, off: bool}>"
+      doc: "what runs unattended: taxis schedule apply renders each into a systemd user timer taxis-<id>; calendar is OnCalendar, steps are taxis argv run in order; internal, never rendered"
     assets: [hooks, mcp, plugins]
 
   nomos:

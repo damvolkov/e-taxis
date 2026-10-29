@@ -23,12 +23,19 @@ typo fails the gate, never a user.
     taxis transpile run   --target T [--nous PATH] --out DIR [--ref REF | --worktree] [--json]   # pure export
     taxis workflow run ID [--nous PATH] [name=value ...]                  # a corpus workflow, end to end
     taxis workflow list [--nous PATH] · check [ID ...] [--nous PATH]
-    taxis distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas [--nous PATH] --rundir DIR …
+    taxis workflow step NODE --workflow W --rundir DIR [--nous PATH] [name=value ...] · put NODE --workflow W --rundir DIR --file F
+    taxis workflow reverse-distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas [--nous PATH] --rundir DIR …
+    taxis workflow soa-sweep frame|ledger|fetch|ground|fit|report|deliver|schemas [--nous PATH] --rundir DIR …
+    taxis workflow soa-assess intake|inventory|health|bench|stats|report|schemas [--nous PATH] --rundir DIR …
+    taxis workflow soa-compare intake|health|rank|bench|stats|report|schemas [--nous PATH] --rundir DIR …
     taxis eval run TARGET [IDS ...] [--nous PATH] [--cadence C] [--candidate RUN]   # the evaluator, read-only
     taxis eval graph [TARGET] · eval needs TARGET [--nous PATH] [--run R] [--owner O]
     taxis enhance run TARGET [IDS ...] [--nous PATH] (--from R | --directive D | --manual) [--cadence C]
     taxis enhance graph [TARGET] · enhance promote [RUN] [--nous PATH] [--ids ...] [--all-verdicts] [--yes]
     taxis reports show [RUN] [--nous PATH] [--json]
+    taxis schedule list [--nous PATH] [--json]                            # every schedule and its timer's state
+    taxis schedule apply [--nous PATH] [--yes] [--json]                   # core → systemd user timers; dry unless --yes
+    taxis schedule run ID [--nous PATH]                                   # one now, through systemd; its result
     taxis logo NAMES [--out DIR] [--prefix P] [--background HEX] [--foreground HEX] [--force]
     taxis repo resolve URL REF                     # the commit a branch, tag or sha names
     taxis repo tree    URL REF [PATH]              # every file the remote holds at REF
@@ -54,7 +61,24 @@ GROUPS: tuple[CommandGroup, ...] = (
         path="workflow", help="Corpus workflows: graphs of command and agent steps, run from an e-nous checkout."
     ),
     CommandGroup(
-        path="distill", help="reverse-distill's deterministic steps, one per workflow node: --nous, --rundir."
+        path="workflow soa-assess",
+        help="soa-assess's deterministic steps, one per workflow node: --rundir, --nous.",
+        show=False,
+    ),
+    CommandGroup(
+        path="workflow soa-compare",
+        help="soa-compare's deterministic steps, one per workflow node: --rundir, --nous.",
+        show=False,
+    ),
+    CommandGroup(
+        path="workflow soa-sweep",
+        help="soa-sweep's deterministic steps, one per workflow node: --nous, --rundir.",
+        show=False,
+    ),
+    CommandGroup(
+        path="workflow reverse-distill",
+        help="reverse-distill's deterministic steps, one per workflow node: --nous, --rundir.",
+        show=False,
     ),
     CommandGroup(
         path="eval", help="The evaluator: measure a corpus target, read-only; every subject ends in its needs."
@@ -63,6 +87,7 @@ GROUPS: tuple[CommandGroup, ...] = (
         path="enhance", help="The enhancer: act on a reason in a sandbox; verdicts, patches, a human promotes."
     ),
     CommandGroup(path="reports", help="Evaluation and enhancement runs, rebuilt from their ledgers."),
+    CommandGroup(path="schedule", help="Unattended runs: the core's schedules as systemd user timers taxis-<id>."),
 )
 
 CARDS: tuple[CommandCard, ...] = (
@@ -121,9 +146,19 @@ CARDS: tuple[CommandCard, ...] = (
         summary="Run a workflow; exits 24 when a step failed.",
     ),
     CommandCard(
+        path="workflow step",
+        target="e_taxis.workflow.commands.workflow:step",
+        summary="Run one step inside a run a harness walks; one JSON line.",
+    ),
+    CommandCard(
+        path="workflow put",
+        target="e_taxis.workflow.commands.workflow:put",
+        summary="Keep a harness agent's answer as a semantic step's out.",
+    ),
+    CommandCard(
         path="workflow list",
         target="e_taxis.workflow.commands.workflow:listing",
-        summary="Every workflow, its parameters and steps.",
+        summary="Every workflow drawn: parameters, then D/S step chains.",
     ),
     CommandCard(
         path="workflow check",
@@ -131,52 +166,162 @@ CARDS: tuple[CommandCard, ...] = (
         summary="Hold workflows to their static law; writes nothing.",
     ),
     CommandCard(
-        path="distill guard",
+        path="workflow soa-compare intake",
+        target="e_taxis.workflow.commands.compare:intake",
+        summary="Read the repository's declared stack and imports.",
+    ),
+    CommandCard(
+        path="workflow soa-compare health",
+        target="e_taxis.workflow.commands.compare:health",
+        summary="Health and hot-path language of every subject.",
+    ),
+    CommandCard(
+        path="workflow soa-compare rank",
+        target="e_taxis.workflow.commands.compare:rank",
+        summary="Score on one rubric; shortlist the rivals that win.",
+    ),
+    CommandCard(
+        path="workflow soa-compare bench",
+        target="e_taxis.workflow.commands.compare:bench",
+        summary="Bench every shortlisted pair, fenced.",
+    ),
+    CommandCard(
+        path="workflow soa-compare stats",
+        target="e_taxis.workflow.commands.compare:stats",
+        summary="Every pair's interval against its threshold.",
+    ),
+    CommandCard(
+        path="workflow soa-compare report",
+        target="e_taxis.workflow.commands.compare:report",
+        summary="Write report.md and compare.json; index the verdicts.",
+    ),
+    CommandCard(
+        path="workflow soa-compare schemas",
+        target="e_taxis.workflow.commands.compare:schemas",
+        summary="Write (or --check) every soa-compare port's JSON Schema.",
+    ),
+    CommandCard(
+        path="workflow soa-assess intake",
+        target="e_taxis.workflow.commands.assess:intake",
+        summary="Resolve a technology to its repository and package.",
+    ),
+    CommandCard(
+        path="workflow soa-assess inventory",
+        target="e_taxis.workflow.commands.assess:inventory",
+        summary="What lives here in the candidate's domain, no model.",
+    ),
+    CommandCard(
+        path="workflow soa-assess health",
+        target="e_taxis.workflow.commands.assess:health",
+        summary="Dated health KPIs from no-auth sources.",
+    ),
+    CommandCard(
+        path="workflow soa-assess bench",
+        target="e_taxis.workflow.commands.assess:bench",
+        summary="Install every arm fenced; run the plan interleaved.",
+    ),
+    CommandCard(
+        path="workflow soa-assess stats",
+        target="e_taxis.workflow.commands.assess:stats",
+        summary="The paired bootstrap interval against the threshold.",
+    ),
+    CommandCard(
+        path="workflow soa-assess report",
+        target="e_taxis.workflow.commands.assess:report",
+        summary="Write report.md and assess.json; index the verdict.",
+    ),
+    CommandCard(
+        path="workflow soa-assess schemas",
+        target="e_taxis.workflow.commands.assess:schemas",
+        summary="Write (or --check) every soa-assess port's JSON Schema.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep frame",
+        target="e_taxis.workflow.commands.sweep:frame",
+        summary="Fix the frame from soa.yaml; an unknown topic fails here.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep ledger",
+        target="e_taxis.workflow.commands.sweep:ledger",
+        summary="The seen ledger, for the frame's voices.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep fetch",
+        target="e_taxis.workflow.commands.sweep:fetch",
+        summary="Every voice and entry page inside the window.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep ground",
+        target="e_taxis.workflow.commands.sweep:ground",
+        summary="Merge the findings; keep what a fetched page holds.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep fit",
+        target="e_taxis.workflow.commands.sweep:fit",
+        summary="Mark each finding have, considered or new.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep report",
+        target="e_taxis.workflow.commands.sweep:report",
+        summary="Write report.md and report.json; record the ledger.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep deliver",
+        target="e_taxis.workflow.commands.sweep:deliver",
+        summary="Post the summary and report.md to Discord.",
+    ),
+    CommandCard(
+        path="workflow soa-sweep schemas",
+        target="e_taxis.workflow.commands.sweep:schemas",
+        summary="Write (or --check) every soa-sweep port's JSON Schema.",
+    ),
+    CommandCard(
+        path="workflow reverse-distill guard",
         target="e_taxis.workflow.commands.distill:guard",
         summary="Fix the scope; exit 3 when nothing is past the base.",
     ),
     CommandCard(
-        path="distill intake",
+        path="workflow reverse-distill intake",
         target="e_taxis.workflow.commands.distill:intake",
         summary="The range's commits and touched files.",
     ),
     CommandCard(
-        path="distill index",
+        path="workflow reverse-distill index",
         target="e_taxis.workflow.commands.distill:index",
         summary="e-nous, e-arkhetypo and the project into the code graph.",
     ),
     CommandCard(
-        path="distill scan",
+        path="workflow reverse-distill scan",
         target="e_taxis.workflow.commands.distill:scan",
         summary="The range's changed files and impacted symbols.",
     ),
     CommandCard(
-        path="distill drift",
+        path="workflow reverse-distill drift",
         target="e_taxis.workflow.commands.distill:drift",
         summary="The project's own drift checks, read.",
     ),
     CommandCard(
-        path="distill inventory",
+        path="workflow reverse-distill inventory",
         target="e_taxis.workflow.commands.distill:inventory",
         summary="Every plane, without a model: what the cores do not say.",
     ),
     CommandCard(
-        path="distill grade",
+        path="workflow reverse-distill grade",
         target="e_taxis.workflow.commands.distill:grade",
         summary="Merge the miners, propagate contradictions, weigh.",
     ),
     CommandCard(
-        path="distill report",
+        path="workflow reverse-distill report",
         target="e_taxis.workflow.commands.distill:report",
         summary="Join verdicts and reviews; write report.md and briefs.",
     ),
     CommandCard(
-        path="distill ship",
+        path="workflow reverse-distill ship",
         target="e_taxis.workflow.commands.distill:ship",
         summary="Run the commands that apply the musts.",
     ),
     CommandCard(
-        path="distill schemas",
+        path="workflow reverse-distill schemas",
         target="e_taxis.workflow.commands.distill:schemas",
         summary="Write (or --check) every port's JSON Schema.",
     ),
@@ -215,6 +360,21 @@ CARDS: tuple[CommandCard, ...] = (
         target="e_taxis.workflow.commands.reports:show",
         summary="A plane run's report, rebuilt from its ledger.",
     ),
+    CommandCard(
+        path="schedule list",
+        target="e_taxis.schedule.commands.schedule:listing",
+        summary="Every schedule with its timer's state; orphans too.",
+    ),
+    CommandCard(
+        path="schedule apply",
+        target="e_taxis.schedule.commands.schedule:apply",
+        summary="Render the schedules into systemd user timers; dry unless --yes.",
+    ),
+    CommandCard(
+        path="schedule run",
+        target="e_taxis.schedule.commands.schedule:run",
+        summary="Run one now through systemd; exits 33 unless it succeeds.",
+    ),
     CommandCard(path="logo", target="e_taxis.ops.logo:logo", summary="Deterministic family wordmarks into assets/."),
     CommandCard(path="repo resolve", target="e_taxis.ops.repo:resolve", summary="The commit a ref names on a remote."),
     CommandCard(path="repo tree", target="e_taxis.ops.repo:tree", summary="Every file under a path at a ref."),
@@ -234,7 +394,7 @@ def build() -> App:
     )
     apps = {"": root}
     for group in GROUPS:
-        apps[group.path] = App(name=group.name, help=group.help)
+        apps[group.path] = App(name=group.name, help=group.help, show=group.show)
         apps[group.parent].command(apps[group.path])
     for card in CARDS:
         apps[card.parent].command(card.target, name=card.name, help=card.summary)

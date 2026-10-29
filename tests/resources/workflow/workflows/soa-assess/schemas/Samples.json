@@ -1,0 +1,165 @@
+{
+  "$ref": "#/$defs/Samples",
+  "$defs": {
+    "Samples": {
+      "title": "Samples",
+      "description": "bench: raw samples per arm and case, interleaved; install failures recorded. No arm ran → `reason` says why.",
+      "type": "object",
+      "properties": {
+        "arms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ArmSamples"
+          }
+        },
+        "warmup": {
+          "type": "integer"
+        },
+        "machine": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/Machine"
+            }
+          ],
+          "default": null
+        },
+        "seed": {
+          "type": "integer",
+          "default": 0
+        },
+        "measured_at": {
+          "type": "string",
+          "default": ""
+        },
+        "reason": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "arms",
+        "warmup"
+      ]
+    },
+    "ArmSamples": {
+      "title": "ArmSamples",
+      "description": "One arm as it ran: installed or not (the install's failure is the arm's result), its measured runs.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/$defs/Role"
+        },
+        "installed": {
+          "type": "boolean"
+        },
+        "samples": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Sample"
+          },
+          "default": []
+        },
+        "error": {
+          "type": "string",
+          "default": ""
+        },
+        "version": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "name",
+        "role",
+        "installed"
+      ]
+    },
+    "Role": {
+      "title": "Role",
+      "description": "One side of the benchmark: the candidate, and the baseline it is weighed against.",
+      "enum": [
+        "candidate",
+        "empty",
+        "incumbent"
+      ]
+    },
+    "Sample": {
+      "title": "Sample",
+      "description": "One measured run: its repetition, its position in the whole interleaved schedule (`at`, warm-ups counted);\n`metric` null when the run failed, `error` saying how.",
+      "type": "object",
+      "properties": {
+        "case": {
+          "type": "string"
+        },
+        "rep": {
+          "type": "integer"
+        },
+        "at": {
+          "type": "integer"
+        },
+        "metric": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "secondary": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          },
+          "default": {}
+        },
+        "error": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "case",
+        "rep",
+        "at"
+      ]
+    },
+    "Machine": {
+      "title": "Machine",
+      "description": "Where the arms ran, read at the start: a busy machine is not comparable to an idle one.",
+      "type": "object",
+      "properties": {
+        "cpu": {
+          "type": "string"
+        },
+        "cores": {
+          "type": "integer"
+        },
+        "ram": {
+          "type": "integer"
+        },
+        "load": {
+          "type": "number"
+        },
+        "kernel": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "cpu",
+        "cores",
+        "ram",
+        "load",
+        "kernel"
+      ]
+    }
+  }
+}

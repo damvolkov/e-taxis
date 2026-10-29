@@ -1,0 +1,16 @@
+[project]
+name = "sample"
+version = "0.1.0"
+dependencies = [
+    "msgspec>=0.21",
+    "wreq>=0.10 ; python_version >= '3.12'",
+    "e-serde[yaml]>=0.5",
+    "PyYAML>=6",
+]
+
+[project.optional-dependencies]
+fast = ["orjson>=3"]
+
+[dependency-groups]
+dev = ["pytest>=8", { include-group = "lint" }]
+lint = ["ruff"]

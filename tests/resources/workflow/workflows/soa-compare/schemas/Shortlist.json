@@ -1,0 +1,106 @@
+{
+  "$ref": "#/$defs/Shortlist",
+  "$defs": {
+    "Shortlist": {
+      "title": "Shortlist",
+      "description": "rank: the rubric's weights and margin, and every contest.",
+      "type": "object",
+      "properties": {
+        "weights": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "margin": {
+          "type": "number"
+        },
+        "contests": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Contest"
+          }
+        }
+      },
+      "required": [
+        "weights",
+        "margin",
+        "contests"
+      ]
+    },
+    "Contest": {
+      "title": "Contest",
+      "description": "One incumbent against its rivals: every score, the incumbent's first; `rival` the one kept (empty: none\nbeat the incumbent by the margin) and why.",
+      "type": "object",
+      "properties": {
+        "incumbent": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "scores": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Score"
+          }
+        },
+        "reason": {
+          "type": "string"
+        },
+        "rival": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "incumbent",
+        "role",
+        "scores",
+        "reason"
+      ]
+    },
+    "Score": {
+      "title": "Score",
+      "description": "One subject on the rubric: its total, each term's points, the terms no source measured (zero points).",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "total": {
+          "type": "number"
+        },
+        "terms": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "unmeasured": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "stars": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "name",
+        "total",
+        "terms"
+      ]
+    }
+  }
+}

@@ -7,7 +7,7 @@ import msgspec
 import pytest
 
 from e_taxis.transpile.adapters.nous import GitNous
-from e_taxis.workflow.models.error import LockError, WorkflowError
+from e_taxis.workflow.models.error import LockError, RunFailedError, WorkflowError
 from e_taxis.workflow.models.run import RunManifest, Status
 
 if TYPE_CHECKING:
@@ -35,7 +35,8 @@ async def test_run_demo_end_to_end(workflow_run: WorkflowRun, nous: Path, agent)
     assert "| last | idle | — |" in (folder / "report.md").read_text()
     assert msgspec.json.decode((folder / "run.json").read_bytes(), type=RunManifest).params == {
         "value": value,
-        "apply": "",
+        "apply": "false",
+        "query": "",
     }
 
 
@@ -79,3 +80,71 @@ async def test_run_held_checkout_fails_after_the_wait(
     async with held(workflow_run.reports(nous) / ".lock"):
         with pytest.raises(LockError):
             await workflow_run.run(GitNous(nous, None), "demo", {})
+
+
+async def test_run_launch_rebuilds_the_report_from_what_the_harness_walked(
+    workflow_run: WorkflowRun, nous: Path, tmp_path: Path, walking
+) -> None:
+    report = await workflow_run.launch(GitNous(nous, None), "demo", {"value": "v"}, walking, cwd=tmp_path)
+    folder = tmp_path / ".reports" / "workflows" / "demo"
+    assert [(run.node, run.status) for run in report.runs] == [
+        ("first", Status.OK),
+        ("echo", Status.OK),
+        ("think", Status.OK),
+        ("last", Status.IDLE),
+    ]
+    assert walking.seen[0][2] == ("builder",)
+    assert (await anyio.Path(report.folder, "report.md").read_text()).endswith("## The harness said\n\nwalked\n")
+    assert report.folder.startswith(str(folder))
+
+
+async def test_run_launch_fails_without_the_declared_output(
+    workflow_run: WorkflowRun, nous: Path, tmp_path: Path, standing
+) -> None:
+    with pytest.raises(RunFailedError, match="without the declared output"):
+        await workflow_run.launch(GitNous(nous, None), "demo", {}, standing, cwd=tmp_path)
+
+
+async def test_run_project_empty_is_the_git_root(workflow_run: WorkflowRun, nous: Path, tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    (repo / "deep").mkdir(parents=True)
+    await anyio.run_process(["git", "init", "-q", str(repo)])
+    report = await workflow_run.run(GitNous(nous, None), "rooted", {}, cwd=repo / "deep")
+    folder = nous / ".reports" / "workflows" / "rooted" / report.manifest.run_id
+    assert (folder / "project.txt").read_text() == str(repo)
+
+
+async def test_run_project_outside_git_is_refused(workflow_run: WorkflowRun, nous: Path, tmp_path: Path) -> None:
+    with pytest.raises(WorkflowError, match="is in no git project"):
+        await workflow_run.run(GitNous(nous, None), "rooted", {}, cwd=tmp_path)
+
+
+async def test_run_reads_query_into_the_unsaid_kwargs(reading_run: WorkflowRun, nous: Path, chat) -> None:
+    chat.answers["local"] = {"value": "from the query", "apply": ""}
+    report = await reading_run.run(GitNous(nous, None), "demo", {"query": "write from the query"})
+    first = report.runs[0]
+    assert (first.node, first.runner, first.tokens, first.reason) == ("kwargs", "local", 7, "read value from query")
+    assert report.manifest.params["value"] == "from the query"
+
+
+async def test_run_each_runs_one_child_per_item_and_joins(workflow_run: WorkflowRun, nous: Path) -> None:
+    report = await workflow_run.run(GitNous(nous, None), "fanned", {"items": "a b, c"})
+    folder = nous / ".reports" / "workflows" / "fanned" / report.manifest.run_id
+    children = sorted((folder / "each").iterdir())
+    assert [child.name for child in children] == ["1-a-b", "2-c"]
+    assert [(child / "item.txt").read_text() for child in children] == ["a b", "c"]
+    assert [run.node for run in report.runs] == ["1·write", "2·write"]
+    assert "| a b | ok |" in (folder / "report.md").read_text()
+
+
+async def test_run_each_with_one_item_is_a_plain_run(workflow_run: WorkflowRun, nous: Path) -> None:
+    report = await workflow_run.run(GitNous(nous, None), "fanned", {"items": "solo"})
+    folder = nous / ".reports" / "workflows" / "fanned" / report.manifest.run_id
+    assert ((folder / "item.txt").read_text(), (folder / "each").exists()) == ("solo", False)
+
+
+async def test_run_launch_each_walks_every_item(workflow_run: WorkflowRun, nous: Path, tmp_path: Path, writing) -> None:
+    report = await workflow_run.launch(GitNous(nous, None), "fanned", {"items": "x, y"}, writing, cwd=tmp_path)
+    assert sorted(args["items"] for _, args, _ in writing.seen) == ["x", "y"]
+    assert [run.node for run in report.runs] == ["1·write", "2·write"]
+    assert "## each items" in (await anyio.Path(report.folder, "report.md").read_text())

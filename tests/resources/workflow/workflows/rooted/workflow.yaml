@@ -1,0 +1,7 @@
+id: rooted
+domains: [tekton]
+description: A project kwarg left empty is the git root of the terminal's directory.
+parameters:
+  project: {type: project, doc: "the repository; empty = the git root"}
+nodes:
+  - {id: where, run: "printf '%s' \"{{project}}\" > \"{{rundir}}/project.txt\""}

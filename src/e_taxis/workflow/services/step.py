@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Final
 import anyio
 
 from e_taxis.workflow.engine.bind import ParamBind
-from e_taxis.workflow.models.error import CommandError, NothingError
+from e_taxis.workflow.models.error import CommandError, NothingError, WorkflowError
 from e_taxis.workflow.models.metrics import LoopMetrics, LoopState, SessionMetrics
 from e_taxis.workflow.models.run import NodeRun, Outcome, Reply, Status
 
@@ -34,6 +34,8 @@ REASON: int = 200
 OPEN: int = 1
 RUNNER: str = "bash"
 AGENT: str = "opencode"
+### a step a harness walked: its agent ran there, taxis only kept the answer.
+HARNESS: str = "harness"
 
 
 ##### TYPES #####
@@ -56,6 +58,7 @@ class WorkflowStep:
         return manifest.params | {
             "iteration": str(spec.iteration) if spec.iteration else "",
             "run": manifest.run_id,
+            "workflow": manifest.workflow,
             "rundir": str(context.state.paths.root),
             "nous": manifest.nous,
         }
@@ -197,3 +200,35 @@ class WorkflowStep:
                 return await self._run_until(context, params)
             case _:
                 return await self._run_step(context, params)
+
+
+class AnsweredStep:
+    """Satisfies NodePort: a semantic step a harness agent already answered — kept as the step's out, the way the
+    engine keeps an agent's reply, so every downstream step reads it the same."""
+
+    __slots__ = ("_answer",)
+
+    def __init__(self, answer: Path) -> None:
+        self._answer = answer
+
+    ##### PUBLIC #####
+
+    async def run(self, context: NodeContext) -> Outcome:
+        spec = context.spec
+        match spec.semantic:
+            case False:
+                msg = f"{spec.id} is a command step: `taxis workflow step` runs it"
+                raise WorkflowError(msg)
+            case _:
+                pass
+        text = await anyio.Path(self._answer).read_text()
+        await anyio.Path(context.workdir).mkdir(parents=True, exist_ok=True)
+        out = context.state.paths.out(spec.id)
+        await anyio.Path(out).write_text(text)
+        lines = tuple(line for line in text.splitlines() if line.strip())[-SAID:]
+        return Outcome(
+            status=Status.OK,
+            runner=HARNESS,
+            artifacts=(str(out),),
+            metrics=SessionMetrics(agent=spec.actor or LEAD, narrative=lines),
+        )

@@ -1,0 +1,9 @@
+id: fanned
+domains: [tekton]
+each: items
+description: One run per item of a list, in parallel; the parent joins them.
+parameters:
+  items: {type: list, doc: "what to run once each"}
+nodes:
+  - {id: write, run: "printf '%s' \"{{items}}\" > \"{{rundir}}/item.txt\""}
+output: {type: item, path: "<rundir>/item.txt"}

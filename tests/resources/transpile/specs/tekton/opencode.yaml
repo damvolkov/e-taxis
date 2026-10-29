@@ -142,6 +142,9 @@ map:
     unmapped:
       output:   {reason: covered, detail: "the graph combinator's output block"}
       loop:     {reason: covered, detail: "the graph combinator's loop block"}
+      domains:     {reason: house, detail: "read by the renderer: an instance reaches only the harnesses of its domains"}
+      family:      {reason: covered, detail: "expanded at load (adapters.ontology): its kwargs, output and nodes are in the instance"}
+      each:        {reason: house, detail: "taxis fans the run out per item (engine and --harness); inside a session the command launches the workflow once per item"}
       triggers: {reason: house, detail: "eng-grammar phrases read by the channel hooks (e-metaxy), not by the coder"}
     notes: >-
       The lead agent (/workflow) walks the graph and delegates each node with
@@ -187,6 +190,9 @@ map:
       permissions.default_mode:  {reason: house, detail: "Claude's session mode; OpenCode's policy is #permission"}
       permissions.external_dirs: {reason: pending, detail: "permission.external_directory is a flat allow inside granular; whether it accepts per-path patterns is not checked"}
       security:                  {reason: internal, detail: "scanner acceptances, never rendered"}
+      schedules:                 {reason: internal, detail: "unattended runs: taxis schedule renders them into systemd timers, never the harness"}
+      soa:                       {reason: internal, detail: "soa-sweep's frame, read by taxis workflow soa-sweep, never the harness"}
+      workflows:                 {reason: internal, detail: "the workflows' kwargs ontology and families, expanded by taxis at load"}
       mcp.servers.*.note:        {reason: pending, detail: "no description field known in an OpenCode MCP entry"}
       mcp.servers.*.smoke:       {reason: internal, detail: "evaluation data (taxis eval run config)"}
     notes: >-
@@ -248,9 +254,11 @@ trial:
     - {name: session,  kind: capture, serve: [opencode, serve, --hostname, 127.0.0.1, --port, "${port}"], ready: [opencode, api, --server, "http://127.0.0.1:${port}", agent.list], argv: [opencode, run, --server, "http://127.0.0.1:${port}", --model, ghost/x, ghost]}
     - {name: agents,   kind: command, serve: [opencode, serve, --hostname, 127.0.0.1, --port, "${port}"], ready: [opencode, api, --server, "http://127.0.0.1:${port}", agent.list], argv: [opencode, api, --server, "http://127.0.0.1:${port}", agent.list]}
     - {name: commands, kind: command, serve: [opencode, serve, --hostname, 127.0.0.1, --port, "${port}"], ready: [opencode, api, --server, "http://127.0.0.1:${port}", agent.list], argv: [opencode, api, --server, "http://127.0.0.1:${port}", command.list]}
+    - {name: workflows, kind: command, argv: [ls, "${tree}/workflows"]}   # no native type: /workflow reads these files
   sees:
     persona: [session]                  # AGENTS.md in the system message
     skill: [session]
     agent: [agents]                     # primary agents never reach the prompt: the server's agent list holds them all
     command: [commands]
+    workflow: [workflows]
   notes: "OpenCode 2.x (pinned v2.2.0, stack.yaml): `run`/`api` always talk to an HTTP server, and a standalone one binds a random port the fence will not allow — so every probe serves `opencode serve` on the declared ${port} (password-protected in 2.x: OPENCODE_SERVER_PASSWORD / OPENCODE_PASSWORD) and connects with --server. `serve` reads no OPENCODE_CONFIG_CONTENT: the overlay bends the sandbox copy of opencode.jsonc instead — a v2 `providers` ghost answered by the fake, no plugins, no MCP (offline they hold the session). OPENCODE_DISABLE_MODELS_FETCH: the models catalog fetch would wait on the fence and leave the server 503. `run --model ghost/x`: the built-in build agent's own model would win over `model`. The session fails with 400 on purpose (a 500 is retried with backoff). Skills are seen in the session, agents and commands in the server's agent.list / command.list. Proven 3/3 on v2.2.0, 2026-10-28 (taxis transpile trial); the 1.x trial (--pure, debug skill) is history."

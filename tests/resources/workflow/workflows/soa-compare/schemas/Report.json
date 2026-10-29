@@ -1,0 +1,387 @@
+{
+  "$ref": "#/$defs/Report",
+  "$defs": {
+    "Report": {
+      "title": "Report",
+      "description": "report: the comparison as written, one row per incumbent.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string"
+        },
+        "query": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "settled": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Settled"
+          }
+        }
+      },
+      "required": [
+        "project",
+        "query",
+        "date",
+        "path",
+        "settled"
+      ]
+    },
+    "Settled": {
+      "title": "Settled",
+      "description": "One incumbent as it stood: `decision` the verdict's when the review stands, the reviewer's when it does not;\n`proposed` the verdict step's own. An incumbent rank kept never reached the verdict: keep, by the rubric.",
+      "type": "object",
+      "properties": {
+        "incumbent": {
+          "type": "string"
+        },
+        "decision": {
+          "$ref": "#/$defs/Decision"
+        },
+        "proposed": {
+          "$ref": "#/$defs/Decision"
+        },
+        "stands": {
+          "type": "boolean"
+        },
+        "scores": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Score"
+          }
+        },
+        "declared": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Dependency"
+          },
+          "default": []
+        },
+        "rival": {
+          "type": "string",
+          "default": ""
+        },
+        "reason": {
+          "type": "string",
+          "default": ""
+        },
+        "landing": {
+          "$ref": "#/$defs/Destination",
+          "default": "none"
+        },
+        "command": {
+          "type": "string",
+          "default": ""
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "objections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Objection"
+          },
+          "default": []
+        },
+        "migration": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/Migration"
+            }
+          ],
+          "default": null
+        },
+        "stats": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/Stats"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "incumbent",
+        "decision",
+        "proposed",
+        "stands",
+        "scores"
+      ]
+    },
+    "Decision": {
+      "title": "Decision",
+      "description": "replace.md's verdicts, per incumbent.",
+      "enum": [
+        "keep",
+        "replace",
+        "trial"
+      ]
+    },
+    "Score": {
+      "title": "Score",
+      "description": "One subject on the rubric: its total, each term's points, the terms no source measured (zero points).",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "total": {
+          "type": "number"
+        },
+        "terms": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "unmeasured": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "stars": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "name",
+        "total",
+        "terms"
+      ]
+    },
+    "Dependency": {
+      "title": "Dependency",
+      "description": "One declared dependency: `declared` as the manifest writes it, `resolved` the lockfile's version (empty: no\nlockfile names it); `imports` the first source files that import it, `imported` how many do.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "ecosystem": {
+          "$ref": "#/$defs/Ecosystem"
+        },
+        "manifest": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "declared": {
+          "type": "string",
+          "default": ""
+        },
+        "resolved": {
+          "type": "string",
+          "default": ""
+        },
+        "imports": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "imported": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "required": [
+        "name",
+        "ecosystem",
+        "manifest"
+      ]
+    },
+    "Ecosystem": {
+      "title": "Ecosystem",
+      "description": "Where a dependency is declared: its manifest's world.",
+      "enum": [
+        "container",
+        "js",
+        "python",
+        "rust"
+      ]
+    },
+    "Destination": {
+      "title": "Destination",
+      "description": "Where the lesson lands, by the Triad — or the repository alone.",
+      "enum": [
+        "e-arkhetypo",
+        "e-nous",
+        "e-taxis",
+        "none",
+        "project"
+      ]
+    },
+    "Objection": {
+      "title": "Objection",
+      "type": "object",
+      "properties": {
+        "claim": {
+          "type": "string"
+        },
+        "refuted": {
+          "type": "boolean"
+        },
+        "evidence": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "claim",
+        "refuted"
+      ],
+      "additionalProperties": false
+    },
+    "Migration": {
+      "title": "Migration",
+      "description": "The migration sketch: the files it touches and the API changes it takes.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "files",
+        "changes"
+      ],
+      "additionalProperties": false
+    },
+    "Stats": {
+      "title": "Stats",
+      "description": "stats: the interval of the paired difference (candidate - baseline, in the metric's units) against the\nthreshold; `secondary` describes, never decides.",
+      "type": "object",
+      "properties": {
+        "metric": {
+          "type": "string"
+        },
+        "outcome": {
+          "$ref": "#/$defs/Outcome"
+        },
+        "candidate": {
+          "type": "string",
+          "default": ""
+        },
+        "baseline": {
+          "type": "string",
+          "default": ""
+        },
+        "pairs": {
+          "type": "integer",
+          "default": 0
+        },
+        "mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "low": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "high": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "threshold": {
+          "type": "number",
+          "default": 0.0
+        },
+        "higher_is_better": {
+          "type": "boolean",
+          "default": true
+        },
+        "resamples": {
+          "type": "integer",
+          "default": 0
+        },
+        "confidence": {
+          "type": "number",
+          "default": 0.0
+        },
+        "secondary": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "reason": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "metric",
+        "outcome"
+      ]
+    },
+    "Outcome": {
+      "title": "Outcome",
+      "enum": [
+        "better",
+        "no difference",
+        "not measured",
+        "worse"
+      ]
+    }
+  }
+}

@@ -15,6 +15,12 @@ import msgspec
 from e_taxis.workflow.models.graph import LoopDecl
 
 
+##### UTILITIES #####
+def items_workflow(value: str) -> tuple[str, ...]:
+    """A list kwarg's items, comma-separated: a name may hold spaces (`auto ontology`), so a space never splits."""
+    return tuple(item.strip() for item in value.split(",") if item.strip())
+
+
 ##### TYPES #####
 class StepKind(StrEnum):
     """What runs a node: a command, an agent session, or the lead itself."""
@@ -33,11 +39,22 @@ class AgentMode(StrEnum):
 
 
 class ParamType(StrEnum):
-    """A parameter's shape; every value still reaches a step as text (`{{name}}`)."""
+    """A parameter's shape; every value still reaches a step as text (`{{name}}`). `project` is a path that, left empty,
+    is the git root of the directory the run was launched from; `topic` a key of soa.yaml's topics."""
 
     STR = "str"
     BOOL = "bool"
     LIST = "list"
+    PATH = "path"
+    TOPIC = "topic"
+    PROJECT = "project"
+
+
+class Domain(StrEnum):
+    """The hemisphere a workflow serves; the transpiler renders it only into that hemisphere's harnesses."""
+
+    TEKTON = "tekton"
+    NOMOS = "nomos"
 
 
 class Param(msgspec.Struct, frozen=True, kw_only=True, forbid_unknown_fields=True):
@@ -97,6 +114,9 @@ class Workflow(msgspec.Struct, frozen=True, kw_only=True, forbid_unknown_fields=
 
     id: str
     description: str
+    domains: tuple[Domain, ...]
+    family: str = ""
+    each: str = ""
     parameters: dict[str, str | Param] = {}
     nodes: tuple[Node, ...] = ()
     loop: LoopDecl | None = None
@@ -154,6 +174,11 @@ class Workflow(msgspec.Struct, frozen=True, kw_only=True, forbid_unknown_fields=
         ancestors = self._problems_ancestors()
         return (
             *(f"duplicate step {i}" for i in sorted({i for i in ids if ids.count(i) > 1})),
+            *(
+                [f"each names {self.each!r}, which is no list kwarg"]
+                if self.each and getattr(self.params.get(self.each), "type", None) is not ParamType.LIST
+                else []
+            ),
             *(f"{n.id}: depends on unknown step {d}" for n in self.nodes for d in n.depends if d not in known),
             *(f"{n.id}: unknown agent {n.actor}" for n in self.nodes if n.actor and n.actor not in agents),
             *(f"{n.id}: unknown hook {h}" for n in self.nodes for h in n.hooks if h not in hooks),

@@ -1,0 +1,11 @@
+{
+ "projectKey": {
+  "id": "github.com/rtk-ai/rtk"
+ },
+ "openIssuesCount": 1625,
+ "starsCount": 84542,
+ "forksCount": 5374,
+ "license": "Apache-2.0",
+ "description": "CLI proxy that reduces LLM token consumption by 60-90% on common dev commands. Single Rust binary, zero dependencies",
+ "homepage": "https://www.rtk-ai.app"
+}
