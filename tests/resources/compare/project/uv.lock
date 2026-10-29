@@ -1,0 +1,29 @@
+version = 1
+
+[[package]]
+name = "msgspec"
+version = "0.22.0"
+
+[[package]]
+name = "wreq"
+version = "0.12.2"
+
+[[package]]
+name = "e-serde"
+version = "0.5.1"
+
+[[package]]
+name = "pyyaml"
+version = "6.0.2"
+
+[[package]]
+name = "pytest"
+version = "8.4.0"
+
+[[package]]
+name = "pytest"
+version = "7.4.4"
+
+[[package]]
+name = "sample"
+source = { editable = "." }

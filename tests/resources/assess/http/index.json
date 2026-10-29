@@ -1,0 +1,147 @@
+{
+ "https://api.github.com/repos/rtk-ai/rtk/contents/": {
+  "status": 200,
+  "file": "api_github_com_repos_rtk_ai_rtk_contents.json",
+  "link": ""
+ },
+ "https://api.github.com/repos/rtk-ai/rtk/contents/Cargo.toml": {
+  "status": 200,
+  "file": "api_github_com_repos_rtk_ai_rtk_contents_Cargo_toml.json",
+  "link": ""
+ },
+ "https://crates.io/api/v1/crates/rtk": {
+  "status": 200,
+  "file": "crates_io_api_v1_crates_rtk.json",
+  "link": ""
+ },
+ "https://api.github.com/repos/jcrist/msgspec": {
+  "status": 200,
+  "file": "api_github_com_repos_jcrist_msgspec.json",
+  "link": ""
+ },
+ "https://api.github.com/repos/msgspec/msgspec/contents/": {
+  "status": 200,
+  "file": "api_github_com_repos_msgspec_msgspec_contents.json",
+  "link": ""
+ },
+ "https://api.github.com/repos/msgspec/msgspec/contents/pyproject.toml": {
+  "status": 200,
+  "file": "api_github_com_repos_msgspec_msgspec_contents_pyproject_toml.json",
+  "link": ""
+ },
+ "https://pypi.org/pypi/msgspec/json": {
+  "status": 200,
+  "file": "pypi_org_pypi_msgspec_json.json",
+  "link": ""
+ },
+ "https://registry.npmjs.org/express": {
+  "status": 200,
+  "file": "registry_npmjs_org_express.json",
+  "link": ""
+ },
+ "https://api.github.com/repos/rtk-ai/rtk": {
+  "status": 200,
+  "file": "api_github_com_repos_rtk_ai_rtk.json",
+  "link": ""
+ },
+ "https://api.github.com/repos/rtk-ai/rtk/contributors?per_page=1&anon=true": {
+  "status": 200,
+  "file": "api_github_com_repos_rtk_ai_rtk_contributors_per_page_1_anon_true.json",
+  "link": "<https://api.github.com/repos/x/y/contributors?per_page=1&anon=true&page=2>; rel=\"next\", <https://api.github.com/repos/x/y/contributors?per_page=1&anon=true&page=192>; rel=\"last\""
+ },
+ "https://api.github.com/search/issues?q=repo:rtk-ai/rtk+type:issue+state:open&per_page=1": {
+  "status": 200,
+  "file": "api_github_com_search_issues_q_repo_rtk_ai_rtk_type_issue_state_open_per_page_1.json",
+  "link": "<https://api.github.com/search/issues?q=repo%3Artk-ai%2Frtk+type%3Aissue+state%3Aopen&per_page=1&page=2>; rel=\"next\", <https://api.github.com/search/issues?q=repo%3Artk-ai%2Frtk+type%3Aissue+state%3Aopen&per_page=1&page=914>; rel=\"last\""
+ },
+ "https://api.github.com/search/issues?q=repo:rtk-ai/rtk+type:issue&per_page=1": {
+  "status": 200,
+  "file": "api_github_com_search_issues_q_repo_rtk_ai_rtk_type_issue_per_page_1.json",
+  "link": "<https://api.github.com/search/issues?q=repo%3Artk-ai%2Frtk+type%3Aissue&per_page=1&page=2>; rel=\"next\", <https://api.github.com/search/issues?q=repo%3Artk-ai%2Frtk+type%3Aissue&per_page=1&page=1000>; rel=\"last\""
+ },
+ "https://api.deps.dev/v3/projects/github.com%2Frtk-ai%2Frtk": {
+  "status": 200,
+  "file": "api_deps_dev_v3_projects_github_com_2Frtk_ai_2Frtk.json",
+  "link": ""
+ },
+ "https://api.github.com/repos/rtk-ai/rtk/releases?per_page=100&page=1": {
+  "status": 200,
+  "file": "api_github_com_repos_rtk_ai_rtk_releases_per_page_100_page_1.json",
+  "link": "<https://api.github.com/repos/x/y/releases?per_page=100&page=2>; rel=\"next\", <https://api.github.com/repos/x/y/releases?per_page=100&page=5>; rel=\"last\""
+ },
+ "https://api.github.com/repos/rtk-ai/rtk/releases?per_page=100&page=2": {
+  "status": 200,
+  "file": "api_github_com_repos_rtk_ai_rtk_releases_per_page_100_page_2.json",
+  "link": "<https://api.github.com/repos/x/y/releases?per_page=100&page=1>; rel=\"prev\", <https://api.github.com/repos/x/y/releases?per_page=100&page=3>; rel=\"next\", <https://api.github.com/repos/x/y/releases?per_page=100&page=5>; rel=\"last\", <https://api.github.com/repos/x/y/releases?per_page=100&page=1>; rel=\"first\""
+ },
+ "https://api.github.com/repos/rtk-ai/rtk/releases?per_page=100&page=3": {
+  "status": 200,
+  "file": "api_github_com_repos_rtk_ai_rtk_releases_per_page_100_page_3.json",
+  "link": "<https://api.github.com/repos/x/y/releases?per_page=100&page=2>; rel=\"prev\", <https://api.github.com/repos/x/y/releases?per_page=100&page=4>; rel=\"next\", <https://api.github.com/repos/x/y/releases?per_page=100&page=5>; rel=\"last\", <https://api.github.com/repos/x/y/releases?per_page=100&page=1>; rel=\"first\""
+ },
+ "https://api.github.com/repos/rtk-ai/rtk/releases?per_page=100&page=4": {
+  "status": 200,
+  "file": "api_github_com_repos_rtk_ai_rtk_releases_per_page_100_page_4.json",
+  "link": "<https://api.github.com/repos/x/y/releases?per_page=100&page=3>; rel=\"prev\", <https://api.github.com/repos/x/y/releases?per_page=100&page=5>; rel=\"next\", <https://api.github.com/repos/x/y/releases?per_page=100&page=5>; rel=\"last\", <https://api.github.com/repos/x/y/releases?per_page=100&page=1>; rel=\"first\""
+ },
+ "https://api.github.com/repos/rtk-ai/rtk/releases?per_page=100&page=5": {
+  "status": 200,
+  "file": "api_github_com_repos_rtk_ai_rtk_releases_per_page_100_page_5.json",
+  "link": "<https://api.github.com/repos/x/y/releases?per_page=100&page=4>; rel=\"prev\", <https://api.github.com/repos/x/y/releases?per_page=100&page=1>; rel=\"first\""
+ },
+ "https://api.github.com/search/issues?q=repo:jcrist/msgspec+type:issue+state:open&per_page=1": {
+  "status": 422,
+  "file": "api_github_com_search_issues_q_repo_jcrist_msgspec_type_issue_state_open_per_page_1.json",
+  "link": ""
+ },
+ "https://api.github.com/repos/msgspec/msgspec": {
+  "status": 200,
+  "file": "api_github_com_repos_msgspec_msgspec.json",
+  "link": ""
+ },
+ "https://api.github.com/repos/msgspec/msgspec/contributors?per_page=1&anon=true": {
+  "status": 200,
+  "file": "api_github_com_repos_msgspec_msgspec_contributors_per_page_1_anon_true.json",
+  "link": "<https://api.github.com/repos/x/y/contributors?per_page=1&anon=true&page=2>; rel=\"next\", <https://api.github.com/repos/x/y/contributors?per_page=1&anon=true&page=83>; rel=\"last\""
+ },
+ "https://api.github.com/search/issues?q=repo:msgspec/msgspec+type:issue+state:open&per_page=1": {
+  "status": 200,
+  "file": "api_github_com_search_issues_q_repo_msgspec_msgspec_type_issue_state_open_per_page_1.json",
+  "link": "<https://api.github.com/search/issues?q=repo%3Amsgspec%2Fmsgspec+type%3Aissue+state%3Aopen&per_page=1&page=2>; rel=\"next\", <https://api.github.com/search/issues?q=repo%3Amsgspec%2Fmsgspec+type%3Aissue+state%3Aopen&per_page=1&page=195>; rel=\"last\""
+ },
+ "https://api.github.com/search/issues?q=repo:msgspec/msgspec+type:issue&per_page=1": {
+  "status": 200,
+  "file": "api_github_com_search_issues_q_repo_msgspec_msgspec_type_issue_per_page_1.json",
+  "link": "<https://api.github.com/search/issues?q=repo%3Amsgspec%2Fmsgspec+type%3Aissue&per_page=1&page=2>; rel=\"next\", <https://api.github.com/search/issues?q=repo%3Amsgspec%2Fmsgspec+type%3Aissue&per_page=1&page=561>; rel=\"last\""
+ },
+ "https://api.deps.dev/v3/projects/github.com%2Fmsgspec%2Fmsgspec": {
+  "status": 200,
+  "file": "api_deps_dev_v3_projects_github_com_2Fmsgspec_2Fmsgspec.json",
+  "link": ""
+ },
+ "https://api.deps.dev/v3/systems/pypi/packages/msgspec": {
+  "status": 200,
+  "file": "api_deps_dev_v3_systems_pypi_packages_msgspec.json",
+  "link": ""
+ },
+ "https://api.deps.dev/v3alpha/systems/pypi/packages/msgspec/versions/0.22.0:dependents": {
+  "status": 200,
+  "file": "api_deps_dev_v3alpha_systems_pypi_packages_msgspec_versions_0_22_0_dependents.json",
+  "link": ""
+ },
+ "https://pypistats.org/api/packages/msgspec/recent": {
+  "status": 200,
+  "file": "pypistats_org_api_packages_msgspec_recent.json",
+  "link": ""
+ },
+ "https://api.github.com/repos/msgspec/msgspec/languages": {
+  "status": 200,
+  "file": "api_github_com_repos_msgspec_msgspec_languages.json",
+  "link": ""
+ },
+ "https://api.github.com/repos/rtk-ai/rtk/languages": {
+  "status": 200,
+  "file": "api_github_com_repos_rtk_ai_rtk_languages.json",
+  "link": ""
+ }
+}

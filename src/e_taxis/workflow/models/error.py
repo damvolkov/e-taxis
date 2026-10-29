@@ -99,3 +99,21 @@ class IdleError(PlaneError):
 
 class ProviderError(PlaneError):
     """A tier, alias or key the checkout's models config does not resolve, or an endpoint that answered no message."""
+
+
+class SweepError(DistillError):
+    """A soa-sweep step that cannot go on: an unknown topic, a page that does not answer, no webhook to deliver to."""
+
+
+class AssessError(WorkflowError):
+    """A soa-assess step that cannot go on: nothing resolvable, a missing or malformed artifact, a fence that does not
+    hold."""
+
+    exit_code: ClassVar[int] = 34
+
+
+class CompareError(WorkflowError):
+    """A soa-compare step that cannot go on: no repository or an empty stack, a topic soa.yaml does not hold, a
+    missing or malformed artifact."""
+
+    exit_code: ClassVar[int] = 35

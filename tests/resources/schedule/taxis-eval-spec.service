@@ -1,0 +1,11 @@
+# rendered by taxis schedule apply from core/tekton/config/schedules.yaml — do not edit
+[Unit]
+Description=nightly upstream spec drift, then the speckeeper on its needs
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/e-nous
+Environment=TAXIS_NOUS=/srv/e-nous
+ExecStart=/opt/taxis/bin/taxis eval run spec --cadence nightly
+ExecStart=/opt/taxis/bin/taxis enhance run spec --from latest --cadence nightly
+Nice=10

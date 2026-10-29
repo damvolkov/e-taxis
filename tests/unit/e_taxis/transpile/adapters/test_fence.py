@@ -20,6 +20,12 @@ async def test_fence_wrap_reads_all_writes_named_connects_named() -> None:
     assert argv[argv.index("--connect-tcp") + 1] == "45"
 
 
+@pytest.mark.parametrize(("network", "open_"), [(True, True), (False, False)], ids=["open", "closed"])
+async def test_fence_wrap_opens_the_network_only_when_asked(network: bool, open_: bool) -> None:
+    argv = LandrunFence(Path("/bin/landrun")).wrap(["uv"], writable=[], ports=[], env={}, network=network)
+    assert ("--unrestricted-network" in argv[: argv.index("--")]) is open_
+
+
 async def test_fence_run_keeps_code_and_output(landrun: Path, tmp_path: Path) -> None:
     run = await LandrunFence(landrun).run(
         ["sh", "-c", "echo out; echo err >&2; exit 3"], env=ENV, cwd=tmp_path, writable=[tmp_path], ports=[], limit=10

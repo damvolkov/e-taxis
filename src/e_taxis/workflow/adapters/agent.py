@@ -229,6 +229,10 @@ class OpencodeAgent(LandrunAgent):
             text=text, tokens=spent - cached if any("total" in step for step in steps) else spent, cached=cached
         )
 
+    async def rules(self, agent: str) -> dict[str, Rule]:
+        """The permissions that keep a headless session of `agent` from meeting an `ask`: every ask denied."""
+        return await self._drive_rules(await self._common_front(agent))
+
     async def mode(self, agent: str) -> AgentMode:
         """The agent's mode in the live tree; an agent the tree lacks raises."""
         return self._common_mode(await self._common_front(agent))
@@ -320,6 +324,16 @@ class ClaudeAgent(LandrunAgent):
                     tokens=sum(model.get(key, 0) for model in usage for key in FRESH),
                     cached=sum(model.get("cacheReadInputTokens", 0) for model in usage),
                 )
+
+    async def allowed(self, agent: str) -> tuple[str, ...]:
+        """What a live definition grants, as `--allowedTools` names: its tools (every approvable one when it names
+        none, less what it disallows) and its MCP servers."""
+        definition = eserde.loads(await self._common_front(agent), format=eserde.Format.YAML) or {}
+        denied = set(self._drive_names(definition.get("disallowedTools")))
+        return (
+            *(tool for tool in self._drive_names(definition.get("tools")) or GRANTS if tool not in denied),
+            *(f"mcp__{server}" for server in self._drive_servers(definition.get("mcpServers"))),
+        )
 
     async def drive(
         self, agent: str, prompt: str, *, cwd: Path, limit: float, readonly: bool = False, steps: int = 0

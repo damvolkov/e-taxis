@@ -1,0 +1,148 @@
+{
+  "$ref": "#/$defs/Plan",
+  "$defs": {
+    "Plan": {
+      "title": "Plan",
+      "description": "weigh: the incumbent, the overlap and the pre-registered benchmark. `threshold` is in the metric's own units;\n`warmup` runs per arm and case are discarded; `seed` fixes the order the arms take in every round.",
+      "type": "object",
+      "properties": {
+        "incumbent": {
+          "type": "string"
+        },
+        "overlap": {
+          "$ref": "#/$defs/Overlap"
+        },
+        "hypothesis": {
+          "type": "string"
+        },
+        "metric": {
+          "type": "string"
+        },
+        "threshold": {
+          "type": "number",
+          "minimum": 0
+        },
+        "higher_is_better": {
+          "type": "boolean"
+        },
+        "cases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "n": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "cache": {
+          "$ref": "#/$defs/Cache"
+        },
+        "arms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Arm"
+          }
+        },
+        "landing": {
+          "type": "string"
+        },
+        "secondary": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "warmup": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 1
+        },
+        "seed": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "required": [
+        "incumbent",
+        "overlap",
+        "hypothesis",
+        "metric",
+        "threshold",
+        "higher_is_better",
+        "cases",
+        "n",
+        "cache",
+        "arms",
+        "landing"
+      ],
+      "additionalProperties": false
+    },
+    "Overlap": {
+      "title": "Overlap",
+      "description": "flow-gen-research's fit: what the candidate does to the inventory.",
+      "enum": [
+        "complements",
+        "none",
+        "overlaps",
+        "replaces"
+      ]
+    },
+    "Cache": {
+      "title": "Cache",
+      "enum": [
+        "cold",
+        "warm"
+      ]
+    },
+    "Arm": {
+      "title": "Arm",
+      "description": "One side of the benchmark, installed fresh in its own sandbox. `run` is one script per case and repetition\n(its lines in order, `CASE` in the environment): its last stdout line is a JSON number or {\"metric\": n, …}.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+$"
+        },
+        "role": {
+          "$ref": "#/$defs/Role"
+        },
+        "install": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "run": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "version": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "name",
+        "role",
+        "install",
+        "run"
+      ],
+      "additionalProperties": false
+    },
+    "Role": {
+      "title": "Role",
+      "description": "One side of the benchmark: the candidate, and the baseline it is weighed against.",
+      "enum": [
+        "candidate",
+        "empty",
+        "incumbent"
+      ]
+    }
+  }
+}

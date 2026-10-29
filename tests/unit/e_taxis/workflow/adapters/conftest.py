@@ -48,6 +48,16 @@ class MessagesHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(self.server.answer)
 
+    def do_GET(self) -> None:
+        """A public API's page: the answer, paginated by a `Link` header — soa-assess's reader."""
+        self.server.seen.append((self.path, dict(self.headers.items()), None))
+        self.send_response(200)
+        self.send_header("content-type", "application/json")
+        self.send_header("link", '<http://x/?page=3>; rel="last"')
+        self.send_header("content-length", str(len(self.server.answer)))
+        self.end_headers()
+        self.wfile.write(self.server.answer)
+
     def log_message(self, format: str, *args: object) -> None:  # noqa: A002 — the stdlib's own signature
         return
 
@@ -56,6 +66,51 @@ class MessagesHandler(BaseHTTPRequestHandler):
 def messages() -> Iterator[MessagesServer]:
     server = MessagesServer(("127.0.0.1", 0), MessagesHandler)
     server.seen = []
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield server
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+class PagesServer(ThreadingHTTPServer):
+    """`pages` maps a path to the body GET answers (any other path: 404); `posted` keeps each POST's raw body."""
+
+    pages: dict[str, bytes]
+    posted: list[tuple[str, bytes]]
+
+
+class PagesHandler(BaseHTTPRequestHandler):
+    server: PagesServer
+
+    def do_GET(self) -> None:
+        match self.server.pages.get(self.path):
+            case None:
+                self.send_response(404)
+                self.end_headers()
+            case body:
+                self.send_response(200)
+                self.send_header("content-type", "text/html; charset=utf-8")
+                self.send_header("content-length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+    def do_POST(self) -> None:
+        body = self.rfile.read(int(self.headers.get("content-length", "0")))
+        self.server.posted.append((self.headers.get("content-type", ""), body))
+        self.send_response(204 if self.path == "/hook" else 400)
+        self.end_headers()
+
+    def log_message(self, format: str, *args: object) -> None:  # noqa: A002 — the stdlib's own signature
+        return
+
+
+@pytest.fixture
+def pages() -> Iterator[PagesServer]:
+    server = PagesServer(("127.0.0.1", 0), PagesHandler)
+    server.pages, server.posted = {}, []
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:

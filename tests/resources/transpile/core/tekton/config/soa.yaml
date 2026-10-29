@@ -1,0 +1,18 @@
+# soa — what soa-sweep watches: the plane, its topics, the voices heard first. Runs add voices and links with kwargs.
+# A voice's topics name the topics it speaks to ("*" = all). The seen ledger is state, never here (~/.local/state/e-taxis/soa/).
+brief: >-
+  State of the art in agentic systems: how agents, their memory, tools, plugins and harnesses are modelled — as
+  graphs and ontologies — and run; new frameworks, OSS repositories, patterns and papers.
+window: 2
+topics:
+  memory:        {keywords: [agent memory, knowledge graph, long-term memory, retrieval]}
+  self-learn:    {keywords: [skill optimization, self-improving agents, evals for skills]}
+  observability: {keywords: [agent tracing, OpenTelemetry, LLM observability, evals in production]}
+  token-economy: {keywords: [prompt caching, context compression, token cost, model routing]}
+  governance:    {keywords: [agent permissions, sandboxing, policy, skill security]}
+  tools:         {keywords: [MCP servers, coding agent tools, browser agents, agent harness]}
+authors:
+  lindenberg: {name: André Lindenberg, url: "https://www.linkedin.com/in/alindnbrg", kind: linkedin_profile, topics: ["*"]}
+  karpathy:   {name: Andrej Karpathy, url: "https://karpathy.bearblog.dev/feed/", kind: atom_feed, topics: ["*"]}
+links: {}
+discord: {webhook: ""}   # the file holding the webhook URL (kept out of git); empty = deliver=discord stops with a reason

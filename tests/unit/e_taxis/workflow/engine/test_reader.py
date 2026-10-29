@@ -1,6 +1,6 @@
 """tests/unit/e_taxis/workflow/engine/reader: workflows read from an e-nous tree as executor graphs."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -10,11 +10,23 @@ from e_taxis.workflow.models.error import PlaneError, WorkflowError
 from e_taxis.workflow.models.plane import NodeCard, NodeUse, Plane, PlaneDecl, Role, Target
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
+
+    from e_taxis.workflow.models.workflow import Workflow
 
 
 async def test_reader_ids_are_every_workflow_folder(reader: WorkflowReader) -> None:
-    assert reader.ids() == ("broken", "demo", "looped", "reverse-distill")
+    assert reader.ids() == (
+        "broken",
+        "demo",
+        "fanned",
+        "looped",
+        "reverse-distill",
+        "rooted",
+        "soa-assess",
+        "soa-compare",
+    )
 
 
 async def test_reader_steps_carry_what_runs_them(reader: WorkflowReader) -> None:
@@ -73,7 +85,7 @@ async def test_reader_bind_refuses_undeclared_and_defaults_the_rest(reader: Work
     _, decl = reader.read("demo")
     with pytest.raises(WorkflowError, match="undeclared parameter"):
         reader.bind(decl, {"nope": "x"})
-    assert reader.bind(decl, {"value": "v"}) == {"value": "v", "apply": ""}
+    assert reader.bind(decl, {"value": "v"}) == {"value": "v", "apply": "false", "query": ""}
 
 
 ##### PLANES #####
@@ -105,3 +117,26 @@ async def test_reader_plane_describes_one_target() -> None:
     graphs = {Plane.ENHANCER: {Target.TOOL: PlaneDecl(summary="t", nodes=(NodeUse(use="a", id="x"),))}}
     described = PlaneReader({"a": CARD}, graphs).describe(Plane.ENHANCER, Target.TOOL)
     assert described == "## enhancer/tool — t\n  x                   gate     deterministic  subject  always"
+
+
+@pytest.mark.parametrize(
+    ("param", "value", "problem"),
+    [
+        ({"type": "bool"}, "maybe", "k=maybe is not true or false"),
+        ({"values": ["a", "b"]}, "c", "k=c is not one of a, b"),
+        ({"type": "topic"}, "ghost", "k=ghost is not a topic of soa.yaml"),
+        ({"type": "path"}, "/no/such/path", "k=/no/such/path does not exist"),
+    ],
+    ids=["bool", "enum", "topic", "path"],
+)
+async def test_reader_bind_checks_each_type(
+    reader: WorkflowReader, declare: Callable[..., Workflow], param: dict[str, Any], value: str, problem: str
+) -> None:
+    decl = declare([{"id": "a", "run": "true"}], parameters={"k": param})
+    with pytest.raises(WorkflowError, match=problem):
+        reader.bind(decl, {"k": value})
+
+
+async def test_reader_bind_lets_a_good_value_through(reader: WorkflowReader, declare: Callable[..., Workflow]) -> None:
+    decl = declare([{"id": "a", "run": "true"}], parameters={"k": {"type": "bool", "default": "true"}})
+    assert (reader.bind(decl, {"k": "false"}), reader.bind(decl, {})) == ({"k": "false"}, {"k": "true"})

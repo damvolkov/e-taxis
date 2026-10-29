@@ -1,0 +1,106 @@
+[
+ {
+  "name": ".cibuildwheel.toml",
+  "type": "file"
+ },
+ {
+  "name": ".codecov.yml",
+  "type": "file"
+ },
+ {
+  "name": ".codespellrc",
+  "type": "file"
+ },
+ {
+  "name": ".coveragerc",
+  "type": "file"
+ },
+ {
+  "name": ".devcontainer",
+  "type": "dir"
+ },
+ {
+  "name": ".editorconfig",
+  "type": "file"
+ },
+ {
+  "name": ".gitattributes",
+  "type": "file"
+ },
+ {
+  "name": ".github",
+  "type": "dir"
+ },
+ {
+  "name": ".gitignore",
+  "type": "file"
+ },
+ {
+  "name": ".justfile",
+  "type": "file"
+ },
+ {
+  "name": ".pre-commit-config.yaml",
+  "type": "file"
+ },
+ {
+  "name": ".pytest.toml",
+  "type": "file"
+ },
+ {
+  "name": ".ruff.toml",
+  "type": "file"
+ },
+ {
+  "name": "LICENSE",
+  "type": "file"
+ },
+ {
+  "name": "MANIFEST.in",
+  "type": "file"
+ },
+ {
+  "name": "README.md",
+  "type": "file"
+ },
+ {
+  "name": "benchmarks",
+  "type": "dir"
+ },
+ {
+  "name": "conftest.py",
+  "type": "file"
+ },
+ {
+  "name": "docs",
+  "type": "dir"
+ },
+ {
+  "name": "examples",
+  "type": "dir"
+ },
+ {
+  "name": "lychee.toml",
+  "type": "file"
+ },
+ {
+  "name": "pyproject.toml",
+  "type": "file"
+ },
+ {
+  "name": "scripts",
+  "type": "dir"
+ },
+ {
+  "name": "setup.py",
+  "type": "file"
+ },
+ {
+  "name": "src",
+  "type": "dir"
+ },
+ {
+  "name": "tests",
+  "type": "dir"
+ }
+]

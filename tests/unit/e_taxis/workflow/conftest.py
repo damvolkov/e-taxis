@@ -3,7 +3,13 @@ the real git repos reverse-distill reads (a project with a feature branch, the t
 
 `nous` is the transpiler's mini checkout (copied per test) with its `converge` replaced by the workflows under
 `tests/resources/workflow/workflows`: `demo` (every kind of step), `looped` (a bounded loop) and `broken` (an unknown
-agent). Commands run for real (bash, git); agents never do — `FakeAgent` answers, `FakeFence` decides the canary."""
+agent). Commands run for real (bash, git); agents never do — `FakeAgent` answers, `FakeFence` decides the canary.
+soa-sweep never leaves the machine: `FakeWeb` serves the recorded pages under `tests/resources/sweep`.
+
+soa-assess: `RecordedApi` answers every URL of `tests/resources/assess/http/index.json` with the body recorded there
+(trimmed to the fields read; GitHub's numeric repository ids in `Link` replaced by `x/y`) and a 404 for every other —
+the contract `WreqApi` keeps: it never raises; `outage` turns chosen URLs into transport failures (status 0).
+`FakeLab` runs for real through the stand-in landrun, its canary saying what `holds` says."""
 
 import asyncio
 import datetime as dt
@@ -20,6 +26,7 @@ import pytest
 
 from e_taxis.harness.runtime.deps import Deps
 from e_taxis.transpile.adapters.capture import HttpCapture
+from e_taxis.transpile.adapters.fence import LandrunFence
 from e_taxis.transpile.adapters.nous import GitNous
 from e_taxis.transpile.models.trial import TrialReport, TrialSight
 from e_taxis.transpile.services.check import CheckService
@@ -33,17 +40,20 @@ from e_taxis.workflow.adapters.sandbox import GitSandbox
 from e_taxis.workflow.distill.grade import DistillGrade
 from e_taxis.workflow.distill.matrix import VersionMatrix
 from e_taxis.workflow.engine.reader import WorkflowReader
+from e_taxis.workflow.models.assess import Arm, Cache, Fetched, Overlap, Plan, Role
 from e_taxis.workflow.models.case import ProbeMode, ProbeResult
 from e_taxis.workflow.models.distill import Candidate, Change, HarnessPart, HarnessTarget, Relation, Target
 from e_taxis.workflow.models.endpoint import Endpoint
 from e_taxis.workflow.models.entity import Entity
-from e_taxis.workflow.models.error import AgentError, CommandError
+from e_taxis.workflow.models.error import AgentError, CommandError, ProviderError, SweepError
 from e_taxis.workflow.models.graph import GraphSpec, StepSpec
 from e_taxis.workflow.models.plane import Cadence, NodeCard, NodeSpec, Plane, PlaneGraph, PlaneManifest, PlanePaths
 from e_taxis.workflow.models.plane import Target as PlaneTarget
-from e_taxis.workflow.models.ports import AgentPort, NodeContext, PlaneContext, PlaneState, RunState
+from e_taxis.workflow.models.ports import AgentPort, NodeContext, PlaneContext, PlaneState, RunState, WebPort
 from e_taxis.workflow.models.run import NodeRun, Outcome, Reply, RunManifest, RunPaths, Status
 from e_taxis.workflow.models.security import ScanResult
+from e_taxis.workflow.models.sweep import Finding as SweepFinding
+from e_taxis.workflow.models.sweep import FindingKind
 from e_taxis.workflow.models.workflow import Workflow
 from e_taxis.workflow.plane.activation import PlaneActivation
 from e_taxis.workflow.plane.brief import PlaneBrief
@@ -67,17 +77,19 @@ from e_taxis.workflow.plane.signals import PlaneSignals
 from e_taxis.workflow.plane.snapshot import PlaneSnapshot
 from e_taxis.workflow.plane.speckeeper import PlaneSpeckeeper
 from e_taxis.workflow.plane.tasks import PlaneTasks
+from e_taxis.workflow.services.kwargs import WorkflowKwargs
 from e_taxis.workflow.services.plane import PlaneRun
 from e_taxis.workflow.services.promote import PlanePromote
 from e_taxis.workflow.services.run import WorkflowRun
 from e_taxis.workflow.services.step import WorkflowStep
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
+    from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 
     from pytest_resources import Resources
 
     from e_taxis.transpile.models.nous import NousTree
+    from e_taxis.transpile.models.trial import TrialRun
     from e_taxis.workflow.models.metrics import Finding
 
 
@@ -181,7 +193,9 @@ def flow() -> Callable[..., Workflow]:
     """A workflow from node dicts, as the manifest would declare it."""
 
     def build(*nodes: dict[str, Any], **extra: Any) -> Workflow:
-        return msgspec.convert({"id": "w", "description": "d", "nodes": list(nodes), **extra}, Workflow)
+        return msgspec.convert(
+            {"id": "w", "description": "d", "domains": ["tekton"], "nodes": list(nodes), **extra}, Workflow
+        )
 
     return build
 
@@ -290,13 +304,17 @@ def fake_agent_deps(monkeypatch: pytest.MonkeyPatch, agent: FakeAgent) -> FakeAg
 
 @pytest.fixture
 def opencode_tree(tmp_path: Path) -> Path:
-    """A live OpenCode tree: `builder` drivable (mode all), `scout` a subagent; global asks in the v2 list form."""
+    """A live OpenCode tree: `builder` drivable (mode all), `scout` a subagent, `orchestrator` the lead; global asks in
+    the v2 list form."""
     root = tmp_path / "opencode"
     (root / "agents").mkdir(parents=True)
     (root / "agents" / "builder.md").write_text(
         '---\nmode: all\npermission:\n  edit: allow\n  bash:\n    "*": ask\n    "ls*": allow\n---\nbody\n'
     )
     (root / "agents" / "scout.md").write_text("---\nmode: subagent\n---\nbody\n")
+    (root / "agents" / "orchestrator.md").write_text(
+        '---\nmode: primary\npermission:\n  bash:\n    "*": ask\n---\nlead\n'
+    )
     (root / "opencode.jsonc").write_text(
         '{\n  // global\n  "permissions": [\n'
         '    {"action": "edit", "resource": "*", "effect": "allow"},\n'
@@ -365,14 +383,14 @@ def held() -> Callable[[Path], Any]:
 ##### DISTILL #####
 IDENTITY = ("-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", "-c", "init.defaultBranch=main")
 TEMPLATES_V1 = {
-    "projects/python/core/src/e_core/adapters/http.py": "x = 1\n",
-    "projects/python/core/src/e_core/adapters/ports.py": "p = 1\n",
-    "projects/python/core/src/e_core/adapters/thing.py": "class Thing:\n    pass\n",
-    "projects/python/core/src/e_core/ops/file.py": "f = 1\n",
-    "projects/python/core/src/e_core/ops/same.py": "s = 1\n",
-    "projects/python/core/common/prek.toml": "a = 1\n",
-    "projects/python/core/common/gitattributes": "* text\n",
-    "projects/python/api/Makefile": "lint:\n\t@true\ncore-check:\n\t@true\ncommon-check:\n\t@true\n",
+    "projects/python/infra/src/e_infra/adapters/http.py": "x = 1\n",
+    "projects/python/infra/src/e_infra/adapters/ports.py": "p = 1\n",
+    "projects/python/infra/src/e_infra/adapters/thing.py": "class Thing:\n    pass\n",
+    "projects/python/infra/src/e_infra/ops/file.py": "f = 1\n",
+    "projects/python/infra/src/e_infra/ops/same.py": "s = 1\n",
+    "projects/python/infra/prek.toml": "a = 1\n",
+    "projects/python/infra/.gitattributes": "* text\n",
+    "projects/python/api/Makefile": "lint:\n\t@true\ninfra-check:\n\t@true\n",
     "projects/python/api/pyproject.toml": '[project]\nname = "e-api"\ndependencies = ["psqlpy>=0.1"]\n[tool.ruff]\nline-length = 120\n',
     "projects/python/api/src/e_api/router/x.py": "",
     "projects/python/api/tests/unit/test_x.py": "",
@@ -380,8 +398,8 @@ TEMPLATES_V1 = {
     "scripts/release.sh": "",
     "projects/templates.yml": (
         "templates:\n  api:\n    source: projects/python/api\n    package: e_api\n    brand: e-api\n    materials:\n"
-        "      - {src: projects/python/core/common/prek.toml, dst: prek.toml}\n"
-        "      - {src: projects/python/core/common/gitattributes, dst: .gitattributes}\n"
+        "      - {src: projects/python/infra/prek.toml, dst: prek.toml}\n"
+        "      - {src: projects/python/infra/.gitattributes, dst: .gitattributes}\n"
     ),
 }
 PROJECT_COPY = {
@@ -474,8 +492,8 @@ async def cores(tmp_path: Path, git, tree, commit) -> tuple[Path, Path, Path, st
     tree(
         templates,
         {
-            "projects/python/core/src/e_core/adapters/ports.py": "p = 2\n",
-            "projects/python/core/src/e_core/ops/file.py": "f = 2\n",
+            "projects/python/infra/src/e_infra/adapters/ports.py": "p = 2\n",
+            "projects/python/infra/src/e_infra/ops/file.py": "f = 2\n",
         },
     )
     await commit(templates, "v2")
@@ -867,3 +885,345 @@ def plane_context() -> Callable[..., PlaneContext]:
 @pytest.fixture
 def scripted_plane() -> type[ScriptedPlaneNode]:
     return ScriptedPlaneNode
+
+
+##### SWEEP #####
+FEED = "https://blog.example/feed/"
+PROFILE = "https://www.linkedin.com/in/adavoice"
+POST = "https://www.linkedin.com/posts/adavoice_tracing-otel-activity-1111111111111111111-AbCd"
+REPO = "https://github.com/spanline/spanline"
+
+
+class FakeWeb:
+    """WebPort over a table url → body: an unknown URL raises SweepError, as a page that does not answer; every
+    post is kept (url, fields, files)."""
+
+    def __init__(self, pages: Mapping[str, str]) -> None:
+        self.pages = dict(pages)
+        self.posted: list[tuple[str, dict[str, str], dict[str, tuple[str, bytes]]]] = []
+
+    async def get(self, url: str) -> str:
+        if url not in self.pages:
+            msg = f"{url}: 404 Not Found"
+            raise SweepError(msg)
+        return self.pages[url]
+
+    async def post(self, url: str, *, fields: Mapping[str, str], files: Mapping[str, tuple[str, bytes]]) -> None:
+        self.posted.append((url, dict(fields), dict(files)))
+
+
+@pytest.fixture
+def soa_nous(resources: Resources, nous: Path) -> Path:
+    """The mini checkout with a soa.yaml: two topics, a LinkedIn voice for all of them, a feed for memory only."""
+    shutil.copy(resources.path / "sweep" / "soa.yaml", nous / "core" / "tekton" / "config" / "soa.yaml")
+    return nous
+
+
+@pytest.fixture
+def web_page(resources: Resources) -> str:
+    """A project's page: a title, a publish date, text among a script and a style, links relative and repeated."""
+    return (resources.path / "sweep" / "page.html").read_text()
+
+
+@pytest.fixture
+def profile_page(resources: Resources) -> str:
+    """A public LinkedIn profile, hand-authored in its real shape: a JSON-LD @graph of the author's posts (two in a
+    short window, one older), an article, another author's repost, the page and the person."""
+    return (resources.path / "sweep" / "profile.html").read_text()
+
+
+@pytest.fixture
+def post_page(resources: Resources) -> str:
+    """A LinkedIn post page, hand-authored in its real shape: its SocialMediaPosting with the body and comments —
+    another reader's first, then the author's own first comment (the repo link) listed after a later one."""
+    return (resources.path / "sweep" / "post.html").read_text()
+
+
+@pytest.fixture
+def feed_xml(resources: Resources) -> str:
+    """A real Atom feed (a Bear blog), cut to three entries: 2026-04-30, 2025-12-19, 2025-03-24."""
+    return (resources.path / "sweep" / "feed.xml").read_text()
+
+
+@pytest.fixture
+def web(web_page: str, profile_page: str, post_page: str, feed_xml: str) -> FakeWeb:
+    """The recorded world: the feed and its newest entry's page, the profile and its newest post, the repo."""
+    return FakeWeb(
+        {
+            FEED: feed_xml,
+            "https://karpathy.bearblog.dev/sequoia-ascent-2026/": web_page,
+            PROFILE: profile_page,
+            POST: post_page,
+            REPO: web_page,
+        }
+    )
+
+
+@pytest.fixture
+def finding() -> Callable[..., SweepFinding]:
+    """A finding as an agent would answer it: grounded by default in the project's page (its repo link)."""
+
+    def build(title: str, **fields: Any) -> SweepFinding:
+        told: dict[str, Any] = {
+            "title": title,
+            "kind": FindingKind.TOOL,
+            "description": f"{title} exports agent spans.",
+            "why": "Observability of agents.",
+            "facts": ("OpenTelemetry exporter",),
+            "links": (REPO,),
+            "sources": (POST,),
+            "published_at": "2026-10-27",
+            "relevance": 3,
+            "via": "search",
+        }
+        return SweepFinding(**(told | fields))
+
+    return build
+
+
+@pytest.fixture
+def web_deps(monkeypatch: pytest.MonkeyPatch, web: FakeWeb) -> FakeWeb:
+    """Every `taxis` run reads the recorded world in place of the web."""
+
+    async def fake(deps: Deps) -> FakeWeb:
+        return web
+
+    monkeypatch.setattr(Deps, "PROVIDERS", MappingProxyType({**Deps.PROVIDERS, WebPort: fake}))
+    return web
+
+
+##### SOA-ASSESS #####
+NOW = dt.datetime(2026, 10, 28, 15, 0, tzinfo=dt.UTC)
+MISSING = b'{"message": "Not Found"}'
+
+
+class RecordedApi:
+    """ApiPort over recorded answers; `outage` maps a URL to the transport error it fails with."""
+
+    def __init__(self, root: Path) -> None:
+        self._root = root
+        self._index: dict[str, dict[str, Any]] = msgspec.json.decode((root / "index.json").read_bytes())
+        self.outage: dict[str, str] = {}
+
+    async def get(self, url: str) -> Fetched:
+        match (self.outage.get(url), self._index.get(url)):
+            case (str() as error, _):
+                return Fetched(url=url, status=0, error=error)
+            case (None, {"status": int() as status, "file": str() as file, "link": str() as link}):
+                return Fetched(url=url, status=status, body=(self._root / file).read_bytes(), link=link)
+            case _:
+                return Fetched(url=url, status=404, body=MISSING)
+
+
+class FakeLab:
+    """LabPort: runs for real through the stand-in landrun (no fence), the canary says what `holds` says."""
+
+    def __init__(self, landrun: Path) -> None:
+        self._fence = LandrunFence(landrun)
+        self.holds = True
+
+    async def run(
+        self,
+        argv: Sequence[str],
+        *,
+        env: Mapping[str, str],
+        cwd: Path,
+        writable: Sequence[Path],
+        ports: Sequence[int],
+        limit: float,
+        network: bool = False,
+    ) -> TrialRun:
+        return await self._fence.run(
+            argv, env=env, cwd=cwd, writable=writable, ports=ports, limit=limit, network=network
+        )
+
+    async def canary(self, inside: Path, outside: Path) -> bool:
+        return self.holds
+
+
+@pytest.fixture
+def now() -> dt.datetime:
+    return NOW
+
+
+@pytest.fixture
+def api(resources: Resources) -> RecordedApi:
+    return RecordedApi(resources.path / "assess" / "http")
+
+
+@pytest.fixture
+def outage(api: RecordedApi) -> dict[str, str]:
+    """The URLs the recorded API fails to reach, each with its transport error: filled by the test."""
+    return api.outage
+
+
+@pytest.fixture
+def landrun(resources: Resources) -> Path:
+    return resources.path / "landrun" / "landrun"
+
+
+@pytest.fixture
+def lab(landrun: Path) -> FakeLab:
+    return FakeLab(landrun)
+
+
+@pytest.fixture
+def leaky_lab(landrun: Path) -> FakeLab:
+    """A lab whose canary says the fence does not hold."""
+    leaky = FakeLab(landrun)
+    leaky.holds = False
+    return leaky
+
+
+##### HARNESS #####
+class WalkingHarness:
+    """HarnessPort that walks `demo` the way a coder would: each step through `WorkflowRun.one`, the agent's answer
+    kept as given — or, `idle`, walks nothing."""
+
+    def __init__(
+        self,
+        runner: WorkflowRun,
+        nous: Path,
+        *,
+        idle: bool = False,
+        steps: tuple[str, ...] = ("first", "echo", "think", "last"),
+    ) -> None:
+        self.runner, self.nous, self.idle, self.steps = runner, nous, idle, steps
+        self.seen: list[tuple[str, dict[str, str], tuple[str, ...]]] = []
+
+    async def run(self, workflow: str, args: Mapping[str, str], actors: tuple[str, ...], *, cwd: Path) -> str:
+        self.seen.append((workflow, dict(args), actors))
+        rundir, source = cwd / args["rundir"], GitNous(self.nous, None)
+        given = {key: value for key, value in args.items() if key not in {"rundir", "nous"}}
+        answer = cwd / "answer.md"
+        answer.write_text("thought\n")
+        steps = () if self.idle else self.steps
+        _ = [
+            await self.runner.one(source, workflow, step, given, rundir, answer=answer if step == "think" else None)
+            for step in steps
+        ]
+        return "walked"
+
+
+@pytest.fixture
+def walking(workflow_run: WorkflowRun, nous: Path) -> WalkingHarness:
+    return WalkingHarness(workflow_run, nous)
+
+
+@pytest.fixture
+def standing(workflow_run: WorkflowRun, nous: Path) -> WalkingHarness:
+    return WalkingHarness(workflow_run, nous, idle=True)
+
+
+@pytest.fixture
+def writing(workflow_run: WorkflowRun, nous: Path) -> WalkingHarness:
+    """A harness walking `fanned`: its one command step."""
+    return WalkingHarness(workflow_run, nous, steps=("write",))
+
+
+##### KWARGS #####
+class FakeChat:
+    """ChatPort: `answers` per tier (the model name); a tier in `down` raises; every request kept."""
+
+    def __init__(self) -> None:
+        self.answers: dict[str, dict[str, Any]] = {}
+        self.down: set[str] = set()
+        self.asked: list[tuple[str, str, str, Mapping[str, Any]]] = []
+
+    async def structured(
+        self, endpoint: Endpoint, system: str, user: str, schema: Mapping[str, Any]
+    ) -> tuple[dict[str, Any], int]:
+        self.asked.append((endpoint.model, system, user, schema))
+        if endpoint.model in self.down:
+            msg = f"{endpoint.model} is down"
+            raise ProviderError(msg)
+        return self.answers.get(endpoint.model, {}), 7
+
+
+@pytest.fixture
+def chat() -> FakeChat:
+    return FakeChat()
+
+
+@pytest.fixture
+def kwargs_reader(chat: FakeChat, provider: FakeProvider) -> WorkflowKwargs:
+    return WorkflowKwargs(chat, provider, ("local", "scout"))
+
+
+@pytest.fixture
+def declare() -> Callable[..., Workflow]:
+    """A workflow declaration from its nodes as plain mappings, the way a manifest reads."""
+    return lambda nodes, **rest: msgspec.convert(
+        {"id": "w", "description": "Draw it: the rest is detail.", "domains": ["tekton"], "nodes": nodes, **rest},
+        Workflow,
+    )
+
+
+@pytest.fixture
+def reading_run(command: ShellCommand, agent: FakeAgent, lock: FlockLock, kwargs_reader: WorkflowKwargs) -> WorkflowRun:
+    """The workflow runner with a small model reading `query` (the fake chat answers per tier)."""
+    return WorkflowRun(
+        command,
+        agent,
+        lock,
+        JsonlLedger.open,
+        concurrency=4,
+        limit=30.0,
+        reports=Path(".reports"),
+        kwargs=kwargs_reader,
+    )
+
+
+##### STUB API #####
+class StubApi:
+    """ApiPort answering hand-written bodies by URL, 404 otherwise: the shapes no recorded answer has."""
+
+    def __init__(self, answers: Mapping[str, Any]) -> None:
+        self._answers = dict(answers)
+
+    async def get(self, url: str) -> Fetched:
+        match self._answers.get(url):
+            case None:
+                return Fetched(url=url, status=404, body=MISSING)
+            case (int() as status, body):
+                return Fetched(url=url, status=status, body=msgspec.json.encode(body))
+            case body:
+                return Fetched(url=url, status=200, body=msgspec.json.encode(body))
+
+
+@pytest.fixture
+def stub() -> Callable[[Mapping[str, Any]], StubApi]:
+    return StubApi
+
+
+##### PLANS #####
+@pytest.fixture
+def arm() -> Callable[..., Arm]:
+    def build(name: str, role: Role, run: Sequence[str] = ("echo 1",), install: Sequence[str] = ()) -> Arm:
+        return Arm(name=name, role=role, install=tuple(install), run=tuple(run))
+
+    return build
+
+
+@pytest.fixture
+def plan(arm: Callable[..., Arm]) -> Callable[..., Plan]:
+    """A plan of two arms (`fast` the candidate, `slow` the incumbent) over the given knobs."""
+
+    def build(*arms: Arm, **knobs: Any) -> Plan:
+        frame: dict[str, Any] = {
+            "incumbent": "slow",
+            "overlap": Overlap.REPLACES,
+            "hypothesis": "fast is faster",
+            "metric": "ms",
+            "threshold": 0.5,
+            "higher_is_better": False,
+            "cases": ("a",),
+            "n": 3,
+            "cache": Cache.WARM,
+            "arms": arms or (arm("fast", Role.CANDIDATE), arm("slow", Role.INCUMBENT)),
+            "landing": "lib.md row",
+            "warmup": 0,
+        }
+        return Plan(**(frame | knobs))
+
+    return build

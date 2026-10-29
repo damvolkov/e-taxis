@@ -54,3 +54,16 @@ async def test_run_binding_without_its_file_refuses(nous_root: Path, tmp_path: P
         await RunService(CheckService()).run(
             GitNous(nous_root, None), "openhuman", tmp_path / "out", live=tmp_path / "nothing"
         )
+
+
+@pytest.mark.parametrize(("domains", "rendered"), [(["tekton"], True), (["nomos"], False)], ids=["tekton", "nomos"])
+async def test_run_renders_a_workflow_only_into_its_domains(
+    nous_root: Path,
+    tmp_path: Path,
+    edit: Callable[[str, Callable[[Any], None]], None],
+    domains: list[str],
+    rendered: bool,
+) -> None:
+    edit("core/tekton/workflows/converge/workflow.yaml", lambda w: w.update({"domains": domains}))
+    projection = await RunService(CheckService()).run(GitNous(nous_root, None), "claudecode", tmp_path / "cc")
+    assert ("workflows/converge.js" in projection.files) is rendered

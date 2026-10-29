@@ -1,4 +1,5 @@
 id: demo
+domains: [tekton]
 description: >-
   Every kind of step: a command that writes an artifact, one that reads it, a read-only agent beside it, and a
   last step only when apply is true.
@@ -12,3 +13,6 @@ nodes:
   - {source: nodes/echo.yaml}
   - {source: nodes/think.yaml}
   - {source: nodes/last.yaml}
+output:
+  type: value
+  path: "<rundir>/value.txt"

@@ -1,15 +1,15 @@
-"""scripts/materialize: the hardened sed — copy arkhetypo's `e_core` sections into the project package with a structural rewrite.
+"""scripts/materialize: the hardened sed — copy arkhetypo's `e_infra` sections into the project package with a structural rewrite.
 
 libcst parses each source file as real 3.14 syntax (PEP 695 included, verified against the whole
-`e_core` tree) and rewrites *only* the import nodes: `e_core.<section> → e_taxis.<section>`; every
+`e_infra` tree) and rewrites *only* the import nodes: `e_infra.<section> → e_taxis.<section>`; every
 result is re-parsed with `ast.parse` and scanned for leftovers before it is written. Sections land
-under their upstream names — `src/e_taxis/{core,ops,adapters,processors}` — because materialized code
-is part of the project and the wheel ships one root, never a global `core` or `adapters`. `ops` and
+under their upstream names — `src/e_taxis/{infra,ops,adapters,processors}` — because materialized code
+is part of the project and the wheel ships one root, never a global `infra` or `adapters`. `ops` and
 `adapters` are shared homes — the project keeps code beside generated files there — so the write is
 never destructive: each run lands what the sections expect, prunes only what its own manifest lists
 and the new run does not, and records the rest in `src/e_taxis/.materialized.json` — the generator's
-memory, because untracked project code is never its to touch. `make core` materializes into `src/`;
-`make core-check` materializes into a throwaway tree under `/tmp` and diffs, so both modes run the
+memory, because untracked project code is never its to touch. `make infra` materializes into `src/`;
+`make infra-check` materializes into a throwaway tree under `/tmp` and diffs, so both modes run the
 exact same generation path and the drift-check cannot lie about a second one.
 """
 
@@ -33,17 +33,17 @@ if TYPE_CHECKING:
 
 ROOT: Path = Path(__file__).resolve().parents[1]
 PACKAGE: Final[str] = "e_taxis"
-### a standalone repo: the core lives in the e-arkhetypo checkout beside it; E_CORE_SRC points elsewhere.
-CORE_SRC: Path = Path(
-    os.environ.get("E_CORE_SRC", ROOT.parent / "e-arkhetypo" / "projects" / "python" / "core" / "src" / "e_core")
+### a standalone repo: the infra lives in the e-arkhetypo checkout beside it; E_INFRA_SRC points elsewhere.
+INFRA_SRC: Path = Path(
+    os.environ.get("E_INFRA_SRC", ROOT.parent / "e-arkhetypo" / "projects" / "python" / "infra" / "src" / "e_infra")
 )
-SECTIONS: tuple[str, ...] = ("adapters", "core", "ops", "processors")
+SECTIONS: tuple[str, ...] = ("adapters", "infra", "ops", "processors")
 DEST: Final[Mapping[str, str]] = MappingProxyType({section: f"{PACKAGE}/{section}" for section in SECTIONS})
 ### the TUI header belongs to the boilerplate wizard, not to a running service: same topology as the old sed.
 ### the compose tool belongs to the stack, not to a running service.
 EXCLUDES: frozenset[str] = frozenset({"ops/tui.py", "ops/snap.py", "ops/compose.py"})
 ### `ops` and `adapters` are shared homes: only the manifest owns there — committed code is the project's.
-### `core` and `processors` are dedicated: anything tracked inside is a violation the gate must flag.
+### `infra` and `processors` are dedicated: anything tracked inside is a violation the gate must flag.
 SHARED: Final[frozenset[str]] = frozenset({"ops", "adapters"})
 
 
@@ -71,10 +71,10 @@ def _dotted(parts: Sequence[str]) -> cst.BaseExpression:
             return cst.Attribute(value=_dotted(init), attr=cst.Name(last))
 
 
-def _reroot_e_core(name: cst.BaseExpression) -> cst.BaseExpression:
-    """`e_core.core.x` → `e_taxis.core.x`; anything outside a materialized section untouched."""
+def _reroot_e_infra(name: cst.BaseExpression) -> cst.BaseExpression:
+    """`e_infra.infra.x` → `e_taxis.infra.x`; anything outside a materialized section untouched."""
     parts = _parts(name)
-    hit = parts is not None and parts[0] == "e_core" and len(parts) > 1 and parts[1] in SECTIONS
+    hit = parts is not None and parts[0] == "e_infra" and len(parts) > 1 and parts[1] in SECTIONS
     return _dotted([*DEST[parts[1]].split("/"), *parts[2:]]) if hit else name
 
 
@@ -82,14 +82,14 @@ def _strip_alias(alias: object) -> object:
     """One `import a.b [as c]` alias, rerooted whatever its wrapper shape; anything else passes through."""
     match alias:
         case cst.ImportAlias(name=name):
-            return alias.with_changes(name=_reroot_e_core(name))
+            return alias.with_changes(name=_reroot_e_infra(name))
         case cst.Element(node=cst.ImportAlias() as inner):
             return alias.with_changes(node=_strip_alias(inner))
         case _:
             return alias
 
 
-class _RerootECore(cst.CSTTransformer):
+class _RerootEInfra(cst.CSTTransformer):
     """Import statements only: docstrings and comments keep naming the source of truth verbatim."""
 
     def leave_Import(  # noqa: N802 — libcst dispatches visitor methods by node class name
@@ -108,26 +108,26 @@ class _RerootECore(cst.CSTTransformer):
             case None:
                 return updated_node
             case module:
-                return updated_node.with_changes(module=_reroot_e_core(module))
+                return updated_node.with_changes(module=_reroot_e_infra(module))
 
 
 ##### VALIDATION #####
-def _is_e_core_import(node: ast.AST) -> bool:
+def _is_e_infra_import(node: ast.AST) -> bool:
     match node:
         case ast.ImportFrom(module=module) | ast.Import(names=[ast.alias(name=module), *_]):
-            return bool(module) and module.split(".")[0] == "e_core"
+            return bool(module) and module.split(".")[0] == "e_infra"
         case _:
             return False
 
 
 def rewrite_source(text: str, path: str) -> str:
-    """One file rewritten structurally, then hard-validated: parseable by `ast`, free of `e_core` imports."""
-    out = cst.parse_module(text).visit(_RerootECore()).code
-    match [node for node in ast.walk(ast.parse(out, filename=path)) if _is_e_core_import(node)]:
+    """One file rewritten structurally, then hard-validated: parseable by `ast`, free of `e_infra` imports."""
+    out = cst.parse_module(text).visit(_RerootEInfra()).code
+    match [node for node in ast.walk(ast.parse(out, filename=path)) if _is_e_infra_import(node)]:
         case []:
             return out
         case leftovers:
-            msg = f"{path}: unresolved e_core imports survive the rewrite: {[n.lineno for n in leftovers]}"
+            msg = f"{path}: unresolved e_infra imports survive the rewrite: {[n.lineno for n in leftovers]}"
             raise SystemExit(msg)
 
 
@@ -139,8 +139,8 @@ def _sources(section: str) -> list[Path]:
     """Every .py of one section, in stable order, minus the excluded files."""
     return [
         path
-        for path in sorted((CORE_SRC / section).rglob("*.py"))
-        if "__pycache__" not in path.parts and str(path.relative_to(CORE_SRC)) not in EXCLUDES
+        for path in sorted((INFRA_SRC / section).rglob("*.py"))
+        if "__pycache__" not in path.parts and str(path.relative_to(INFRA_SRC)) not in EXCLUDES
     ]
 
 
@@ -152,7 +152,9 @@ def _target(section: str, rel: Path) -> Path:
 def _expected() -> dict[Path, str]:
     """Every file the sections must hold, keyed by its path under `src`, rewritten and ready to write."""
     return {
-        _target(section, path.relative_to(CORE_SRC)): rewrite_source(path.read_text(), str(path.relative_to(CORE_SRC)))
+        _target(section, path.relative_to(INFRA_SRC)): rewrite_source(
+            path.read_text(), str(path.relative_to(INFRA_SRC))
+        )
         for section in SECTIONS
         for path in _sources(section)
     }
@@ -161,7 +163,7 @@ def _expected() -> dict[Path, str]:
 def _manifest(dest_root: Path) -> frozenset[Path]:
     """What the last run materialized, relative to `src`. No manifest is a tree that was never generated:
     the previous set is empty, and this run only writes and remembers. The manifest is what keeps a
-    project file beside generated code safe between `make core` runs: git knows only what is committed."""
+    project file beside generated code safe between `make infra` runs: git knows only what is committed."""
     listing = dest_root / MANIFEST
     return frozenset(map(Path, json.loads(listing.read_text()) if listing.is_file() else []))
 
@@ -228,10 +230,10 @@ def check(dest_root: Path) -> int:
         ]
         match issues:
             case []:
-                print("✓ materialized e_taxis.{core,ops,adapters,processors} in sync")
+                print("✓ materialized e_taxis.{infra,ops,adapters,processors} in sync")
                 return 0
             case _:
-                print("✗ drift from arkhetypo (run make core):")
+                print("✗ drift from arkhetypo (run make infra):")
                 print("\n".join(f"  {issue}" for issue in issues))
                 return 1
     finally:
@@ -249,7 +251,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return check(ROOT)
         case _:
             materialize(ROOT)
-            print("✓ materialized arkhetypo e-core into e_taxis.{core,ops,adapters,processors}")
+            print("✓ materialized arkhetypo e-infra into e_taxis.{infra,ops,adapters,processors}")
             return 0
 
 

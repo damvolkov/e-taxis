@@ -11,7 +11,7 @@ content, its schema and its specs; e-taxis owns the code that reads them. The co
 [`docs/design.md`](docs/design.md), [`docs/transpile.md`](docs/transpile.md) and [`docs/workflow.md`](docs/workflow.md). P1 (read), P2 (write: user and
 machine scopes) and the transpiler (Claude Code, OpenCode, Hermes, OpenHuman) are shipped.
 
-Three houses, one system: **arkhetypo** (e-arkhetypo) is the matter — project blueprints, the stack, the shared core this repo
+Three houses, one system: **arkhetypo** (e-arkhetypo) is the matter — project blueprints, the stack, the shared infra this repo
 materializes; **e-nous** is the mind — its two hemispheres, tekton (the engineer) and nomos (the polymath); **e-taxis** is the
 joint — it projects one into the other, and grows past transpilation into the deterministic mounting and
 maintenance of whole systems. The mark is the word itself in the house square font, on a banner that hugs
@@ -68,23 +68,57 @@ Every command, one line each — `taxis <command> --help` gives its flags. `test
 | Command | Does |
 |---|---|
 | `taxis workflow run` | Run a workflow; exits 24 when a step failed. |
-| `taxis workflow list` | Every workflow, its parameters and steps. |
+| `taxis workflow list` | Every workflow drawn: parameters, then D/S step chains. |
+| `taxis workflow step` | Run one step inside a run a harness walks; one JSON line. |
+| `taxis workflow put` | Keep a harness agent's answer as a semantic step's out. |
 | `taxis workflow check` | Hold workflows to their static law; writes nothing. |
+
+**soa-sweep steps**
+
+| Command | Does |
+|---|---|
+| `taxis workflow soa-sweep frame` | Fix the frame from soa.yaml; an unknown topic fails here. |
+| `taxis workflow soa-sweep ledger` | The seen ledger, for the frame's voices. |
+| `taxis workflow soa-sweep fetch` | Every voice and entry page inside the window. |
+| `taxis workflow soa-sweep ground` | Merge the findings; keep what a fetched page holds. |
+| `taxis workflow soa-sweep fit` | Mark each finding have, considered or new. |
+| `taxis workflow soa-sweep report` | Write report.md and report.json; record the ledger. |
+| `taxis workflow soa-sweep deliver` | Post the summary and report.md to Discord. |
+| `taxis workflow soa-sweep schemas` | Write (or --check) every soa-sweep port's JSON Schema. |
 
 **reverse-distill steps**
 
 | Command | Does |
 |---|---|
-| `taxis distill guard` | Fix the scope; exit 3 when nothing is past the base. |
-| `taxis distill intake` | The range's commits and touched files. |
-| `taxis distill index` | e-nous, e-arkhetypo and the project into the code graph. |
-| `taxis distill scan` | The range's changed files and impacted symbols. |
-| `taxis distill drift` | The project's own drift checks, read. |
-| `taxis distill inventory` | Every plane, without a model: what the cores do not say. |
-| `taxis distill grade` | Merge the miners, propagate contradictions, weigh. |
-| `taxis distill report` | Join verdicts and reviews; write report.md and briefs. |
-| `taxis distill ship` | Run the commands that apply the musts. |
-| `taxis distill schemas` | Write (or --check) every port's JSON Schema. |
+| `taxis workflow reverse-distill guard` | Fix the scope; exit 3 when nothing is past the base. |
+| `taxis workflow reverse-distill intake` | The range's commits and touched files. |
+| `taxis workflow reverse-distill index` | e-nous, e-arkhetypo and the project into the code graph. |
+| `taxis workflow reverse-distill scan` | The range's changed files and impacted symbols. |
+| `taxis workflow reverse-distill drift` | The project's own drift checks, read. |
+| `taxis workflow reverse-distill inventory` | Every plane, without a model: what the cores do not say. |
+| `taxis workflow reverse-distill grade` | Merge the miners, propagate contradictions, weigh. |
+| `taxis workflow reverse-distill report` | Join verdicts and reviews; write report.md and briefs. |
+| `taxis workflow reverse-distill ship` | Run the commands that apply the musts. |
+| `taxis workflow reverse-distill schemas` | Write (or --check) every port's JSON Schema. |
+
+**soa-assess steps**
+
+| Command | Does |
+|---|---|
+| `taxis workflow soa-compare intake` | Read the repository's declared stack and imports. |
+| `taxis workflow soa-compare health` | Health and hot-path language of every subject. |
+| `taxis workflow soa-compare rank` | Score on one rubric; shortlist the rivals that win. |
+| `taxis workflow soa-compare bench` | Bench every shortlisted pair, fenced. |
+| `taxis workflow soa-compare stats` | Every pair's interval against its threshold. |
+| `taxis workflow soa-compare report` | Write report.md and compare.json; index the verdicts. |
+| `taxis workflow soa-compare schemas` | Write (or --check) every soa-compare port's JSON Schema. |
+| `taxis workflow soa-assess intake` | Resolve a technology to its repository and package. |
+| `taxis workflow soa-assess inventory` | What lives here in the candidate's domain, no model. |
+| `taxis workflow soa-assess health` | Dated health KPIs from no-auth sources. |
+| `taxis workflow soa-assess bench` | Install every arm fenced; run the plan interleaved. |
+| `taxis workflow soa-assess stats` | The paired bootstrap interval against the threshold. |
+| `taxis workflow soa-assess report` | Write report.md and assess.json; index the verdict. |
+| `taxis workflow soa-assess schemas` | Write (or --check) every soa-assess port's JSON Schema. |
 
 **Evaluation and enhancement**
 
@@ -97,6 +131,14 @@ Every command, one line each — `taxis <command> --help` gives its flags. `test
 | `taxis enhance graph` | Print and prove the enhancer's graphs. |
 | `taxis enhance promote` | Apply an enhancement's patches to the checkout; a human command. |
 | `taxis reports show` | A plane run's report, rebuilt from its ledger. |
+
+**Schedules**
+
+| Command | Does |
+|---|---|
+| `taxis schedule list` | Every schedule with its timer's state; orphans too. |
+| `taxis schedule apply` | Render the schedules into systemd user timers; dry unless --yes. |
+| `taxis schedule run` | Run one now through systemd; exits 33 unless it succeeds. |
 
 **Tools**
 
@@ -115,11 +157,15 @@ taxis install --target T [--nous PATH] [--profile P] [--ref REF | --worktree] [-
 taxis transpile check|run|reverse|trial …                           # the brain alone: docs/transpile.md
 taxis workflow run ID [--nous PATH] [name=value ...]                # a corpus workflow, end to end: docs/workflow.md
 taxis workflow list [--nous PATH] · check [ID ...] [--nous PATH]    # every workflow; its static law
-taxis distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas --rundir DIR [--nous PATH] …
+taxis workflow reverse-distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas --rundir DIR [--nous PATH] …
+taxis workflow soa-sweep frame|ledger|fetch|ground|fit|report|deliver|schemas --rundir DIR [--nous PATH] …
+taxis workflow soa-assess intake|inventory|health|bench|stats|report|schemas --rundir DIR [--nous PATH] …
+taxis workflow soa-compare intake|health|rank|bench|stats|report|schemas --rundir DIR [--nous PATH] …
 taxis eval run T [IDS] [--nous PATH] [--cadence C] [--only M,...] [--candidate RUN] # the evaluator, read-only
 taxis enhance run T [IDS] [--nous PATH] (--from R | --directive D | --manual) # verdicts + patches, in a sandbox
 taxis enhance promote [RUN] [--nous PATH] [--ids …] [--yes]         # a human command: the patches into the checkout
 taxis eval graph|needs · enhance graph · reports show [RUN] [--nous PATH]
+taxis schedule list|apply [--nous PATH] [--yes] [--json] · run ID   # core schedules ⇄ systemd user timers taxis-<id>
 taxis map    [--target T] [--json]                                  # the catalog: targets, scope, rollout per profile
 taxis plan   --target T [--profile P | --nous PATH] [--json]        # wanted ⨝ catalog, requires order, probed
 taxis verify --target T [--profile P | --nous PATH] [--json]        # every wanted part's verify, all of them
@@ -150,13 +196,16 @@ a failed run: `taxis history undo` reverts it.
 Exit codes: `0` · nothing to undo `4` · catalog does not load `5` · bad source `6` · plan has unknown or
 blocked parts `7` · verify failed `8` · doctor found problems `9` · apply refused or failed `10` ·
 uninstall failed `11` · transpile `17`–`22` (docs/transpile.md) · nothing to distill `3` · workflow `23`–`26`, planes `27`–`30`
-(open needs and refused promotions `1`), lock held past the wait `75` (docs/workflow.md) · no e-nous checkout `31`.
+(open needs and refused promotions `1`), lock held past the wait `75` (docs/workflow.md) · no e-nous checkout `31` · schedule refused `32`, a schedule
+run that did not succeed `33` · soa-assess `34` · soa-compare `35`.
 The report always prints first.
 
 `TAXIS_NOUS` is the e-nous checkout read when `--nous` is not given (One system, above).
 `TAXIS_CATALOG` points at another catalog root; `TAXIS_TIMEOUT` bounds each probe (seconds, default 10).
 `TAXIS_NPM_PREFIX` is where `npm -g` installs (default: npm's own prefix); `TAXIS_DOWNLOAD_TIMEOUT` bounds
 a binary download (seconds, default 300); `TAXIS_TEMP` stages downloads (default: the system temp dir).
+`TAXIS_SCHEDULE_UNITS` is where `taxis schedule apply` writes its `taxis-<id>.service|.timer` (default
+`~/.config/systemd/user`); it only ever touches files of that name carrying its header.
 `CLAUDE_CONFIG_DIR`, when set, is where the world's `~/.claude` paths are written; the brain lands where its spec
 says (`~/.claude`).
 
@@ -178,13 +227,13 @@ src/e_taxis/harness/      # THE HARNESS BRANCH — mounts a brain + its world on
   runtime/                # deps (composition root) · lifespan · settings · source · journal
 
 src/e_taxis/adapters/     # SHARED FLOOR — the project's own adapters (FileCatalog, ShellProbe, ProcessRunner,
-                          # WreqDownloader, EffectUndo) beside the materialized e-core service adapters
+                          # WreqDownloader, EffectUndo) beside the materialized e-infra service adapters
                           # (base, stores, http…); adapters/primitives/ = one adapter per primitive
 src/e_taxis/transpile/    # THE TRANSPILER — e-nous core + specs → each harness, and back (docs/transpile.md)
 src/e_taxis/workflow/     # THE WORKFLOWS — e-nous workflow definitions run as graphs of commands and agent sessions,
                           # reverse-distill's deterministic steps, the evaluator and the enhancer (docs/workflow.md)
 src/e_taxis/ops/          # SHARED FLOOR — light tools, standalone via CLI or imported by a branch (logo, registry, file)
-src/e_taxis/{core,processors}/  # GENERATED by `make core` from arkhetypo's `projects/python/core` into the package — never edited here
+src/e_taxis/{infra,processors}/ # GENERATED by `make infra` from arkhetypo's `projects/python/infra` into the package — never edited here
 src/e_taxis/project/      # THE PROJECT BRANCH — scaffold a new system from arkhetypo (registry → plan → gen)
 tests/unit/               # mirrors src · tests/resources holds the fixture catalogs and e-nous trees
 ```
@@ -192,7 +241,7 @@ tests/unit/               # mirrors src · tests/resources holds the fixture cat
 ##### DEVELOP #####
 
 ```bash
-make install      # materialize core + sync deps + git hooks
+make install      # materialize infra + sync deps + git hooks
 make check        # lint + ty + tach + validate + drift + tests
 make cov          # tests under the 100% coverage gate
 ```

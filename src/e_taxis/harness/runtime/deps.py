@@ -18,6 +18,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Annotated, ClassVar, TypeVar, cast
 
+import anyio
 from cyclopts import Parameter
 from rich.console import Console
 
@@ -36,8 +37,6 @@ from e_taxis.adapters.probe import ShellProbe
 from e_taxis.adapters.runner import ProcessRunner
 from e_taxis.adapters.sqlite import SQLiteAdapter
 from e_taxis.adapters.undo import EffectUndo
-from e_taxis.core.settings import settings as st
-from e_taxis.core.state import State
 from e_taxis.harness.models.catalog import Primitive
 from e_taxis.harness.models.ports import (
     CatalogPort,
@@ -56,6 +55,10 @@ from e_taxis.harness.services.plan import PlanService
 from e_taxis.harness.services.resolver import ResolverService
 from e_taxis.harness.services.uninstall import UninstallService
 from e_taxis.harness.services.verify import VerifyService
+from e_taxis.infra.settings import settings as st
+from e_taxis.infra.state import State
+from e_taxis.schedule.adapters.systemd import UserSystemd
+from e_taxis.schedule.services.schedule import ScheduleService
 from e_taxis.transpile.adapters.capture import HttpCapture
 from e_taxis.transpile.adapters.fence import LandrunFence
 from e_taxis.transpile.models.ports import CapturePort
@@ -65,16 +68,29 @@ from e_taxis.transpile.services.reverse import ReverseService
 from e_taxis.transpile.services.run import RunService
 from e_taxis.transpile.services.trial import TrialService
 from e_taxis.workflow.adapters.agent import ClaudeAgent, ModeAgent, OpencodeAgent
+from e_taxis.workflow.adapters.api import WreqApi
+from e_taxis.workflow.adapters.chat import WreqChat
 from e_taxis.workflow.adapters.coder import ClaudeCoder, OpencodeCoder
 from e_taxis.workflow.adapters.command import ShellCommand
 from e_taxis.workflow.adapters.evals import NousEvals
+from e_taxis.workflow.adapters.harness import ClaudeHarness, Harness, HarnessTable, OpencodeHarness
 from e_taxis.workflow.adapters.ledger import JsonlLedger
 from e_taxis.workflow.adapters.lock import FlockLock
 from e_taxis.workflow.adapters.provider import HouseProvider
 from e_taxis.workflow.adapters.runner import AnthropicRunner
 from e_taxis.workflow.adapters.sandbox import GitSandbox
 from e_taxis.workflow.adapters.scanner import SkillspectorScanner
-from e_taxis.workflow.models.ports import AgentPort, CommandPort, PlaneNodePort, SandboxPort
+from e_taxis.workflow.adapters.web import WreqWeb
+from e_taxis.workflow.assess.bench import AssessBench
+from e_taxis.workflow.models.ports import (
+    AgentPort,
+    ApiPort,
+    CommandPort,
+    LabPort,
+    PlaneNodePort,
+    SandboxPort,
+    WebPort,
+)
 from e_taxis.workflow.plane.activation import PlaneActivation
 from e_taxis.workflow.plane.brief import PlaneBrief
 from e_taxis.workflow.plane.candidate import PlaneCandidate
@@ -97,6 +113,7 @@ from e_taxis.workflow.plane.signals import PlaneSignals
 from e_taxis.workflow.plane.snapshot import PlaneSnapshot
 from e_taxis.workflow.plane.speckeeper import PlaneSpeckeeper
 from e_taxis.workflow.plane.tasks import PlaneTasks
+from e_taxis.workflow.services.kwargs import WorkflowKwargs
 from e_taxis.workflow.services.plane import PlaneRun
 from e_taxis.workflow.services.promote import PlanePromote
 from e_taxis.workflow.services.run import WorkflowRun
@@ -268,6 +285,31 @@ class Deps:
             ),
         )
 
+    async def _resolve_harnesses(self) -> HarnessTable:
+        """The coders that walk a whole workflow: Claude Code from `~/.claude`, OpenCode from its live tree."""
+        settings, (_, claude) = await self.resolve(TaxisSettings), await self._common_homes()
+        command, landrun = await self.resolve(CommandPort), settings.taxis_landrun.expanduser()
+        writable = tuple(path.expanduser() for path in settings.taxis_workflow_writable)
+        fence, limit = LandrunFence(landrun), settings.taxis_workflow_harness_limit
+        opencode = OpencodeAgent(
+            command,
+            fence,
+            config=settings.taxis_workflow_opencode.expanduser(),
+            landrun=landrun,
+            writable=writable,
+            environ=os.environ,
+            model=settings.taxis_workflow_model,
+        )
+        agent = ClaudeAgent(command, fence, config=claude, landrun=landrun, writable=writable, environ=os.environ)
+        return HarnessTable(
+            MappingProxyType(
+                {
+                    Harness.CLAUDE: ClaudeHarness(command, agent, limit),
+                    Harness.OPENCODE: OpencodeHarness(command, opencode, limit),
+                }
+            )
+        )
+
     async def _resolve_workflow(self) -> WorkflowRun:
         """A run waits for the checkout's lock, saying once on stderr whom it waits for."""
         settings = await self.resolve(TaxisSettings)
@@ -282,7 +324,15 @@ class Deps:
             concurrency=settings.taxis_workflow_concurrency,
             limit=settings.taxis_workflow_timeout,
             reports=settings.taxis_workflow_reports,
+            kwargs=WorkflowKwargs(
+                WreqChat(settings.taxis_workflow_kwargs_limit),
+                HouseProvider(os.environ),
+                settings.taxis_workflow_kwargs_tiers,
+            ),
         )
+
+    async def _resolve_web(self) -> WreqWeb:
+        return WreqWeb()
 
     async def _resolve_sandbox(self) -> GitSandbox:
         return GitSandbox(await self.resolve(CommandPort))
@@ -372,6 +422,30 @@ class Deps:
     async def _resolve_promote(self) -> PlanePromote:
         return PlanePromote(await self.resolve(PlaneRun), await self.resolve(SandboxPort), await self._common_lock())
 
+    async def _resolve_schedule(self) -> ScheduleService:
+        """The units dir from the settings; the binary the one this process was started as — absolute, not resolved
+        through symlinks, so a unit keeps pointing at the stable entrypoint (`~/.local/bin/taxis`), never at PATH."""
+        units = (await self.resolve(TaxisSettings)).taxis_schedule_units.expanduser()
+        return ScheduleService(
+            UserSystemd(await self.resolve(RunnerPort), units), Path(await anyio.Path(sys.argv[0]).absolute())
+        )
+
+    async def _resolve_api(self) -> WreqApi:
+        """soa-assess's public APIs; the GitHub token, when the settings hold one, signs GitHub's requests only."""
+        settings = await self.resolve(TaxisSettings)
+        token = settings.gh_token.get_secret_value() if settings.gh_token else ""
+        return WreqApi(settings.taxis_assess_timeout, token)
+
+    async def _resolve_lab(self) -> LandrunFence:
+        return LandrunFence((await self.resolve(TaxisSettings)).taxis_landrun.expanduser())
+
+    async def _resolve_bench(self) -> AssessBench:
+        """The bench's sandboxes start from this process's PATH: the arms find the same toolchain."""
+        settings = await self.resolve(TaxisSettings)
+        return AssessBench(
+            await self.resolve(LabPort), path=os.environ.get("PATH", ""), limit=settings.taxis_assess_limit
+        )
+
     ############################################################
 
     ##### PUBLIC #####
@@ -404,9 +478,15 @@ class Deps:
             CommandPort: _resolve_command,
             AgentPort: _resolve_agent,
             WorkflowRun: _resolve_workflow,
+            HarnessTable: _resolve_harnesses,
             SandboxPort: _resolve_sandbox,
+            WebPort: _resolve_web,
             PlaneRun: _resolve_plane,
             PlanePromote: _resolve_promote,
+            ScheduleService: _resolve_schedule,
+            ApiPort: _resolve_api,
+            LabPort: _resolve_lab,
+            AssessBench: _resolve_bench,
         }
     )
 

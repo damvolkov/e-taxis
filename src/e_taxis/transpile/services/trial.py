@@ -170,7 +170,8 @@ class TrialService:
         cls, tree: NousTree, spec: Mapping[str, Any], projection: Projection, entity: str
     ) -> tuple[str, ...]:
         """What an entity must show: every non-empty persona text it renders, every `command` a config module's rows
-        render, or every id of its instances."""
+        render, or every id of its instances that reach this harness (an instance naming its `domains` reaches only
+        theirs)."""
         placements = [placement for found in projection.placements.values() for placement in found]
         match entity:
             case "persona":
@@ -189,7 +190,14 @@ class TrialService:
                     )
                 )
             case _:
-                return tuple(sorted(tree.entities.get(entity, {}))) if entity in spec["map"] else ()
+                instances = tree.entities.get(entity, {}) if entity in spec["map"] else {}
+                return tuple(
+                    sorted(
+                        ident
+                        for ident, raw in instances.items()
+                        if spec["harness"] in raw.get("domains", (spec["harness"],))
+                    )
+                )
 
     async def _run_probe(
         self,

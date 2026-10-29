@@ -17,6 +17,14 @@ from e_taxis.transpile.models.error import RenderError
 ### `${name}` or `$name` in a template: the named input it refers to.
 NAME: Final = re.compile(r"\$\{?([a-z_][a-z0-9_-]*)\}?(?!\w)")
 SPLIT: str = "/"
+### how a lead walks the rendered graph: taxis runs every command and keeps the ledger; the lead waits for its agents.
+WALK: str = (
+    "## walk\n\nWalk the steps in order, in the foreground: start each agent task and wait for its answer before "
+    "going on — never end your turn while a step is pending, nor before the output exists. `<rundir>` is the absolute "
+    "run folder and `<nous>` the e-nous checkout, both given with the parameters; `<name=value…>` are the run's "
+    "parameters. Never run a step's own command yourself: `taxis workflow step` runs it and keeps the ledger; a step "
+    "it reports `skip` skips every step after it, and a step whose conditions do not hold still goes through it."
+)
 NATIVE: str = "native."
 
 
@@ -166,11 +174,13 @@ def graph(value: list[Mapping[str, Any]], params: Mapping[str, str], ctx: RowCon
             else []
         ),
     ]
+    ident = str(instance.get("id") or ctx.bindings.get("id", ""))
     steps = "\n\n".join(
-        f"### {node['id']} (depends: {', '.join(parents[node['id']])})\n\n{graph_step(node)}" for node in value
+        f"### {node['id']} (depends: {', '.join(parents[node['id']])})\n\n{graph_step(node, ident)}" for node in value
     )
     blocks = [
         "```mermaid\nflowchart TD\n" + "\n".join(edges) + "\n```",
+        WALK,
         f"## steps\n\n{steps}",
         *([graph_loop(loop)] if loop else []),
         *(["## output\n\n" + "\n".join(f"{key}: {item}" for key, item in output.items())] if output else []),
@@ -178,18 +188,26 @@ def graph(value: list[Mapping[str, Any]], params: Mapping[str, str], ctx: RowCon
     return "\n\n".join(blocks)
 
 
-def graph_step(node: Mapping[str, Any]) -> str:
-    """One step's body: its conditions, then the command to run or the instruction for its actor."""
+def graph_step(node: Mapping[str, Any], workflow: str) -> str:
+    """One step's body: its conditions, then the taxis command that runs it, or its actor's instruction and the
+    command that keeps the answer."""
     when = "".join(
         f"*only when `{key}` is {' or '.join(f'`{v}`' for v in ([values] if isinstance(values, str) else values))}*\n\n"
         for key, values in (node.get("when") or {}).items()
     )
+    common = f"--workflow {workflow} --rundir <rundir> --nous <nous>"
     match node:
         case {"run": str() as command}:
             note = f"\n\n{node['instruction']}" if node.get("instruction") else ""
-            return f"{when}run: `{command}`{note}"
+            return (
+                f"{when}step: `taxis workflow step {node['id']} {common} <name=value…>` — taxis runs `{command}`{note}"
+            )
         case {"instruction": str() as text}:
-            return when + (f"@{node['actor']} " if node.get("actor") else "") + text
+            keep = (
+                f"\n\nKeep the answer: write it to `<rundir>/nodes/{node['id']}/answer.md`, then "
+                f"`taxis workflow put {node['id']} {common} --file <rundir>/nodes/{node['id']}/answer.md`."
+            )
+            return when + (f"@{node['actor']} " if node.get("actor") else "") + text + keep
         case _:
             msg = f"step `{node.get('id')}`: needs `run` or `instruction`"
             raise RenderError(msg)

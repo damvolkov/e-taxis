@@ -1,7 +1,8 @@
 """engine.render: one spec over one core → placements, in declaration order — the generic row engine.
 
 No backend is named here. A persona row reads a slot of the facet's layers, an instanced row a field of each
-instance (sorted by id), a config row a dotted path of the facet's modules, `native.` or a constant. Its `via`
+instance (sorted by id) — an instance that names its `domains` reaches only the harnesses among them —, a config row
+a dotted path of the facet's modules, `native.` or a constant. Its `via`
 runs left to right through the combinators and the backend's named transforms; `each` fans a mapping out into
 one placement per child. `to` binds `{id}`, `{name}` (the `each` variable), every binding and any `{a.b}` core path.
 An absent value places nothing; a present one — null included — runs its `via` (so `falsy` can stand in for it) and
@@ -178,6 +179,7 @@ class SpecRender:
                 yield from (
                     placement
                     for ident in sorted(instances)
+                    if self._spec["harness"] in instances[ident].get("domains", (self._spec["harness"],))
                     for ctx in (self._ctx.per(instances[ident], ident),)
                     for index, row in rows
                     for placement in self._run_row(name, index, row, section, ctx)

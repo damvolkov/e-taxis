@@ -1,0 +1,6 @@
+# schedules — what runs unattended, and when. `taxis schedule apply` renders each into a systemd user timer taxis-<id>.
+eval-corpus:
+  doc: nightly corpus audit into a ledger
+  calendar: "*-*-* 03:00:00"
+  steps:
+    - [eval, run, corpus, --cadence, nightly]
