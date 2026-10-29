@@ -27,6 +27,7 @@ typo fails the gate, never a user.
     taxis workflow reverse-distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas [--nous PATH] --rundir DIR …
     taxis workflow soa-sweep frame|ledger|fetch|ground|fit|report|deliver|schemas [--nous PATH] --rundir DIR …
     taxis workflow soa-assess intake|inventory|health|bench|stats|report|schemas [--nous PATH] --rundir DIR …
+    taxis workflow soa-compare intake|health|rank|bench|stats|report|schemas [--nous PATH] --rundir DIR …
     taxis eval run TARGET [IDS ...] [--nous PATH] [--cadence C] [--candidate RUN]   # the evaluator, read-only
     taxis eval graph [TARGET] · eval needs TARGET [--nous PATH] [--run R] [--owner O]
     taxis enhance run TARGET [IDS ...] [--nous PATH] (--from R | --directive D | --manual) [--cadence C]
@@ -62,6 +63,11 @@ GROUPS: tuple[CommandGroup, ...] = (
     CommandGroup(
         path="workflow soa-assess",
         help="soa-assess's deterministic steps, one per workflow node: --rundir, --nous.",
+        show=False,
+    ),
+    CommandGroup(
+        path="workflow soa-compare",
+        help="soa-compare's deterministic steps, one per workflow node: --rundir, --nous.",
         show=False,
     ),
     CommandGroup(
@@ -158,6 +164,41 @@ CARDS: tuple[CommandCard, ...] = (
         path="workflow check",
         target="e_taxis.workflow.commands.workflow:check",
         summary="Hold workflows to their static law; writes nothing.",
+    ),
+    CommandCard(
+        path="workflow soa-compare intake",
+        target="e_taxis.workflow.commands.compare:intake",
+        summary="Read the repository's declared stack and imports.",
+    ),
+    CommandCard(
+        path="workflow soa-compare health",
+        target="e_taxis.workflow.commands.compare:health",
+        summary="Health and hot-path language of every subject.",
+    ),
+    CommandCard(
+        path="workflow soa-compare rank",
+        target="e_taxis.workflow.commands.compare:rank",
+        summary="Score on one rubric; shortlist the rivals that win.",
+    ),
+    CommandCard(
+        path="workflow soa-compare bench",
+        target="e_taxis.workflow.commands.compare:bench",
+        summary="Bench every shortlisted pair, fenced.",
+    ),
+    CommandCard(
+        path="workflow soa-compare stats",
+        target="e_taxis.workflow.commands.compare:stats",
+        summary="Every pair's interval against its threshold.",
+    ),
+    CommandCard(
+        path="workflow soa-compare report",
+        target="e_taxis.workflow.commands.compare:report",
+        summary="Write report.md and compare.json; index the verdicts.",
+    ),
+    CommandCard(
+        path="workflow soa-compare schemas",
+        target="e_taxis.workflow.commands.compare:schemas",
+        summary="Write (or --check) every soa-compare port's JSON Schema.",
     ),
     CommandCard(
         path="workflow soa-assess intake",

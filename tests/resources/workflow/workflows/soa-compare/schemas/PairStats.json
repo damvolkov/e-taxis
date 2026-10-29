@@ -1,0 +1,139 @@
+{
+  "$ref": "#/$defs/PairStats",
+  "$defs": {
+    "PairStats": {
+      "title": "PairStats",
+      "description": "stats: every pair's paired interval against its threshold, as soa-assess's stats reads it.",
+      "type": "object",
+      "properties": {
+        "pairs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Measured"
+          }
+        }
+      },
+      "required": [
+        "pairs"
+      ]
+    },
+    "Measured": {
+      "title": "Measured",
+      "type": "object",
+      "properties": {
+        "incumbent": {
+          "type": "string"
+        },
+        "rival": {
+          "type": "string"
+        },
+        "stats": {
+          "$ref": "#/$defs/Stats"
+        }
+      },
+      "required": [
+        "incumbent",
+        "rival",
+        "stats"
+      ]
+    },
+    "Stats": {
+      "title": "Stats",
+      "description": "stats: the interval of the paired difference (candidate - baseline, in the metric's units) against the\nthreshold; `secondary` describes, never decides.",
+      "type": "object",
+      "properties": {
+        "metric": {
+          "type": "string"
+        },
+        "outcome": {
+          "$ref": "#/$defs/Outcome"
+        },
+        "candidate": {
+          "type": "string",
+          "default": ""
+        },
+        "baseline": {
+          "type": "string",
+          "default": ""
+        },
+        "pairs": {
+          "type": "integer",
+          "default": 0
+        },
+        "mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "low": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "high": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "threshold": {
+          "type": "number",
+          "default": 0.0
+        },
+        "higher_is_better": {
+          "type": "boolean",
+          "default": true
+        },
+        "resamples": {
+          "type": "integer",
+          "default": 0
+        },
+        "confidence": {
+          "type": "number",
+          "default": 0.0
+        },
+        "secondary": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "reason": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "metric",
+        "outcome"
+      ]
+    },
+    "Outcome": {
+      "title": "Outcome",
+      "enum": [
+        "better",
+        "no difference",
+        "not measured",
+        "worse"
+      ]
+    }
+  }
+}

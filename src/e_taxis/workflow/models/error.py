@@ -110,3 +110,10 @@ class AssessError(WorkflowError):
     hold."""
 
     exit_code: ClassVar[int] = 34
+
+
+class CompareError(WorkflowError):
+    """A soa-compare step that cannot go on: no repository or an empty stack, a topic soa.yaml does not hold, a
+    missing or malformed artifact."""
+
+    exit_code: ClassVar[int] = 35

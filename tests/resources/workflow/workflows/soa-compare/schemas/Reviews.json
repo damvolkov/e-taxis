@@ -1,0 +1,81 @@
+{
+  "$ref": "#/$defs/Reviews",
+  "$defs": {
+    "Reviews": {
+      "title": "Reviews",
+      "description": "adversary: one challenge per ruling.",
+      "type": "object",
+      "properties": {
+        "reviews": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Challenge"
+          }
+        }
+      },
+      "required": [
+        "reviews"
+      ],
+      "additionalProperties": false
+    },
+    "Challenge": {
+      "title": "Challenge",
+      "description": "The adversary on one ruling: what tried to sink it, whether it stands; `decision` is the reviewer's own.",
+      "type": "object",
+      "properties": {
+        "incumbent": {
+          "type": "string"
+        },
+        "stands": {
+          "type": "boolean"
+        },
+        "objections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Objection"
+          }
+        },
+        "decision": {
+          "$ref": "#/$defs/Decision"
+        }
+      },
+      "required": [
+        "incumbent",
+        "stands",
+        "objections",
+        "decision"
+      ],
+      "additionalProperties": false
+    },
+    "Objection": {
+      "title": "Objection",
+      "type": "object",
+      "properties": {
+        "claim": {
+          "type": "string"
+        },
+        "refuted": {
+          "type": "boolean"
+        },
+        "evidence": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "claim",
+        "refuted"
+      ],
+      "additionalProperties": false
+    },
+    "Decision": {
+      "title": "Decision",
+      "description": "replace.md's verdicts, per incumbent.",
+      "enum": [
+        "keep",
+        "replace",
+        "trial"
+      ]
+    }
+  }
+}

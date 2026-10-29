@@ -193,6 +193,8 @@ python-version = "3.14"
 
 [tool.ty.src]
 include = ["src", "tests"]
+### fixture projects (a repository soa-compare reads) are data, not this repo's code — ruff excludes them too.
+exclude = ["tests/resources"]
 
 [tool.ty.terminal]
 error-on-warning = true

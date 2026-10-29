@@ -133,5 +133,15 @@
   "status": 200,
   "file": "pypistats_org_api_packages_msgspec_recent.json",
   "link": ""
+ },
+ "https://api.github.com/repos/msgspec/msgspec/languages": {
+  "status": 200,
+  "file": "api_github_com_repos_msgspec_msgspec_languages.json",
+  "link": ""
+ },
+ "https://api.github.com/repos/rtk-ai/rtk/languages": {
+  "status": 200,
+  "file": "api_github_com_repos_rtk_ai_rtk_languages.json",
+  "link": ""
  }
 }

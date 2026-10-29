@@ -25,7 +25,7 @@ def test_workflow_check_names_what_does_not_read(taxis: Callable[..., tuple[int,
     code, out, err = taxis("workflow", "check", "--nous", str(nous))
     assert code == 23
     assert "unknown agent nobody" in out
-    assert "1 of 7 workflow(s) do not read clean: broken" in err
+    assert "1 of 8 workflow(s) do not read clean: broken" in err
 
 
 def test_workflow_check_clean_ones_exit_zero(taxis: Callable[..., tuple[int, str, str]], nous: Path) -> None:

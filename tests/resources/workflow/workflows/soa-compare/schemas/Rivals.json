@@ -1,0 +1,94 @@
+{
+  "$ref": "#/$defs/Rivals",
+  "$defs": {
+    "Rivals": {
+      "title": "Rivals",
+      "description": "rivals: every incumbent the query names, each with its rivals.",
+      "type": "object",
+      "properties": {
+        "incumbents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Rivalry"
+          }
+        }
+      },
+      "required": [
+        "incumbents"
+      ],
+      "additionalProperties": false
+    },
+    "Rivalry": {
+      "title": "Rivalry",
+      "description": "One incumbent the query is about, the job it does here, and at most three rivals.",
+      "type": "object",
+      "properties": {
+        "incumbent": {
+          "$ref": "#/$defs/Subject"
+        },
+        "role": {
+          "type": "string"
+        },
+        "rivals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Subject"
+          },
+          "maxItems": 3
+        }
+      },
+      "required": [
+        "incumbent",
+        "role",
+        "rivals"
+      ],
+      "additionalProperties": false
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "A technology the health step can read: its GitHub repository (`owner/name`) and its registry entry.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "repo": {
+          "type": "string",
+          "default": ""
+        },
+        "package": {
+          "type": "string",
+          "default": ""
+        },
+        "registry": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Registry"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "why": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "Registry": {
+      "title": "Registry",
+      "description": "Where a package is published: the downloads and the dependents are read from there.",
+      "enum": [
+        "crates",
+        "npm",
+        "pypi"
+      ]
+    }
+  }
+}

@@ -40,7 +40,7 @@ from e_taxis.workflow.adapters.sandbox import GitSandbox
 from e_taxis.workflow.distill.grade import DistillGrade
 from e_taxis.workflow.distill.matrix import VersionMatrix
 from e_taxis.workflow.engine.reader import WorkflowReader
-from e_taxis.workflow.models.assess import Fetched
+from e_taxis.workflow.models.assess import Arm, Cache, Fetched, Overlap, Plan, Role
 from e_taxis.workflow.models.case import ProbeMode, ProbeResult
 from e_taxis.workflow.models.distill import Candidate, Change, HarnessPart, HarnessTarget, Relation, Target
 from e_taxis.workflow.models.endpoint import Endpoint
@@ -1172,3 +1172,58 @@ def reading_run(command: ShellCommand, agent: FakeAgent, lock: FlockLock, kwargs
         reports=Path(".reports"),
         kwargs=kwargs_reader,
     )
+
+
+##### STUB API #####
+class StubApi:
+    """ApiPort answering hand-written bodies by URL, 404 otherwise: the shapes no recorded answer has."""
+
+    def __init__(self, answers: Mapping[str, Any]) -> None:
+        self._answers = dict(answers)
+
+    async def get(self, url: str) -> Fetched:
+        match self._answers.get(url):
+            case None:
+                return Fetched(url=url, status=404, body=MISSING)
+            case (int() as status, body):
+                return Fetched(url=url, status=status, body=msgspec.json.encode(body))
+            case body:
+                return Fetched(url=url, status=200, body=msgspec.json.encode(body))
+
+
+@pytest.fixture
+def stub() -> Callable[[Mapping[str, Any]], StubApi]:
+    return StubApi
+
+
+##### PLANS #####
+@pytest.fixture
+def arm() -> Callable[..., Arm]:
+    def build(name: str, role: Role, run: Sequence[str] = ("echo 1",), install: Sequence[str] = ()) -> Arm:
+        return Arm(name=name, role=role, install=tuple(install), run=tuple(run))
+
+    return build
+
+
+@pytest.fixture
+def plan(arm: Callable[..., Arm]) -> Callable[..., Plan]:
+    """A plan of two arms (`fast` the candidate, `slow` the incumbent) over the given knobs."""
+
+    def build(*arms: Arm, **knobs: Any) -> Plan:
+        frame: dict[str, Any] = {
+            "incumbent": "slow",
+            "overlap": Overlap.REPLACES,
+            "hypothesis": "fast is faster",
+            "metric": "ms",
+            "threshold": 0.5,
+            "higher_is_better": False,
+            "cases": ("a",),
+            "n": 3,
+            "cache": Cache.WARM,
+            "arms": arms or (arm("fast", Role.CANDIDATE), arm("slow", Role.INCUMBENT)),
+            "landing": "lib.md row",
+            "warmup": 0,
+        }
+        return Plan(**(frame | knobs))
+
+    return build

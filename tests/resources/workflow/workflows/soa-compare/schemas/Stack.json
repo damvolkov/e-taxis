@@ -1,0 +1,94 @@
+{
+  "$ref": "#/$defs/Stack",
+  "$defs": {
+    "Stack": {
+      "title": "Stack",
+      "description": "intake: what the repository declares, and the query as written.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string"
+        },
+        "query": {
+          "type": "string"
+        },
+        "manifests": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Dependency"
+          }
+        },
+        "topic": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "project",
+        "query",
+        "manifests",
+        "dependencies"
+      ]
+    },
+    "Dependency": {
+      "title": "Dependency",
+      "description": "One declared dependency: `declared` as the manifest writes it, `resolved` the lockfile's version (empty: no\nlockfile names it); `imports` the first source files that import it, `imported` how many do.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "ecosystem": {
+          "$ref": "#/$defs/Ecosystem"
+        },
+        "manifest": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "declared": {
+          "type": "string",
+          "default": ""
+        },
+        "resolved": {
+          "type": "string",
+          "default": ""
+        },
+        "imports": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "imported": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "required": [
+        "name",
+        "ecosystem",
+        "manifest"
+      ]
+    },
+    "Ecosystem": {
+      "title": "Ecosystem",
+      "description": "Where a dependency is declared: its manifest's world.",
+      "enum": [
+        "container",
+        "js",
+        "python",
+        "rust"
+      ]
+    }
+  }
+}

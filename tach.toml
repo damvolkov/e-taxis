@@ -125,6 +125,12 @@ path = "e_taxis.workflow.assess"
 layer = "services"
 depends_on = ["e_taxis.workflow.distill"]
 
+### soa-compare's pairs are assess plans; it is handed assess's bench, health and stats, never imports them to run.
+[[modules]]
+path = "e_taxis.workflow.compare"
+layer = "services"
+depends_on = []
+
 ### the planes' nodes render and check through the transpiler's own services (v2), never a second render.
 [[modules]]
 path = "e_taxis.workflow.plane"
