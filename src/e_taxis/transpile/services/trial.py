@@ -5,7 +5,9 @@ spec's `trial` plants an established install's state, a fake model listens, and 
 probe reads the requests the harness sent its model, a `command` probe what it printed. Both are reduced to text
 (JSON walked for its strings, whitespace folded: a harness may rewrap, it may not reword). Evidence comes from the
 render, never from a list: a persona shows every non-empty slot it renders, an instanced entity every id. Nothing
-outside the sandbox is written, and only the fake model's port can be reached."""
+outside the sandbox is written, and only the fake model's port can be reached. A probe that declares `reply` gets a
+turn answered instead of a 400, so the hooks of a turn fire; a config module's sight (hooks) expects every `command`
+its rows render, shown by an exec trace one probe writes and another reads."""
 
 import json
 import os
@@ -24,7 +26,7 @@ from e_taxis.transpile.engine.plan import STRUCTURED
 from e_taxis.transpile.models.error import TranspileError
 from e_taxis.transpile.models.placement import Placement
 from e_taxis.transpile.models.trial import TrialReport, TrialRun, TrialSight
-from e_taxis.transpile.transforms.claudecode import reaches
+from e_taxis.transpile.transforms.backends import reaches
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -36,6 +38,7 @@ if TYPE_CHECKING:
 
 ##### DEFAULTS #####
 CAPTURE: str = "capture"
+COMMAND: str = "command"
 PERSONA: str = "persona"
 PROFILE: str = "ghost"
 TURN: str = "1"
@@ -147,17 +150,44 @@ class TrialService:
     def _run_fold(text: str) -> str:
         return " ".join(text.split())
 
-    @staticmethod
-    def _run_expected(tree: NousTree, spec: Mapping[str, Any], projection: Projection, entity: str) -> tuple[str, ...]:
-        """What an entity must show: every non-empty persona text it renders, or every id of its instances that reach
-        this harness (an instance naming its `domains` reaches only theirs)."""
+    @classmethod
+    def _run_commands(cls, node: object) -> Iterator[str]:
+        """Every string held under a `command` key, at any depth."""
+        match node:
+            case dict():
+                yield from (
+                    text
+                    for key, value in node.items()
+                    for text in ([value] if key == COMMAND and isinstance(value, str) else cls._run_commands(value))
+                )
+            case list():
+                yield from (text for value in node for text in cls._run_commands(value))
+            case _:
+                return
+
+    @classmethod
+    def _run_expected(
+        cls, tree: NousTree, spec: Mapping[str, Any], projection: Projection, entity: str
+    ) -> tuple[str, ...]:
+        """What an entity must show: every non-empty persona text it renders, every `command` a config module's rows
+        render, or every id of its instances that reach this harness (an instance naming its `domains` reaches only
+        theirs)."""
+        placements = [placement for found in projection.placements.values() for placement in found]
         match entity:
             case "persona":
                 return tuple(
                     text
-                    for placements in projection.placements.values()
                     for placement in placements
                     if placement.section == PERSONA and (text := str(placement.value).strip())
+                )
+            case module if module in tree.config.get(spec["harness"], {}):
+                return tuple(
+                    dict.fromkeys(
+                        command
+                        for placement in placements
+                        if any(source.partition(".")[0] == module for source in placement.sources)
+                        for command in cls._run_commands(placement.value)
+                    )
                 )
             case _:
                 instances = tree.entities.get(entity, {}) if entity in spec["map"] else {}
@@ -180,6 +210,7 @@ class TrialService:
     ) -> tuple[TrialRun, str]:
         """One probe fenced, and the text it showed: the captured requests, or its stdout."""
         capture.clear()
+        capture.answer(probe.get("reply"))
         argv = [self._run_bind(arg, bindings) for arg in probe["argv"]]
         limit = float(probe.get("timeout") or TIMEOUT)
         ports = [capture.port, int(bindings["port"])]
@@ -206,6 +237,7 @@ class TrialService:
                         argv, env=env, cwd=Path(bindings["home"]), writable=[root], ports=ports, limit=limit
                     )
                     await self._run_settle(capture, float(probe.get("wait") or 0))
+                    await anyio.sleep(float(probe.get("linger") or 0))
         shown = (
             "\n".join(self._run_text(body.decode(errors="replace")) for body in capture.bodies())
             if probe["kind"] == CAPTURE

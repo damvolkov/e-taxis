@@ -53,6 +53,43 @@ targets:
       add: "claude mcp add-json --scope user {name} {json}"
       remove: "claude mcp remove --scope user {name}"
 
+native:
+  tools:                                # house tool (Permission's vocabulary) → Claude Code tools: agents' denied and hook matchers read it
+    read: [Read]
+    glob: [Glob]
+    grep: [Grep]
+    bash: [Bash]
+    edit: [Edit, Write, NotebookEdit]
+    task: [Agent]
+    todowrite: [TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate]
+    webfetch: [WebFetch]
+    websearch: [WebSearch]
+    lsp: [LSP]
+    question: [AskUserQuestion]
+    skill: [Skill]
+  hooks:                                # house event → Claude Code event (hooks.md, read 2026-10-28 on 2.1.312); tools: its matchers are house tools
+    session_start:      {event: SessionStart}
+    session_end:        {event: SessionEnd}
+    prompt_submit:      {event: UserPromptSubmit}
+    turn_end:           {event: Stop}
+    turn_fail:          {event: StopFailure}
+    tool_before:        {event: PreToolUse, tools: true}
+    tool_after:         {event: PostToolUse, tools: true}
+    tool_fail:          {event: PostToolUseFailure, tools: true}
+    tool_batch:         {event: PostToolBatch}
+    permission_request: {event: PermissionRequest, tools: true}
+    permission_deny:    {event: PermissionDenied, tools: true}
+    agent_start:        {event: SubagentStart}
+    agent_end:          {event: SubagentStop}
+    compact_before:     {event: PreCompact}
+    compact_after:      {event: PostCompact}
+    instructions_load:  {event: InstructionsLoaded}
+    notify:             {event: Notification}
+    config_change:      {event: ConfigChange}
+    cwd_change:         {event: CwdChanged}
+    file_change:        {event: FileChanged}
+                                        # model_before: Claude Code has no hook before each model call — a hook that reaches it refuses the render
+
 map:
 
   persona:
@@ -119,12 +156,7 @@ map:
       - from: permission
         to: "#fm.disallowedTools"
         via:
-          denied:
-            tools: {read: [Read], glob: [Glob], grep: [Grep], bash: [Bash],
-                    edit: [Edit, Write, NotebookEdit], task: [Agent],
-                    todowrite: [TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate],
-                    webfetch: [WebFetch], websearch: [WebSearch], lsp: [LSP],
-                    question: [AskUserQuestion], skill: [Skill]}
+          denied: {tools: native.tools}
       - {from: prompt,         to: "#body", required: true}
     unmapped:
       persona:           {reason: house, detail: "narrative identity of the role; it does not travel"}
@@ -220,7 +252,7 @@ map:
       settings.json is owned whole: outputStyle, statusLine or any key Claude
       writes on a UI action is drift until the core models it. settings.local.json
       is outside the governed tree and stays Claude's. Hooks: command type only
-      (exit 2 blocks). MCP user scope lives in ~/.claude.json: delivered through
+      (exit 2 blocks), rendered from the house vocabulary through native.hooks. MCP user scope lives in ~/.claude.json: delivered through
       the registry, never by writing the file; settings.json admits no
       mcpServers.
 
@@ -231,7 +263,7 @@ transforms:
   claude_hooks:
     consumes: [hooks]
     binds: [out]
-    returns: "settings.json#hooks — {event: [{matcher?, hooks: [{type: command, command: shlex.join(run)}]}]}: one entry per event × matcher, no matcher key when the event admits none; {out} bound"
+    returns: "settings.json#hooks — {native.hooks[event].event: [{matcher?, hooks: [{type: command, command: shlex.join(run)}]}]}: events in core order, one entry per hook reaching claudecode (backends absent = all); matchers joined by '|', a tool event's house tools first translated through native.tools; no matcher key when the hook has none; an event native.hooks lacks, or a house tool native.tools lacks, refuses the render; {out} bound"
   claude_plugins:
     consumes: [plugins.claudecode]
     returns: "settings.json#enabledPlugins — {'plugin@marketplace': true} in order"
@@ -265,9 +297,15 @@ trial:
       text: '{"migrationVersion": 14, "opusProMigrationComplete": true, "sonnet1m45MigrationComplete": true, "hasCompletedOnboarding": true}'
   probes:
     - {name: session, kind: capture, argv: [claude, -p, ghost, --max-turns, "1"]}
+    - name: turn                        # a whole turn, answered: one Bash call, then text — every hook of a session runs, traced
+      kind: capture
+      reply: {tool: Bash, input: {command: "true", description: ghost}}
+      argv: [strace, -f, -qq, -e, trace=execve, -s, "4096", -o, "${home}/exec.log", claude, -p, ghost, --max-turns, "3", --dangerously-skip-permissions]
+    - {name: trace, kind: command, argv: [cat, "${home}/exec.log"]}
   sees:
     persona: [session]                  # CLAUDE.md verbatim in `system`
     skill: [session]                    # the Skill tool lists every skill
     agent: [session]                    # the Agent tool lists every subagent
+    hooks: [trace]                      # every rendered hook command was exec'd during the answered turn
     workflow: [session]                 # every saved workflow is offered to the session as /<id>
   notes: "The session fails with 400 on purpose: the request already arrived, and it is what is read. Verified 2026-10-06 on 2.1.291 under the Landlock fence: 31/31 skills, 11/11 agents."

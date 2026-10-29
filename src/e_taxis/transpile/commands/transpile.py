@@ -17,7 +17,7 @@ from rich.table import Table
 from e_taxis.harness.runtime.deps import Inject
 from e_taxis.harness.runtime.locator import UNSET, Nous
 from e_taxis.transpile.adapters.nous import GitNous
-from e_taxis.transpile.models.error import CheckError, TrialError
+from e_taxis.transpile.models.error import CheckError, DriftError, TrialError
 from e_taxis.transpile.models.ports import CapturePort
 from e_taxis.transpile.models.report import Report
 from e_taxis.transpile.services.check import CheckService
@@ -98,6 +98,7 @@ async def run(
     ref: str = "HEAD",
     worktree: bool = False,
     yes: bool = False,
+    check: bool = False,
     json: bool = False,
     runner: Inject[RunService],
     lander: Inject[LandService],
@@ -113,6 +114,7 @@ async def run(
         ref: the git ref core and specs are read at, together.
         worktree: read the checkout as it stands, uncommitted changes included.
         yes: land the plan, through the undo journal. Without it, nothing is written.
+        check: a plan with any finding fails (exit 32): the live tree apart from the render, for cron and CI.
         json: the projection summary or the plan's report as JSON.
     """
     source = GitNous(nous, None if worktree else ref)
@@ -149,6 +151,12 @@ async def run(
                         if not yes
                         else f"landed {target} under {where} · `taxis history undo` reverts it"
                     )
+            match (check and not yes, len(report.findings)):
+                case (True, found) if found:
+                    msg = f"{found} finding(s): {target} under {where} is apart from the render"
+                    raise DriftError(msg)
+                case _:
+                    pass
 
 
 async def trial(

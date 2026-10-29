@@ -3,11 +3,12 @@
 //
 // Reads the hook's JSON on stdin (cwd, stop_hook_active), finds the project root (git top level, else cwd) and,
 // only when <root>/.plans/ exists, holds every plan to the law:
-//   name      TODO_<word>.md · TODO_<word>_FINISHED.md · TODO_<word>_CANCELLED.md, <word> one word
+//   name      TODO_<word>.md · TODO_<word>_FINISHED.md · TODO_<word>_CANCELLED.md · TODO_<word>_TRANSFERRED.md
 //   shape     title · ---- · PROGRESS: <STATE> · ---- · 1. <step> … · ---- · breakdown
-//   state     ACTIVE | BLOCKED on a bare name, FINISHED / CANCELLED on the matching suffix
+//   state     ACTIVE | BLOCKED on a bare name, FINISHED / CANCELLED / TRANSFERRED on the matching suffix — TRANSFERRED:
+//             what was left moved whole into another plan
 //   strikes   FINISHED ⇒ every step ~~struck~~; every step struck ⇒ FINISHED
-//   changelog FINISHED / CANCELLED ⇒ <root>/CHANGELOG.md names TODO_<word>
+//   changelog FINISHED / CANCELLED / TRANSFERRED ⇒ <root>/CHANGELOG.md names TODO_<word>
 // As a Claude Code Stop hook (run directly): a violation exits 2 with the list on stderr, so the turn stays open until
 // the plan is true; on a stop the check itself already re-opened (stop_hook_active), it lets go — a law that loops is
 // worse than one late. As a module, `audit(top)` returns the same list: the OpenCode plugin (plugins/plans.js) uses it.
@@ -17,15 +18,15 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const NAME = /^TODO_([A-Za-z0-9]+)(?:_(FINISHED|CANCELLED))?\.md$/;
+const NAME = /^TODO_([A-Za-z0-9]+)(?:_(FINISHED|CANCELLED|TRANSFERRED))?\.md$/;
 const RULE = /^-{3,}\s*$/m;
-const STATE = /^PROGRESS:\s*(ACTIVE|BLOCKED|FINISHED|CANCELLED)\s*$/m;
+const STATE = /^PROGRESS:\s*(ACTIVE|BLOCKED|FINISHED|CANCELLED|TRANSFERRED)\s*$/m;
 const STEP = /^\s*\d+\.\s+(.*\S)\s*$/gm;
 const OPEN = new Set(["ACTIVE", "BLOCKED"]);
 
 const check = (dir, file, changelog) => {
   const name = NAME.exec(file);
-  if (!name) return [`${file}: not TODO_<word>.md, TODO_<word>_FINISHED.md or TODO_<word>_CANCELLED.md`];
+  if (!name) return [`${file}: not TODO_<word>.md or TODO_<word>_FINISHED|CANCELLED|TRANSFERRED.md`];
   const [, word, suffix] = name;
   const parts = readFileSync(join(dir, file), "utf8").split(RULE);
   if (parts.length < 4) return [`${file}: needs title, ----, PROGRESS, ----, the numbered steps, ----, the breakdown`];
@@ -34,7 +35,7 @@ const check = (dir, file, changelog) => {
   const struck = steps.filter((s) => s.startsWith("~~") && s.endsWith("~~")).length;
   const ended = suffix ?? "";
   return [
-    !state && `${file}: no PROGRESS line (ACTIVE, BLOCKED, FINISHED or CANCELLED) between the first two rules`,
+    !state && `${file}: no PROGRESS line (ACTIVE, BLOCKED, FINISHED, CANCELLED or TRANSFERRED) between the first two rules`,
     steps.length === 0 && `${file}: no numbered steps between the second and third rules`,
     state && !ended && !OPEN.has(state) && `${file}: PROGRESS is ${state} — rename it TODO_${word}_${state}.md`,
     state && ended && state !== ended && `${file}: name says ${ended}, PROGRESS says ${state}`,

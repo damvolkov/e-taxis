@@ -31,6 +31,7 @@ sources:
   - {url: "https://opencode.ai/docs/mcp-servers/", kind: html, covers: [config]}
   - {url: "https://opencode.ai/docs/providers/", kind: html, covers: [config]}
   - {url: "https://opencode.ai/docs/plugins/", kind: html, covers: [config]}
+  - {url: "https://opencode.ai/v2/docs/build/plugins/server/", kind: html, covers: [config], note: "v2 server plugin API: the hooks, events and domains native.hooks realizes"}
   - {url: "https://opencode.ai/config.json", kind: json, covers: [config], note: "the config schema: a new root key = a new surface"}
 
 targets:
@@ -44,10 +45,42 @@ targets:
   package.json:         {format: json}
   mcp/playwright.json:  {format: file}
   hooks/plans.mjs:      {format: file}                                  # the one plans check, shared with Claude Code
-  plugins/plans.js:     {format: file}                                  # the plans law as a v2 plugin (session.idle → prompt)
+  hooks/hooks.json:     {format: json}                                  # the house hooks realized for OpenCode: data plugins/hooks.js reads
+  plugins/hooks.js:     {format: file}                                  # the generic v2 runtime of hooks/hooks.json (Claude's stdin, exit 2)
   plugins/autolearn.js: {format: file}                                  # autolearn's v2 shell (upstream autolearn-v2.js, pinned in stack.yaml)
   plugins/autolearn-core.mjs: {format: file}                            # its core — Claude Code's autolearn hook imports the same file
   mcp/codegraph.md:     {format: file}                                  # codebase-memory's guide, loaded through #instructions (OpenCode only)
+
+native:
+  tools:                                # house tool (Permission's vocabulary) → OpenCode 2.2.0 tools, as a live request lists them (sandbox, 2026-10-28)
+    read: [read]
+    glob: [glob]
+    grep: [grep]
+    bash: [shell]
+    edit: [edit, write]
+    task: [subagent]
+    webfetch: [webfetch]
+    websearch: [websearch]
+    question: [question]
+    skill: [skill]
+                                        # todowrite, lsp: no 2.2.0 tool — a hook matcher naming them refuses the render
+  hooks:                                # house event → what plugins/hooks.js registers (server plugin API v2; each row proven in the sandbox on 2.2.0, 2026-10-28)
+    #   domain   event (ctx.event stream: the payload is event.data) · tool · session · permission (ctx.<domain>.hook(name))
+    #   when     payload fields that must equal (null = absent) · effect: what exit 2 does — reopen (ctx.session.prompt
+    #            with stderr; the next turn_end carries stop_hook_active) · throw (stderr as the error: call or prompt
+    #            refused) · refuse (permission effect deny, stderr as the reason) · none
+    #   matchers the house values the realization satisfies whole ([] = it admits none) · tools: matchers are house
+    #            tools (native.tools) · neither: the harness filters on the house values itself
+    session_start:      {domain: event, name: session.created, when: {parentID: null}, matchers: [startup], effect: none}
+    prompt_submit:      {domain: session, name: prompt, effect: throw, matchers: []}
+    turn_end:           {domain: event, name: session.execution.succeeded, effect: reopen, matchers: []}
+    turn_fail:          {domain: event, name: session.execution.failed, effect: none, matchers: []}
+    model_before:       {domain: session, name: context, effect: none, matchers: []}
+    tool_before:        {domain: tool, name: execute.before, effect: throw, tools: true}
+    tool_after:         {domain: tool, name: execute.after, when: {status: completed}, effect: none, tools: true}
+    tool_fail:          {domain: tool, name: execute.after, when: {status: error}, effect: none, tools: true}
+    permission_request: {domain: permission, name: evaluate, effect: refuse, tools: true}
+                                        # every other event has no 2.2.0 moment proven: a hook that reaches OpenCode with it refuses the render
 
 map:
 
@@ -170,11 +203,12 @@ map:
       - {from: models,               to: "#provider", via: providers_tree}
       - {from: plugins.tui,          to: "tui.json#plugin"}
       - {from: plugins.sdk,          to: "package.json#dependencies", via: npm_dependency}
+      - {from: hooks,                to: "hooks/hooks.json#hooks", via: opencode_hooks}
     assets:
       - {from: mcp/playwright.json, to: mcp/playwright.json}
       - {from: mcp/codegraph.md,    to: mcp/codegraph.md}
       - {from: hooks/plans.mjs,     to: hooks/plans.mjs}
-      - {from: hooks/plans-opencode.js, to: plugins/plans.js}
+      - {from: plugins/hooks.js,          to: plugins/hooks.js}
       - {from: plugins/autolearn.js,      to: plugins/autolearn.js}
       - {from: plugins/autolearn-core.mjs, to: plugins/autolearn-core.mjs}
     unmapped:
@@ -182,7 +216,6 @@ map:
       main.effort:               {reason: pending, detail: "no global effort key known; per-model reasoning rides in the tier options (thinking budget) — confirm a global equivalent in the config schema"}
       main.display:              {reason: pending, detail: "Claude's fullscreen TUI; no equivalent key checked in tui.json"}
       telemetry:                 {reason: pending, detail: "OpenCode's OpenTelemetry surface not checked against the config schema"}
-      hooks:                     {reason: absent, detail: "an OpenCode hook is a JS/TS plugin: code, not data — no deterministic projection from argv hooks (docs/plugins, checked 2026-10-02); the plans law ships as its own plugin asset instead (plugins/plans.js, 2026-10-27)"}
       plugins.claudecode:        {reason: house, detail: "Claude Code marketplace plugins"}
       models.providers.*.openai_url: {reason: internal, detail: "the OpenAI-compatible twin tools without an Anthropic client use (SkillSpector)"}
       models.tiers.*.note:       {reason: internal, detail: "cost documentation"}
@@ -216,6 +249,10 @@ transforms:
   npm_dependency:
     consumes: [plugins.sdk]
     returns: "package.json#dependencies — 'package@version' → {package: version}, split at the last @"
+  opencode_hooks:
+    consumes: [hooks]
+    binds: [out]
+    returns: "hooks/hooks.json#hooks — one binding per hook reaching opencode (backends absent = all), events in core order: {event, domain, name, when, effect, matchers, command: shlex.join(run)} from native.hooks[event]; a tool event's house matchers become native.tools names, any other matchers must lie within the row's `matchers` and are dropped; an event native.hooks lacks, or a matcher it cannot honour, refuses the render; {out} bound"
   mcp_opencode:
     consumes: [mcp.servers.*.command, mcp.servers.*.url, mcp.servers.*.env, mcp.servers.*.headers, mcp.servers.*.backends]
     binds: [out]
@@ -254,11 +291,20 @@ trial:
     - {name: session,  kind: capture, serve: [opencode, serve, --hostname, 127.0.0.1, --port, "${port}"], ready: [opencode, api, --server, "http://127.0.0.1:${port}", agent.list], argv: [opencode, run, --server, "http://127.0.0.1:${port}", --model, ghost/x, ghost]}
     - {name: agents,   kind: command, serve: [opencode, serve, --hostname, 127.0.0.1, --port, "${port}"], ready: [opencode, api, --server, "http://127.0.0.1:${port}", agent.list], argv: [opencode, api, --server, "http://127.0.0.1:${port}", agent.list]}
     - {name: commands, kind: command, serve: [opencode, serve, --hostname, 127.0.0.1, --port, "${port}"], ready: [opencode, api, --server, "http://127.0.0.1:${port}", agent.list], argv: [opencode, api, --server, "http://127.0.0.1:${port}", command.list]}
+    - name: turn                        # a whole turn, answered: one shell call, then text — the server runs plugins/hooks.js, traced
+      kind: capture
+      reply: {tool: shell, input: {command: "true", description: ghost}}
+      serve: [strace, -f, -qq, -e, trace=execve, -s, "4096", -o, "${home}/exec.log", opencode, serve, --hostname, 127.0.0.1, --port, "${port}"]
+      ready: [opencode, api, --server, "http://127.0.0.1:${port}", agent.list]
+      argv: [opencode, run, --server, "http://127.0.0.1:${port}", --model, ghost/x, ghost]
+      linger: 5                         # turn_end fires on session.execution.succeeded, after `run` has its answer
+    - {name: trace, kind: command, argv: [cat, "${home}/exec.log"]}
     - {name: workflows, kind: command, argv: [ls, "${tree}/workflows"]}   # no native type: /workflow reads these files
   sees:
     persona: [session]                  # AGENTS.md in the system message
     skill: [session]
     agent: [agents]                     # primary agents never reach the prompt: the server's agent list holds them all
     command: [commands]
+    hooks: [trace]                      # every binding of hooks/hooks.json was exec'd by plugins/hooks.js during the turn
     workflow: [workflows]
   notes: "OpenCode 2.x (pinned v2.2.0, stack.yaml): `run`/`api` always talk to an HTTP server, and a standalone one binds a random port the fence will not allow — so every probe serves `opencode serve` on the declared ${port} (password-protected in 2.x: OPENCODE_SERVER_PASSWORD / OPENCODE_PASSWORD) and connects with --server. `serve` reads no OPENCODE_CONFIG_CONTENT: the overlay bends the sandbox copy of opencode.jsonc instead — a v2 `providers` ghost answered by the fake, no plugins, no MCP (offline they hold the session). OPENCODE_DISABLE_MODELS_FETCH: the models catalog fetch would wait on the fence and leave the server 503. `run --model ghost/x`: the built-in build agent's own model would win over `model`. The session fails with 400 on purpose (a 500 is retried with backoff). Skills are seen in the session, agents and commands in the server's agent.list / command.list. Proven 3/3 on v2.2.0, 2026-10-28 (taxis transpile trial); the 1.x trial (--pure, debug skill) is history."
