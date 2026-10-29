@@ -46,3 +46,35 @@ soa-assess), hidden from `--help`: only the graph calls them. `taxis distill` le
 human types, not the plumbing.
 **Rejected.** One top-level group per workflow (the help grows with every workflow); a single generic `step` command
 for all logic (the node's behaviour must be a typed command of its own to be tested).
+
+## 2026-10-29 — soa-compare ranks on one fixed rubric, over the terms measured for every subject
+
+**Decision.** `CompareRank` weighs rust 0.25, recency 0.15, cadence 0.10, dependents 0.15, downloads 0.15, scorecard
+0.10, licence 0.10; a rival earns a bench only when it beats its incumbent by 0.05; stars break ties and never score.
+A contest totals only the terms measured for all its subjects. `rust` is true when Rust, C or C++ hold ≥ 20 % of the
+repository's bytes by GitHub `/languages`.
+**Evidence.** 2026-10-29 run: GitHub's anonymous limit (60/h) left one subject without dependents and stars, and the
+old total read the gap as 0 — a rate limit decided the verdict. On common terms msgspec kept against orjson (0.8146
+vs 0.8497 is inside the margin) and wreq against pyreqwest, both on 6 of 7 terms. Bindings are mostly Python bytes:
+msgspec 40 % C, orjson 44 % Rust; a pure package holds 0 %, so the old > 50 % cut called both pure.
+**Rejected.** An LLM ranking the rivals (non-deterministic, unauditable); imputing a missing KPI (a guess presented as
+a measure); stars as a term (popularity, not maintenance — the house order says maintained over popular).
+
+## 2026-10-29 — `query` fills missing kwargs through a small local model, scout tier as fallback
+
+**Decision.** Every workflow takes `query`; when kwargs are missing, `WorkflowKwargs` asks the local vLLM
+(OpenAI-compatible, strict `json_schema` structured output) for them, then the scout tier if the local endpoint fails,
+and binds the answer through the same typed checks as explicit kwargs. Recorded in the ledger as node `kwargs`.
+**Evidence.** The schema comes from the workflow's own params, so the output is validated, never trusted; explicit
+kwargs always win; the default tier is the local Gemma 4 26B-A4B, so a query-only run costs no cloud call.
+**Rejected.** Regex parsing of the query (brittle beyond `k=v`); the harness's main model (cost and latency for a
+deterministic-shaped extraction); no fallback (a stopped GPU stack would break every query-only run).
+
+## 2026-10-29 — `claude -p` runs without the background wait ceiling
+
+**Decision.** The Claude harness launches with `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0`; taxis's own harness limit
+bounds the run.
+**Evidence.** soa-compare through Claude stopped after exactly 10 idle minutes with its workflow still running and its
+result dropped; with the ceiling off the same run finished `ok 4 · skip 7`.
+**Rejected.** Shorter workflows to fit the ceiling (the bench legitimately runs longer); polling from taxis (a second
+wait loop beside the one claude already has).
