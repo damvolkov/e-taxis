@@ -3,8 +3,9 @@
 Every subject gets terms in [0, 1], weighted: `rust` the compiled hot path the house prefers (0.25); `recency` the
 last release, 1 today down to 0 a year old (0.15); `cadence` releases a year, 12 or more counting full (0.10);
 `dependents` and `downloads`, log-scaled to 10⁴ dependents and 10⁷ downloads a month (0.15 each); `scorecard` the
-OpenSSF score over 10 (0.10); `licence` 1 when permissive (0.10). A KPI no source gave scores 0 and is named in
-`unmeasured`: an unknown is never a strength. Stars never score — they break a tie between rivals, nothing more.
+OpenSSF score over 10 (0.10); `licence` 1 when permissive (0.10). A KPI no source gave is named in `unmeasured`, and
+a contest is scored on the terms measured for every subject in it: an unknown is never a strength, nor a weakness of
+the one subject a rate limit happened to hit. Stars never score — they break a tie between rivals, nothing more.
 
 Per incumbent the best rival is kept when its total beats the incumbent's by `margin`; the others, and an incumbent
 with no rival worth a bench, are kept by the rubric — `keep`, with the reason."""
@@ -69,29 +70,39 @@ class CompareRank:
             "licence": (1.0 if health.license in PERMISSIVE else 0.0) if health.license else None,
         }
 
-    def _score(self, vital: Vital) -> Score:
+    def _score(self, vital: Vital, common: frozenset[str]) -> Score:
+        """The subject's weighted terms, totalled over `common` — the terms measured for every subject it meets."""
         terms = self._score_terms(vital)
         weighted = {name: round(self._weights[name] * (term or 0.0), 4) for name, term in terms.items()}
         return Score(
             name=vital.name,
-            total=round(sum(weighted.values()), 4),
+            total=round(sum(value for name, value in weighted.items() if name in common), 4),
             terms=weighted,
             unmeasured=tuple(name for name, term in terms.items() if term is None),
             stars=vital.stars,
         )
 
-    def _contest(self, rivalry: Rivalry, scores: Mapping[str, Score]) -> Contest:
-        """One incumbent against its rivals: the best one, by total then stars, if it clears the margin."""
-        incumbent = scores[rivalry.incumbent.name]
+    def _contest(self, rivalry: Rivalry, vitals: Mapping[str, Vital]) -> Contest:
+        """One incumbent against its rivals on their common measured terms: the best rival, by total then stars, if
+        it clears the margin."""
+        subjects = [vitals[rivalry.incumbent.name], *(vitals[rival.name] for rival in rivalry.rivals)]
+        common = frozenset.intersection(
+            *(
+                frozenset(name for name, term in self._score_terms(vital).items() if term is not None)
+                for vital in subjects
+            )
+        )
+        incumbent = self._score(subjects[0], common)
         ranked = sorted(
-            (scores[rival.name] for rival in rivalry.rivals),
+            (self._score(vital, common) for vital in subjects[1:]),
             key=lambda score: (score.total, score.stars or 0),
             reverse=True,
         )
         best = ranked[0] if ranked else None
         wins = best is not None and best.total > incumbent.total + self._margin
+        basis = f"on {len(common)} of {len(self._weights)} terms measured for all"
         reason = (
-            f"{best.name} scores {best.total} against {incumbent.total} (margin {self._margin})"
+            f"{best.name} scores {best.total} against {incumbent.total} {basis} (margin {self._margin})"
             if best
             else "no rival named"
         )
@@ -109,9 +120,9 @@ class CompareRank:
 
     def rank(self, rivals: Rivals, healths: Healths) -> Shortlist:
         """Every contest; a contest's `rival` empty is an incumbent kept without a bench."""
-        scores = {vital.name: self._score(vital) for vital in healths.subjects}
+        vitals = {vital.name: vital for vital in healths.subjects}
         return Shortlist(
             weights=dict(self._weights),
             margin=self._margin,
-            contests=tuple(self._contest(rivalry, scores) for rivalry in rivals.incumbents),
+            contests=tuple(self._contest(rivalry, vitals) for rivalry in rivals.incumbents),
         )

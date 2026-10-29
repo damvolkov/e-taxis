@@ -47,3 +47,20 @@ async def test_rank_keeps_an_incumbent_no_rival_beats(rivals: Rivals, vital: Cal
     )
     contest = CompareRank(NOW).rank(rivals, healths).contests[0]
     assert (contest.rival, contest.reason.startswith("kept by the rubric: orjson scores")) == ("", True)
+
+
+async def test_rank_scores_a_contest_on_the_terms_measured_for_all(rivals: Rivals, vital: Callable[..., Vital]) -> None:
+    healths = Healths(
+        measured_at="x",
+        subjects=(
+            vital("msgspec", rust=True, downloads_month=10**7, **FRESH),
+            vital("orjson", rust=True, **FRESH),
+            vital("pydantic-core", rust=True, downloads_month=10**7, **FRESH),
+            vital("wreq"),
+        ),
+    )
+    contest = CompareRank(NOW).rank(rivals, healths).contests[0]
+    incumbent = contest.scores[0]
+    assert incumbent.terms["downloads"] == 0.15
+    assert "on 4 of 7 terms measured for all" in contest.reason
+    assert incumbent.total == round(sum(value for name, value in incumbent.terms.items() if name != "downloads"), 4)
