@@ -1,4 +1,4 @@
-"""tests/unit/e_taxis/workflow/assess/store: artifacts under soa/ as models; agent answers read back or refused."""
+"""tests/unit/e_taxis/workflow/assess/store: artifacts under radar/ as models; agent answers read back or refused."""
 
 from typing import TYPE_CHECKING
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 async def test_store_round_trips_an_artifact(tmp_path: Path) -> None:
     store = AssessStore(tmp_path)
     path = await store.put("candidate", Candidate(tech="t", name="n"))
-    assert path == tmp_path / "soa" / "candidate.json"
+    assert path == tmp_path / "radar" / "candidate.json"
     assert (await store.get("candidate", Candidate)).name == "n"
     assert store.rundir == tmp_path
 

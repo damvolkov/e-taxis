@@ -224,7 +224,7 @@ map:
       permissions.external_dirs: {reason: pending, detail: "permission.external_directory is a flat allow inside granular; whether it accepts per-path patterns is not checked"}
       security:                  {reason: internal, detail: "scanner acceptances, never rendered"}
       schedules:                 {reason: internal, detail: "unattended runs: taxis schedule renders them into systemd timers, never the harness"}
-      soa:                       {reason: internal, detail: "soa-sweep's frame, read by taxis workflow soa-sweep, never the harness"}
+      radar:                       {reason: internal, detail: "radar-field's frame, read by taxis workflow radar-field, never the harness"}
       workflows:                 {reason: internal, detail: "the workflows' kwargs ontology and families, expanded by taxis at load"}
       mcp.servers.*.note:        {reason: pending, detail: "no description field known in an OpenCode MCP entry"}
       mcp.servers.*.smoke:       {reason: internal, detail: "evaluation data (taxis eval run config)"}

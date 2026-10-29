@@ -1,7 +1,7 @@
-"""commands.assess: `taxis workflow soa-assess <step>` — soa-assess's deterministic steps, one command per node.
+"""commands.assess: `taxis workflow radar-tech <step>` — radar-tech's deterministic steps, one command per node.
 
-The workflow (`core/tekton/workflows/soa-assess/`) calls these as its `run` nodes with `--rundir {{rundir}}`; each
-reads its parents' typed artifacts from `<rundir>/soa/` and writes its own. The agent steps between them (upstream,
+The workflow (`core/tekton/workflows/radar-tech/`) calls these as its `run` nodes with `--rundir {{rundir}}`; each
+reads its parents' typed artifacts from `<rundir>/radar/` and writes its own. The agent steps between them (upstream,
 weigh, verdict, adversary) answer in JSON blocks, read back through their models; which steps those are is read from
 the workflow's own output ports (`Plan`, `Verdict`, `Review`), never from an id written here — and the workflow is
 found where every command finds the brain (`--nous`, else the locator's ladder: a step runs in the checkout)."""
@@ -41,15 +41,15 @@ from e_taxis.workflow.models.error import AssessError
 from e_taxis.workflow.models.ports import ApiPort
 
 ##### DEFAULTS #####
-SOA: str = "core/tekton/config/soa.yaml"
+RADAR: str = "core/tekton/config/radar.yaml"
 SCHEMAS: str = "schemas"
 SKIP: frozenset[str] = frozenset({"false", "no", "0", "off"})
 
 
 ##### UTILITIES #####
 async def topics_of(nous: Path) -> dict[str, tuple[str, ...]]:
-    """soa.yaml's topics, each with its keyword phrases."""
-    path = anyio.Path(nous / SOA)
+    """radar.yaml's topics, each with its keyword phrases."""
+    path = anyio.Path(nous / RADAR)
     found: Any = eserde.loads(await path.read_text(), format=eserde.Format.YAML) if await path.is_file() else {}
     return {
         name: tuple(map(str, (spec or {}).get("keywords") or ())) for name, spec in (found.get("topics") or {}).items()
@@ -85,10 +85,10 @@ async def intake(
     """Resolve the technology: a URL to its repository and package, a name to its registry entry.
 
     Args:
-        nous: the e-nous checkout (its soa.yaml names the topics).
+        nous: the e-nous checkout (its radar.yaml names the topics).
         rundir: the run's folder.
         tech: a repository URL, a registry URL or a bare package name.
-        topic: a soa.yaml topic; empty = none.
+        topic: a radar.yaml topic; empty = none.
     """
     found = await AssessIntake(api, await topics_of(nous)).resolve(tech, topic)
     path = await AssessStore(rundir).put("candidate", found)
@@ -176,7 +176,7 @@ async def stats(*, nous: Nous = UNSET, rundir: Path, settings: Inject[TaxisSetti
 async def report(
     *, nous: Nous = UNSET, rundir: Path, settings: Inject[TaxisSettings], console: Inject[Console]
 ) -> None:
-    """Write soa/report.md and soa/assess.json: the verdict as it stood after the adversary; index it for soa-sweep.
+    """Write radar/report.md and radar/assess.json: the verdict as it stood after the adversary; index it for radar-field.
 
     Args:
         nous: the e-nous checkout (its workflow names the steps that answered).
@@ -200,14 +200,14 @@ async def report(
     ### never <rundir>/report.md: the engine writes its own run report there when the run ends.
     await anyio.Path(rundir / FOLDER / "report.md").write_text(text)
     await store.put("assess", built)
-    index = await reporter.record(Path(await anyio.Path(settings.taxis_soa_state).expanduser()), built)
+    index = await reporter.record(Path(await anyio.Path(settings.taxis_radar_state).expanduser()), built)
     console.out(f"{text}\nindexed: {index}", highlight=False)
 
 
 async def schemas(
     *, nous: Nous = UNSET, check: bool = False, settings: Inject[TaxisSettings], console: Inject[Console]
 ) -> None:
-    """Write the JSON Schema of every soa-assess port into the workflow's `schemas/`; --check only compares.
+    """Write the JSON Schema of every radar-tech port into the workflow's `schemas/`; --check only compares.
 
     Args:
         nous: the e-nous checkout.
@@ -228,7 +228,7 @@ async def schemas(
             console.out(f"schemas: {len(PORTS)} in sync in {folder}", highlight=False)
         case (True, _):
             msg = (
-                f"stale schemas in {folder}: {', '.join(stale)} — run `taxis workflow soa-assess schemas --nous {nous}`"
+                f"stale schemas in {folder}: {', '.join(stale)} — run `taxis workflow radar-tech schemas --nous {nous}`"
             )
             raise AssessError(msg)
         case _:

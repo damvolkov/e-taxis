@@ -1,6 +1,6 @@
-"""compare.health: every incumbent's and every rival's health — soa-assess's measure, plus where the hot path runs.
+"""compare.health: every incumbent's and every rival's health — radar-tech's measure, plus where the hot path runs.
 
-Each subject is measured as soa-assess measures a candidate (`AssessHealth`, the same KPIs from the same no-auth
+Each subject is measured as radar-tech measures a candidate (`AssessHealth`, the same KPIs from the same no-auth
 sources). On top: `rust`, true when Rust, C or C++ hold a fifth or more of the subject's repository's bytes by
 GitHub's own `/languages` count — a compiled extension, the house's preferred hot path; and the repository's stars, a tie-breaker
 for the rank and nothing more. A subject without a repository has neither; the basis says why."""

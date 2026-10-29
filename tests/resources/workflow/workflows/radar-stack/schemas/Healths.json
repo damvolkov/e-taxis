@@ -23,7 +23,7 @@
     },
     "Vital": {
       "title": "Vital",
-      "description": "One subject's health (soa-assess's KPIs), its stars, and whether its hot path is Rust or C/C++ — `basis`\nsays, reading by reading, how that was decided.",
+      "description": "One subject's health (radar-tech's KPIs), its stars, and whether its hot path is Rust or C/C++ — `basis`\nsays, reading by reading, how that was decided.",
       "type": "object",
       "properties": {
         "name": {

@@ -40,7 +40,7 @@ class AgentMode(StrEnum):
 
 class ParamType(StrEnum):
     """A parameter's shape; every value still reaches a step as text (`{{name}}`). `project` is a path that, left empty,
-    is the git root of the directory the run was launched from; `topic` a key of soa.yaml's topics."""
+    is the git root of the directory the run was launched from; `topic` a key of radar.yaml's topics."""
 
     STR = "str"
     BOOL = "bool"

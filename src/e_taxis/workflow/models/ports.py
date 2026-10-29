@@ -1,6 +1,6 @@
 """models.ports: what the workflow engine asks of the world — run a command, drive an agent, keep a ledger, run a step;
 and for the planes, a git sandbox, a scanner, the evaluator's ledgers, a house tier's endpoint, a bare completion,
-a coder under measurement, and a node over one subject; for soa-sweep, the open web.
+a coder under measurement, and a node over one subject; for radar-field, the open web.
 
 The context is part of the contract: a run's resources (manifest, paths, ledger) are fixed when it starts; the
 evidence lives only in the ledger, append-only and typed. A step reads upstream evidence through its context."""

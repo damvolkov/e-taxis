@@ -15,7 +15,7 @@ from e_taxis.adapters.downloader import FAILURES, REDIRECTS
 from e_taxis.workflow.models.assess import Fetched
 
 ##### DEFAULTS #####
-AGENT: str = "e-taxis (soa-assess)"
+AGENT: str = "e-taxis (radar-tech)"
 GITHUB: str = "https://api.github.com/"
 ACCEPT: Final[dict[str, str]] = {"User-Agent": AGENT, "Accept": "application/json"}
 

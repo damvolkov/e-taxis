@@ -65,10 +65,10 @@ class TaxisSettings(BaseSettings):
     _EFFECT_SEEDS the answers per task and arm, _EFFECT_SPLIT the held-out split the A/B reads.
 
     TAXIS_SCHEDULE_UNITS is the systemd user units dir `taxis schedule` renders its `taxis-<id>` timers into.
-    TAXIS_SOA_STATE is soa-sweep's state, its seen ledger (`ledger.json`) — never config, never the checkout.
-    soa-assess (`taxis workflow soa-assess`): TAXIS_ASSESS_WORKFLOW is the workflow whose ports name the agents'
-    answers, _TIMEOUT bounds one public-API request (seconds), _LIMIT one fenced process of the bench; TAXIS_SOA_STATE
-    is the soa state dir (the `assessed.json` index soa-sweep's fit reads); TAXIS_COMPARE_WORKFLOW the workflow whose ports name soa-compare's agent answers; GH_TOKEN, when set, authenticates the
+    TAXIS_RADAR_STATE is radar-field's state, its seen ledger (`ledger.json`) — never config, never the checkout.
+    radar-tech (`taxis workflow radar-tech`): TAXIS_ASSESS_WORKFLOW is the workflow whose ports name the agents'
+    answers, _TIMEOUT bounds one public-API request (seconds), _LIMIT one fenced process of the bench; TAXIS_RADAR_STATE
+    is the radar state dir (the `assessed.json` index radar-field's fit reads); TAXIS_COMPARE_WORKFLOW the workflow whose ports name radar-stack's agent answers; GH_TOKEN, when set, authenticates the
     GitHub API (unset: 60 requests an hour).
 
     TAXIS_HUMAN is the mandate a terminal-started `taxis` hands its children (a human command run by a workflow step
@@ -101,11 +101,11 @@ class TaxisSettings(BaseSettings):
     taxis_distill_cache: Path = Path("~/.cache/reverse-distill")
     taxis_distill_scope: tuple[str, ...] = ("core", "specs/tekton")
     taxis_distill_candidates: int = 12
-    taxis_assess_workflow: str = "soa-assess"
+    taxis_assess_workflow: str = "radar-tech"
     taxis_assess_timeout: float = 20.0
     taxis_assess_limit: float = 900.0
-    taxis_soa_state: Path = Path("~/.local/state/e-taxis/soa")
-    taxis_compare_workflow: str = "soa-compare"
+    taxis_radar_state: Path = Path("~/.local/state/e-taxis/radar")
+    taxis_compare_workflow: str = "radar-stack"
     gh_token: SecretStr | None = None
     taxis_eval_backend: str = "opencode"
     taxis_eval_concurrency: int = 4

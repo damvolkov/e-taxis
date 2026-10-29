@@ -78,3 +78,15 @@ bounds the run.
 result dropped; with the ceiling off the same run finished `ok 4 · skip 7`.
 **Rejected.** Shorter workflows to fit the ceiling (the bench legitimately runs longer); polling from taxis (a second
 wait loop beside the one claude already has).
+
+## 2026-10-29 — The research workflows are `radar-field`, `radar-tech`, `radar-stack`
+
+**Decision.** soa-sweep, soa-assess and soa-compare become radar-field, radar-tech and radar-stack; one `/radar
+<field|tech|stack>` command replaces /soa, /assess and /compare. The config is `radar.yaml`, the family `radar`, run
+artifacts live under `radar/`, the state under `TAXIS_RADAR_STATE`. The Python modules keep their verbs
+(`sweep`, `assess`, `compare`): they name what the code does, not the product.
+**Evidence.** Damien could not tell the three apart by name, and the family is widening past agents (GEO). The root
+traces to the Technology Radar, whose rings (adopt, trial, assess, hold) are this family's verdicts; the second
+word reads the scope broad to narrow.
+**Rejected.** horizon- (horizon scanning fits the field survey only, not the two that look at what we run); recon-
+(memorable, no vocabulary behind it); a three-word id (the scope fits one word).

@@ -207,9 +207,9 @@ config:
     security:
       fields:
         accepted:     {type: "map<skill, list<{fingerprint: str, file: path, why: str}>>", default: {}, doc: "scanner acceptances: internal, never rendered"}
-    soa:
+    radar:
       fields:
-        brief:        {type: str, required: true, doc: "the plane soa-sweep watches"}
+        brief:        {type: str, required: true, doc: "the plane radar-field watches"}
         window:       {type: int, required: true, doc: "calendar days back from today"}
         topics:       {type: "map<str, {keywords: list<str>}>", required: true}
         authors:      {type: "map<str, {name: str, url: url, kind: enum[atom_feed, linkedin_profile, web], topics: list<str>}>", default: {}}

@@ -23,7 +23,7 @@ async def test_api_get_keeps_body_and_link(messages) -> None:
         path,
         {k.lower(): v for k, v in headers.items()}.get("user-agent"),
         "authorization" in map(str.lower, headers),
-    ) == ("/search?q=1", "e-taxis (soa-assess)", False)
+    ) == ("/search?q=1", "e-taxis (radar-tech)", False)
 
 
 async def test_api_get_a_dead_endpoint_is_status_zero() -> None:

@@ -31,13 +31,13 @@ def worlds(tmp_path: Path, tree) -> tuple[Path, Path, Path, Path]:
         },
     )
     tree(live, {"plugins/installed_plugins.json": '{"tracekit@market": {}}', "projects/history.jsonl": "Phoenix"})
-    run = reports / "workflows" / "soa-sweep" / "now"
+    run = reports / "workflows" / "radar-field" / "now"
     tree(
         reports,
         {
-            "workflows/soa-sweep/past/soa/report.json": '{"findings": [{"title": "Spanline"}]}',
-            "workflows/soa-assess/old/report.md": "# Assessed: Headlong\n",
-            "workflows/soa-sweep/now/report.md": "Phoenix Arize everything",
+            "workflows/radar-field/past/radar/report.json": '{"findings": [{"title": "Spanline"}]}',
+            "workflows/radar-tech/old/report.md": "# Assessed: Headlong\n",
+            "workflows/radar-field/now/report.md": "Phoenix Arize everything",
             "workflows/reverse-distill/r/report.md": "Arize",
         },
     )
@@ -64,12 +64,12 @@ def worlds(tmp_path: Path, tree) -> tuple[Path, Path, Path, Path]:
         (
             {"title": "Spanline"},
             FindingStatus.CONSIDERED,
-            "spanline — {reports}/workflows/soa-sweep/past/soa/report.json",
+            "spanline — {reports}/workflows/radar-field/past/radar/report.json",
         ),
         (
             {"title": "Headlong"},
             FindingStatus.CONSIDERED,
-            "headlong — {reports}/workflows/soa-assess/old/report.md",
+            "headlong — {reports}/workflows/radar-tech/old/report.md",
         ),
         ({"title": "Headlong harness", "entities": ("Headlong",)}, FindingStatus.NEW, ""),
         ({"title": "Phoenix"}, FindingStatus.NEW, ""),

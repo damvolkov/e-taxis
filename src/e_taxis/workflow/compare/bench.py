@@ -1,4 +1,4 @@
-"""compare.bench: every shortlisted pair benched the way soa-assess benches one candidate — one fenced sandbox per arm.
+"""compare.bench: every shortlisted pair benched the way radar-tech benches one candidate — one fenced sandbox per arm.
 
 The pairs run one after another: two installs racing for the same machine would bias both. `skip` (bench=false)
 installs nothing, every pair recorded not measured."""
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class CompareBench:
-    """soa-assess's bench, per pair."""
+    """radar-tech's bench, per pair."""
 
     __slots__ = ("_bench",)
 

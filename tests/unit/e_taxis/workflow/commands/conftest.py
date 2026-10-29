@@ -1,6 +1,6 @@
 """tests/unit/e_taxis/workflow/commands: checkouts in the state a promotion meets — an enhancement with a patch, and the
-same with HEAD moved past its base; and soa-assess's world for `taxis` — the recorded API and the stand-in lab in
-place of the real ones, a soa.yaml in the checkout, the soa state dir and the live trees under the test's temp dir."""
+same with HEAD moved past its base; and radar-tech's world for `taxis` — the recorded API and the stand-in lab in
+place of the real ones, a radar.yaml in the checkout, the radar state dir and the live trees under the test's temp dir."""
 
 import shutil
 from types import MappingProxyType
@@ -51,7 +51,7 @@ async def moved(enhanced: Path, tree, commit: Callable[..., Awaitable[str]]) -> 
 def assess_world(
     monkeypatch: pytest.MonkeyPatch, api: Api, lab: Lab, nous: Path, resources: Resources, tmp_path: Path
 ) -> Path:
-    """Every `taxis` run reads the recorded API and benches through the stand-in lab; returns the soa state dir."""
+    """Every `taxis` run reads the recorded API and benches through the stand-in lab; returns the radar state dir."""
 
     async def apis(deps: Deps) -> Api:
         return api
@@ -61,10 +61,10 @@ def assess_world(
 
     monkeypatch.setattr(Deps, "PROVIDERS", MappingProxyType({**Deps.PROVIDERS, ApiPort: apis, LabPort: labs}))
     shutil.copy(
-        resources.path / "assess" / "nous" / "core" / "tekton" / "config" / "soa.yaml",
+        resources.path / "assess" / "nous" / "core" / "tekton" / "config" / "radar.yaml",
         nous / "core" / "tekton" / "config",
     )
-    monkeypatch.setenv("TAXIS_SOA_STATE", str(tmp_path / "state"))
+    monkeypatch.setenv("TAXIS_RADAR_STATE", str(tmp_path / "state"))
     monkeypatch.setenv("TAXIS_WORKFLOW_OPENCODE", str(resources.path / "assess" / "trees" / "opencode"))
     monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(resources.path / "assess" / "trees" / "claude"))
     return tmp_path / "state"

@@ -4,9 +4,9 @@ the real git repos reverse-distill reads (a project with a feature branch, the t
 `nous` is the transpiler's mini checkout (copied per test) with its `converge` replaced by the workflows under
 `tests/resources/workflow/workflows`: `demo` (every kind of step), `looped` (a bounded loop) and `broken` (an unknown
 agent). Commands run for real (bash, git); agents never do — `FakeAgent` answers, `FakeFence` decides the canary.
-soa-sweep never leaves the machine: `FakeWeb` serves the recorded pages under `tests/resources/sweep`.
+radar-field never leaves the machine: `FakeWeb` serves the recorded pages under `tests/resources/sweep`.
 
-soa-assess: `RecordedApi` answers every URL of `tests/resources/assess/http/index.json` with the body recorded there
+radar-tech: `RecordedApi` answers every URL of `tests/resources/assess/http/index.json` with the body recorded there
 (trimmed to the fields read; GitHub's numeric repository ids in `Link` replaced by `x/y`) and a 404 for every other —
 the contract `WreqApi` keeps: it never raises; `outage` turns chosen URLs into transport failures (status 0).
 `FakeLab` runs for real through the stand-in landrun, its canary saying what `holds` says."""
@@ -913,9 +913,9 @@ class FakeWeb:
 
 
 @pytest.fixture
-def soa_nous(resources: Resources, nous: Path) -> Path:
-    """The mini checkout with a soa.yaml: two topics, a LinkedIn voice for all of them, a feed for memory only."""
-    shutil.copy(resources.path / "sweep" / "soa.yaml", nous / "core" / "tekton" / "config" / "soa.yaml")
+def radar_nous(resources: Resources, nous: Path) -> Path:
+    """The mini checkout with a radar.yaml: two topics, a LinkedIn voice for all of them, a feed for memory only."""
+    shutil.copy(resources.path / "sweep" / "radar.yaml", nous / "core" / "tekton" / "config" / "radar.yaml")
     return nous
 
 
@@ -992,7 +992,7 @@ def web_deps(monkeypatch: pytest.MonkeyPatch, web: FakeWeb) -> FakeWeb:
     return web
 
 
-##### SOA-ASSESS #####
+##### RADAR-ASSESS #####
 NOW = dt.datetime(2026, 10, 28, 15, 0, tzinfo=dt.UTC)
 MISSING = b'{"message": "Not Found"}'
 

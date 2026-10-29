@@ -1,10 +1,10 @@
-id: soa-assess
+id: radar-tech
 domains: [tekton]
 description: The agents named only by the models their ports write — weigh-it, judge and attack here.
 parameters:
   tech: {doc: "the technology"}
 nodes:
-  - {id: intake, run: "taxis workflow soa-assess intake --rundir {{rundir}} --tech {{tech}}"}
+  - {id: intake, run: "taxis workflow radar-tech intake --rundir {{rundir}} --tech {{tech}}"}
   - {id: weigh-it, depends: [intake], actor: builder, readonly: true, instruction: "plan", outputs: [{name: plan, model: Plan}]}
   - {id: judge, depends: [weigh-it], actor: builder, readonly: true, instruction: "judge", outputs: [{name: verdict, model: Verdict}]}
   - {id: attack, depends: [judge], actor: builder, readonly: true, instruction: "attack", outputs: [{name: review, model: Review}]}

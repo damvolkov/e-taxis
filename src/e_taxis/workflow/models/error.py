@@ -102,18 +102,18 @@ class ProviderError(PlaneError):
 
 
 class SweepError(DistillError):
-    """A soa-sweep step that cannot go on: an unknown topic, a page that does not answer, no webhook to deliver to."""
+    """A radar-field step that cannot go on: an unknown topic, a page that does not answer, no webhook to deliver to."""
 
 
 class AssessError(WorkflowError):
-    """A soa-assess step that cannot go on: nothing resolvable, a missing or malformed artifact, a fence that does not
+    """A radar-tech step that cannot go on: nothing resolvable, a missing or malformed artifact, a fence that does not
     hold."""
 
     exit_code: ClassVar[int] = 34
 
 
 class CompareError(WorkflowError):
-    """A soa-compare step that cannot go on: no repository or an empty stack, a topic soa.yaml does not hold, a
+    """A radar-stack step that cannot go on: no repository or an empty stack, a topic radar.yaml does not hold, a
     missing or malformed artifact."""
 
     exit_code: ClassVar[int] = 35

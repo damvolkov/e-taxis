@@ -25,9 +25,9 @@ typo fails the gate, never a user.
     taxis workflow list [--nous PATH] · check [ID ...] [--nous PATH]
     taxis workflow step NODE --workflow W --rundir DIR [--nous PATH] [name=value ...] · put NODE --workflow W --rundir DIR --file F
     taxis workflow reverse-distill guard|intake|index|scan|drift|inventory|grade|report|ship|schemas [--nous PATH] --rundir DIR …
-    taxis workflow soa-sweep frame|ledger|fetch|ground|fit|report|deliver|schemas [--nous PATH] --rundir DIR …
-    taxis workflow soa-assess intake|inventory|health|bench|stats|report|schemas [--nous PATH] --rundir DIR …
-    taxis workflow soa-compare intake|health|rank|bench|stats|report|schemas [--nous PATH] --rundir DIR …
+    taxis workflow radar-field frame|ledger|fetch|ground|fit|report|deliver|schemas [--nous PATH] --rundir DIR …
+    taxis workflow radar-tech intake|inventory|health|bench|stats|report|schemas [--nous PATH] --rundir DIR …
+    taxis workflow radar-stack intake|health|rank|bench|stats|report|schemas [--nous PATH] --rundir DIR …
     taxis eval run TARGET [IDS ...] [--nous PATH] [--cadence C] [--candidate RUN]   # the evaluator, read-only
     taxis eval graph [TARGET] · eval needs TARGET [--nous PATH] [--run R] [--owner O]
     taxis enhance run TARGET [IDS ...] [--nous PATH] (--from R | --directive D | --manual) [--cadence C]
@@ -61,18 +61,18 @@ GROUPS: tuple[CommandGroup, ...] = (
         path="workflow", help="Corpus workflows: graphs of command and agent steps, run from an e-nous checkout."
     ),
     CommandGroup(
-        path="workflow soa-assess",
-        help="soa-assess's deterministic steps, one per workflow node: --rundir, --nous.",
+        path="workflow radar-tech",
+        help="radar-tech's deterministic steps, one per workflow node: --rundir, --nous.",
         show=False,
     ),
     CommandGroup(
-        path="workflow soa-compare",
-        help="soa-compare's deterministic steps, one per workflow node: --rundir, --nous.",
+        path="workflow radar-stack",
+        help="radar-stack's deterministic steps, one per workflow node: --rundir, --nous.",
         show=False,
     ),
     CommandGroup(
-        path="workflow soa-sweep",
-        help="soa-sweep's deterministic steps, one per workflow node: --nous, --rundir.",
+        path="workflow radar-field",
+        help="radar-field's deterministic steps, one per workflow node: --nous, --rundir.",
         show=False,
     ),
     CommandGroup(
@@ -166,114 +166,114 @@ CARDS: tuple[CommandCard, ...] = (
         summary="Hold workflows to their static law; writes nothing.",
     ),
     CommandCard(
-        path="workflow soa-compare intake",
+        path="workflow radar-stack intake",
         target="e_taxis.workflow.commands.compare:intake",
         summary="Read the repository's declared stack and imports.",
     ),
     CommandCard(
-        path="workflow soa-compare health",
+        path="workflow radar-stack health",
         target="e_taxis.workflow.commands.compare:health",
         summary="Health and hot-path language of every subject.",
     ),
     CommandCard(
-        path="workflow soa-compare rank",
+        path="workflow radar-stack rank",
         target="e_taxis.workflow.commands.compare:rank",
         summary="Score on one rubric; shortlist the rivals that win.",
     ),
     CommandCard(
-        path="workflow soa-compare bench",
+        path="workflow radar-stack bench",
         target="e_taxis.workflow.commands.compare:bench",
         summary="Bench every shortlisted pair, fenced.",
     ),
     CommandCard(
-        path="workflow soa-compare stats",
+        path="workflow radar-stack stats",
         target="e_taxis.workflow.commands.compare:stats",
         summary="Every pair's interval against its threshold.",
     ),
     CommandCard(
-        path="workflow soa-compare report",
+        path="workflow radar-stack report",
         target="e_taxis.workflow.commands.compare:report",
         summary="Write report.md and compare.json; index the verdicts.",
     ),
     CommandCard(
-        path="workflow soa-compare schemas",
+        path="workflow radar-stack schemas",
         target="e_taxis.workflow.commands.compare:schemas",
-        summary="Write (or --check) every soa-compare port's JSON Schema.",
+        summary="Write (or --check) every radar-stack port's JSON Schema.",
     ),
     CommandCard(
-        path="workflow soa-assess intake",
+        path="workflow radar-tech intake",
         target="e_taxis.workflow.commands.assess:intake",
         summary="Resolve a technology to its repository and package.",
     ),
     CommandCard(
-        path="workflow soa-assess inventory",
+        path="workflow radar-tech inventory",
         target="e_taxis.workflow.commands.assess:inventory",
         summary="What lives here in the candidate's domain, no model.",
     ),
     CommandCard(
-        path="workflow soa-assess health",
+        path="workflow radar-tech health",
         target="e_taxis.workflow.commands.assess:health",
         summary="Dated health KPIs from no-auth sources.",
     ),
     CommandCard(
-        path="workflow soa-assess bench",
+        path="workflow radar-tech bench",
         target="e_taxis.workflow.commands.assess:bench",
         summary="Install every arm fenced; run the plan interleaved.",
     ),
     CommandCard(
-        path="workflow soa-assess stats",
+        path="workflow radar-tech stats",
         target="e_taxis.workflow.commands.assess:stats",
         summary="The paired bootstrap interval against the threshold.",
     ),
     CommandCard(
-        path="workflow soa-assess report",
+        path="workflow radar-tech report",
         target="e_taxis.workflow.commands.assess:report",
         summary="Write report.md and assess.json; index the verdict.",
     ),
     CommandCard(
-        path="workflow soa-assess schemas",
+        path="workflow radar-tech schemas",
         target="e_taxis.workflow.commands.assess:schemas",
-        summary="Write (or --check) every soa-assess port's JSON Schema.",
+        summary="Write (or --check) every radar-tech port's JSON Schema.",
     ),
     CommandCard(
-        path="workflow soa-sweep frame",
+        path="workflow radar-field frame",
         target="e_taxis.workflow.commands.sweep:frame",
-        summary="Fix the frame from soa.yaml; an unknown topic fails here.",
+        summary="Fix the frame from radar.yaml; an unknown topic fails here.",
     ),
     CommandCard(
-        path="workflow soa-sweep ledger",
+        path="workflow radar-field ledger",
         target="e_taxis.workflow.commands.sweep:ledger",
         summary="The seen ledger, for the frame's voices.",
     ),
     CommandCard(
-        path="workflow soa-sweep fetch",
+        path="workflow radar-field fetch",
         target="e_taxis.workflow.commands.sweep:fetch",
         summary="Every voice and entry page inside the window.",
     ),
     CommandCard(
-        path="workflow soa-sweep ground",
+        path="workflow radar-field ground",
         target="e_taxis.workflow.commands.sweep:ground",
         summary="Merge the findings; keep what a fetched page holds.",
     ),
     CommandCard(
-        path="workflow soa-sweep fit",
+        path="workflow radar-field fit",
         target="e_taxis.workflow.commands.sweep:fit",
         summary="Mark each finding have, considered or new.",
     ),
     CommandCard(
-        path="workflow soa-sweep report",
+        path="workflow radar-field report",
         target="e_taxis.workflow.commands.sweep:report",
         summary="Write report.md and report.json; record the ledger.",
     ),
     CommandCard(
-        path="workflow soa-sweep deliver",
+        path="workflow radar-field deliver",
         target="e_taxis.workflow.commands.sweep:deliver",
         summary="Post the summary and report.md to Discord.",
     ),
     CommandCard(
-        path="workflow soa-sweep schemas",
+        path="workflow radar-field schemas",
         target="e_taxis.workflow.commands.sweep:schemas",
-        summary="Write (or --check) every soa-sweep port's JSON Schema.",
+        summary="Write (or --check) every radar-field port's JSON Schema.",
     ),
     CommandCard(
         path="workflow reverse-distill guard",

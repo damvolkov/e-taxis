@@ -1,10 +1,10 @@
-"""sweep.frame: what a sweep looks at — soa.yaml's plane narrowed to a topic, the window as dates, the voices first.
+"""sweep.frame: what a sweep looks at — radar.yaml's plane narrowed to a topic, the window as dates, the voices first.
 
 A topic narrows the plane to its keywords and to the voices and links that speak to it (their `topics` name it,
 or `*`); no topic is the whole plane, every topic's keywords. The window counts calendar days back from `today`,
 both ends inclusive. A run's extra voices are URLs: the kind is read off the URL alone — a LinkedIn `/in/` profile,
 a feed path (`/feed`, `/atom`, `/rss`, `.xml`, `.atom`, `.rss`), else the page itself — and the id is the URL
-without its scheme. A voice or link already in soa.yaml is not added twice. An unknown topic stops the run here."""
+without its scheme. A voice or link already in radar.yaml is not added twice. An unknown topic stops the run here."""
 
 import datetime as dt
 import re
@@ -15,13 +15,13 @@ import eserde
 import msgspec
 
 from e_taxis.workflow.models.error import SweepError
-from e_taxis.workflow.models.sweep import Frame, SoaConfig, Voice, VoiceKind
+from e_taxis.workflow.models.sweep import Frame, RadarConfig, Voice, VoiceKind
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 ##### DEFAULTS #####
-SOA: str = "core/tekton/config/soa.yaml"
+RADAR: str = "core/tekton/config/radar.yaml"
 ALL: str = "*"
 KINDS: Final[tuple[tuple[re.Pattern[str], VoiceKind], ...]] = (
     (re.compile(r"linkedin\.com/in/[^/]+/?$"), VoiceKind.LINKEDIN_PROFILE),
@@ -31,11 +31,11 @@ KINDS: Final[tuple[tuple[re.Pattern[str], VoiceKind], ...]] = (
 
 ##### TYPES #####
 class SweepFrame:
-    """One soa.yaml, fixed into frames."""
+    """One radar.yaml, fixed into frames."""
 
     __slots__ = ("_config",)
 
-    def __init__(self, config: SoaConfig) -> None:
+    def __init__(self, config: RadarConfig) -> None:
         self._config = config
 
     ##### PRIVATE METHODS #####
@@ -62,7 +62,7 @@ class SweepFrame:
     def _fix_keywords(self, topic: str) -> tuple[str, ...]:
         match self._config.topics.get(topic):
             case None if topic:
-                msg = f"unknown topic {topic!r}: soa.yaml knows {', '.join(self._config.topics)}"
+                msg = f"unknown topic {topic!r}: radar.yaml knows {', '.join(self._config.topics)}"
                 raise SweepError(msg)
             case None:
                 return tuple(dict.fromkeys(word for found in self._config.topics.values() for word in found.keywords))
@@ -75,20 +75,20 @@ class SweepFrame:
 
     @classmethod
     async def load(cls, nous: Path) -> Self:
-        """The checkout's soa.yaml, read through its model."""
+        """The checkout's radar.yaml, read through its model."""
         try:
-            text = await anyio.Path(nous / SOA).read_text()
+            text = await anyio.Path(nous / RADAR).read_text()
         except FileNotFoundError as missing:
-            msg = f"no soa.yaml at {nous / SOA}"
+            msg = f"no radar.yaml at {nous / RADAR}"
             raise SweepError(msg) from missing
         try:
-            return cls(msgspec.convert(eserde.loads(text, format=eserde.Format.YAML), SoaConfig))
+            return cls(msgspec.convert(eserde.loads(text, format=eserde.Format.YAML), RadarConfig))
         except (eserde.LoadError, msgspec.ValidationError) as bad:
-            msg = f"soa.yaml does not fit its schema: {bad}"
+            msg = f"radar.yaml does not fit its schema: {bad}"
             raise SweepError(msg) from bad
 
     @property
-    def config(self) -> SoaConfig:
+    def config(self) -> RadarConfig:
         return self._config
 
     def fix(self, *, today: dt.date, topic: str = "", window: str = "", authors: str = "", links: str = "") -> Frame:

@@ -21,8 +21,8 @@ GitNous (the checkout as it stands) ─▶ WorkflowReader (typed Workflow, stati
 | `workflow/adapters` | adapters | `ShellCommand` (argv, stdout to a file, live stderr, timeout), `JsonlLedger`, `FlockLock`, `ModeAgent` → `OpencodeAgent` · `ClaudeAgent` (headless, fenced when read-only); for the measures (§9) `HouseProvider`, `AnthropicRunner`, `OpencodeCoder` · `ClaudeCoder` |
 | `workflow/services` | services | `WorkflowStep` (the one node kind), `WorkflowRun` (end to end) |
 | `workflow/distill` | services | reverse-distill: `DistillScope`, `DistillGraph`, `DistillDrift`, `DistillInventory`, `VersionMatrix`, `DistillGrade`, `DistillReport`, `DistillStore` |
-| `workflow/assess` | services | soa-assess: `AssessIntake`, `AssessInventory`, `AssessHealth`, `AssessBench`, `AssessStats`, `AssessReport`, `AssessStore` |
-| `workflow/commands` | cli | `taxis workflow …`, `taxis workflow reverse-distill …`, `taxis workflow soa-sweep …`, `taxis workflow soa-assess …` |
+| `workflow/assess` | services | radar-tech: `AssessIntake`, `AssessInventory`, `AssessHealth`, `AssessBench`, `AssessStats`, `AssessReport`, `AssessStore` |
+| `workflow/commands` | cli | `taxis workflow …`, `taxis workflow reverse-distill …`, `taxis workflow radar-field …`, `taxis workflow radar-tech …` |
 
 The workflow is read through the transpiler's own `GitNous` (worktree), so `{source: nodes/<id>.yaml}` envelopes
 resolve in one place. Where things live is what `core/schema.yaml` says: the workflow folder is its entity path,

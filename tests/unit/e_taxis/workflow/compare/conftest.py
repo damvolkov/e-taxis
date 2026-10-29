@@ -1,4 +1,4 @@
-"""tests/unit/e_taxis/workflow/compare: the sample repository soa-compare reads, and the typed artifacts its steps pass."""
+"""tests/unit/e_taxis/workflow/compare: the sample repository radar-stack reads, and the typed artifacts its steps pass."""
 
 from typing import TYPE_CHECKING, Any
 

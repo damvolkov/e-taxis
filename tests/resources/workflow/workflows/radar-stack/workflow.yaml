@@ -1,10 +1,10 @@
-id: soa-compare
+id: radar-stack
 domains: [tekton]
 description: The agents named only by the models their ports write — hunt, plan-it, judge and attack here.
 parameters:
   project: {doc: "the repository"}
 nodes:
-  - {id: intake, run: "taxis workflow soa-compare intake --rundir {{rundir}} --project {{project}}"}
+  - {id: intake, run: "taxis workflow radar-stack intake --rundir {{rundir}} --project {{project}}"}
   - {id: hunt, depends: [intake], actor: builder, readonly: true, instruction: "rivals", outputs: [{name: rivals, model: Rivals}]}
   - {id: plan-it, depends: [hunt], actor: builder, readonly: true, instruction: "plans", outputs: [{name: plans, model: Plans}]}
   - {id: judge, depends: [plan-it], actor: builder, readonly: true, instruction: "judge", outputs: [{name: verdicts, model: Verdicts}]}

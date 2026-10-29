@@ -114,7 +114,7 @@ LINKS: Final[Mapping[Registry, Callable[[Any], list[str]]]] = MappingProxyType(
 
 ##### TYPES #####
 class AssessIntake:
-    """The technology resolved over public APIs (ApiPort); `topics` are the soa.yaml topics a `--topic` may name."""
+    """The technology resolved over public APIs (ApiPort); `topics` are the radar.yaml topics a `--topic` may name."""
 
     __slots__ = ("_api", "_topics")
 
@@ -233,7 +233,7 @@ class AssessIntake:
             case True:
                 return topic
             case _:
-                msg = f"topic {topic!r} is not in soa.yaml: {', '.join(sorted(self._topics)) or 'none declared'}"
+                msg = f"topic {topic!r} is not in radar.yaml: {', '.join(sorted(self._topics)) or 'none declared'}"
                 raise AssessError(msg)
 
     ############################################################

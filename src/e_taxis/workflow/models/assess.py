@@ -1,4 +1,4 @@
-"""models.assess: soa-assess's data — one technology weighed against what we already run, measured, judged.
+"""models.assess: radar-tech's data — one technology weighed against what we already run, measured, judged.
 
 **The chain.** `Candidate` (intake: what the technology resolves to) → `Inventory` (what lives here in its domain) →
 `Upstream` (the scout: what its own sources claim) → `Health` (dated KPIs from no-auth sources) → `Plan` (the
@@ -302,7 +302,7 @@ class Report(msgspec.Struct, frozen=True, kw_only=True):
 
 
 class Assessed(msgspec.Struct, frozen=True, kw_only=True):
-    """One row of the state's index (`assessed.json`, name → row): where soa-sweep's fit finds a past assessment."""
+    """One row of the state's index (`assessed.json`, name → row): where radar-field's fit finds a past assessment."""
 
     verdict: Ring
     date: str
@@ -325,7 +325,7 @@ class Fetched(msgspec.Struct, frozen=True, kw_only=True):
 
 
 ##### THE PORTS #####
-### Every artifact passed between soa-assess's steps, by the model name its ports declare: one JSON Schema each.
+### Every artifact passed between radar-tech's steps, by the model name its ports declare: one JSON Schema each.
 PORTS: Final[Mapping[str, object]] = MappingProxyType(
     {
         "Candidate": Candidate,
