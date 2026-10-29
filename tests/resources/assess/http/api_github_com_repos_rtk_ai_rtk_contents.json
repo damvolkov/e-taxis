@@ -1,0 +1,166 @@
+[
+ {
+  "name": ".cargo",
+  "type": "dir"
+ },
+ {
+  "name": ".claude",
+  "type": "dir"
+ },
+ {
+  "name": ".git-blame-ignore-revs",
+  "type": "file"
+ },
+ {
+  "name": ".gitattributes",
+  "type": "file"
+ },
+ {
+  "name": ".github",
+  "type": "dir"
+ },
+ {
+  "name": ".gitignore",
+  "type": "file"
+ },
+ {
+  "name": ".release-please-manifest.json",
+  "type": "file"
+ },
+ {
+  "name": ".rtk",
+  "type": "dir"
+ },
+ {
+  "name": ".semgrep.yml",
+  "type": "file"
+ },
+ {
+  "name": "CHANGELOG.md",
+  "type": "file"
+ },
+ {
+  "name": "CLAUDE.md",
+  "type": "file"
+ },
+ {
+  "name": "CONTRIBUTING.md",
+  "type": "file"
+ },
+ {
+  "name": "Cargo.lock",
+  "type": "file"
+ },
+ {
+  "name": "Cargo.toml",
+  "type": "file"
+ },
+ {
+  "name": "DISCLAIMER.md",
+  "type": "file"
+ },
+ {
+  "name": "Formula",
+  "type": "dir"
+ },
+ {
+  "name": "INSTALL.md",
+  "type": "file"
+ },
+ {
+  "name": "LICENSE",
+  "type": "file"
+ },
+ {
+  "name": "README.md",
+  "type": "file"
+ },
+ {
+  "name": "README_es.md",
+  "type": "file"
+ },
+ {
+  "name": "README_fr.md",
+  "type": "file"
+ },
+ {
+  "name": "README_ja.md",
+  "type": "file"
+ },
+ {
+  "name": "README_ko.md",
+  "type": "file"
+ },
+ {
+  "name": "README_pt.md",
+  "type": "file"
+ },
+ {
+  "name": "README_zh.md",
+  "type": "file"
+ },
+ {
+  "name": "SECURITY.md",
+  "type": "file"
+ },
+ {
+  "name": "build.rs",
+  "type": "file"
+ },
+ {
+  "name": "docs",
+  "type": "dir"
+ },
+ {
+  "name": "engine",
+  "type": "dir"
+ },
+ {
+  "name": "examples",
+  "type": "dir"
+ },
+ {
+  "name": "hooks",
+  "type": "dir"
+ },
+ {
+  "name": "install.sh",
+  "type": "file"
+ },
+ {
+  "name": "openclaw",
+  "type": "dir"
+ },
+ {
+  "name": "plugin",
+  "type": "dir"
+ },
+ {
+  "name": "proxy",
+  "type": "dir"
+ },
+ {
+  "name": "release-please-config.json",
+  "type": "file"
+ },
+ {
+  "name": "rustfmt.toml",
+  "type": "file"
+ },
+ {
+  "name": "scripts",
+  "type": "dir"
+ },
+ {
+  "name": "src",
+  "type": "dir"
+ },
+ {
+  "name": "tests",
+  "type": "dir"
+ },
+ {
+  "name": "text",
+  "type": "dir"
+ }
+]

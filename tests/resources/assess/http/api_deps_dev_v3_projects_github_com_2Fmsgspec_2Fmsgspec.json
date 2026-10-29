@@ -1,0 +1,11 @@
+{
+ "projectKey": {
+  "id": "github.com/msgspec/msgspec"
+ },
+ "openIssuesCount": 248,
+ "starsCount": 4186,
+ "forksCount": 221,
+ "license": "BSD-3-Clause",
+ "description": "A fast serialization and validation library, with builtin support for JSON, MessagePack, YAML, and TOML",
+ "homepage": "https://msgspec.dev"
+}

@@ -2,7 +2,7 @@
 TAXIS_DOWNLOAD_TIMEOUT, TAXIS_TEMP; and CLAUDE_CONFIG_DIR, Claude Code's own, read so `~/.claude` lands where
 Claude reads it. The workflow branch's knobs are `TAXIS_WORKFLOW_*` (runs, steps, the lock, the live OpenCode tree
 agents are driven from, what a read-only session may write) and `TAXIS_DISTILL_*` (reverse-distill's second core,
-its code graph and caches).
+its code graph and caches). `TAXIS_SCHEDULE_UNITS` is where `taxis schedule` writes its units.
 
 The core settings composer only discovers `core/settings/*`, which is materialized and not e-taxis's to
 edit: this scope stands alone on the same `BaseSettings` layers, and `Deps` builds it once per run."""
@@ -10,7 +10,7 @@ edit: this scope stands alone on the same `BaseSettings` layers, and `Deps` buil
 from importlib.resources import files
 from pathlib import Path
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, SecretStr
 
 from e_taxis.core.settings.base import BaseSettings
 from e_taxis.workflow.models.plane import Cadence
@@ -48,7 +48,7 @@ class TaxisSettings(BaseSettings):
     e-nous checkout a command reads when `--nous` is not given (the ladder's second rung, `runtime.locator`).
 
     TAXIS_WORKFLOW_REPORTS: where runs live, relative to the e-nous checkout; _CONCURRENCY bounds the steps in
-    flight, _TIMEOUT each step (seconds), _LOCK_WAIT how long a run waits for another; _OPENCODE is the live tree
+    flight, _TIMEOUT each step (seconds), _HARNESS_LIMIT a whole run a harness walks (`--harness`), _KWARGS_TIERS the tiers tried in order to read a `query` into kwargs and _KWARGS_LIMIT one such call, _LOCK_WAIT how long a run waits for another; _OPENCODE is the live tree
     agents are driven from (a subagent there is driven from Claude Code's tree, CLAUDE_CONFIG_DIR), _MODEL the model
     OpenCode runs them on (empty: the tree's), _WRITABLE what a read-only session may write.
     TAXIS_DISTILL_BLUEPRINT is the e-arkhetypo checkout read at _REF; _GRAPH the code-graph CLI, _CACHE its
@@ -63,6 +63,13 @@ class TaxisSettings(BaseSettings):
     their answer cap, _RUNNER_TIMEOUT one completion; _SEMANTIC_TIER the tier SkillSpector's LLM stage runs on;
     _PROBE_RUNS the sessions per routing case, _PROBE_CONCURRENCY those in flight, _PROBE_TIMEOUT one session;
     _EFFECT_SEEDS the answers per task and arm, _EFFECT_SPLIT the held-out split the A/B reads.
+
+    TAXIS_SCHEDULE_UNITS is the systemd user units dir `taxis schedule` renders its `taxis-<id>` timers into.
+    TAXIS_SOA_STATE is soa-sweep's state, its seen ledger (`ledger.json`) — never config, never the checkout.
+    soa-assess (`taxis workflow soa-assess`): TAXIS_ASSESS_WORKFLOW is the workflow whose ports name the agents'
+    answers, _TIMEOUT bounds one public-API request (seconds), _LIMIT one fenced process of the bench; TAXIS_SOA_STATE
+    is the soa state dir (the `assessed.json` index soa-sweep's fit reads); TAXIS_COMPARE_WORKFLOW the workflow whose ports name soa-compare's agent answers; GH_TOKEN, when set, authenticates the
+    GitHub API (unset: 60 requests an hour).
 
     TAXIS_HUMAN is the mandate a terminal-started `taxis` hands its children (a human command run by a workflow step
     it started); TAXIS_HEADLESS (or e-nous's OPS_GLOBAL__HEADLESS) marks a session an agent drives —
@@ -80,6 +87,9 @@ class TaxisSettings(BaseSettings):
     taxis_workflow_reports: Path = Path(".reports")
     taxis_workflow_concurrency: int = 4
     taxis_workflow_timeout: float = 1800.0
+    taxis_workflow_harness_limit: float = 7200.0
+    taxis_workflow_kwargs_tiers: tuple[str, ...] = ("local", "scout")
+    taxis_workflow_kwargs_limit: float = 60.0
     taxis_workflow_lock_wait: float = 600.0
     taxis_workflow_opencode: Path = Path("~/.config/opencode")
     taxis_workflow_model: str = ""
@@ -91,6 +101,12 @@ class TaxisSettings(BaseSettings):
     taxis_distill_cache: Path = Path("~/.cache/reverse-distill")
     taxis_distill_scope: tuple[str, ...] = ("core", "specs/tekton")
     taxis_distill_candidates: int = 12
+    taxis_assess_workflow: str = "soa-assess"
+    taxis_assess_timeout: float = 20.0
+    taxis_assess_limit: float = 900.0
+    taxis_soa_state: Path = Path("~/.local/state/e-taxis/soa")
+    taxis_compare_workflow: str = "soa-compare"
+    gh_token: SecretStr | None = None
     taxis_eval_backend: str = "opencode"
     taxis_eval_concurrency: int = 4
     taxis_eval_cadence: Cadence = Cadence.MANUAL
@@ -107,5 +123,6 @@ class TaxisSettings(BaseSettings):
     taxis_eval_probe_timeout: float = 180.0
     taxis_eval_effect_seeds: int = 5
     taxis_eval_effect_split: str = "test"
+    taxis_schedule_units: Path = Path("~/.config/systemd/user")
     taxis_human: bool = False
     taxis_headless: bool = Field(default=False, validation_alias=AliasChoices("TAXIS_HEADLESS", "OPS_GLOBAL__HEADLESS"))

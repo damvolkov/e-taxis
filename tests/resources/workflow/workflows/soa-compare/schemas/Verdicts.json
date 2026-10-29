@@ -1,0 +1,83 @@
+{
+  "$ref": "#/$defs/Verdicts",
+  "$defs": {
+    "Verdicts": {
+      "title": "Verdicts",
+      "description": "verdict: one ruling per shortlisted pair.",
+      "type": "object",
+      "properties": {
+        "verdicts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Ruling"
+          }
+        }
+      },
+      "required": [
+        "verdicts"
+      ],
+      "additionalProperties": false
+    },
+    "Ruling": {
+      "title": "Ruling",
+      "description": "One incumbent judged against its rival: replace, trial or keep, with its evidence and its landing.",
+      "type": "object",
+      "properties": {
+        "incumbent": {
+          "type": "string"
+        },
+        "rival": {
+          "type": "string"
+        },
+        "decision": {
+          "$ref": "#/$defs/Decision"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "landing": {
+          "$ref": "#/$defs/Destination"
+        },
+        "command": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "incumbent",
+        "rival",
+        "decision",
+        "evidence",
+        "landing",
+        "command"
+      ],
+      "additionalProperties": false
+    },
+    "Decision": {
+      "title": "Decision",
+      "description": "replace.md's verdicts, per incumbent.",
+      "enum": [
+        "keep",
+        "replace",
+        "trial"
+      ]
+    },
+    "Destination": {
+      "title": "Destination",
+      "description": "Where the lesson lands, by the Triad — or the repository alone.",
+      "enum": [
+        "e-arkhetypo",
+        "e-nous",
+        "e-taxis",
+        "none",
+        "project"
+      ]
+    }
+  }
+}

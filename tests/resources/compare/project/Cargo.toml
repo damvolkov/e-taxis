@@ -1,0 +1,19 @@
+[package]
+name = "sample"
+version = "0.1.0"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+tokio = "1"
+local = { path = "../local" }
+shared = { workspace = true }
+odd = { features = ["x"] }
+
+[dev-dependencies]
+criterion = "0.5"
+
+[build-dependencies]
+cc = { git = "https://github.com/rust-lang/cc-rs" }
+
+[workspace.dependencies]
+anyhow = "1"

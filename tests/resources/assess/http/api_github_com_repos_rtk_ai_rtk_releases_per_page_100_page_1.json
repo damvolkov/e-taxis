@@ -1,0 +1,702 @@
+[
+ {
+  "tag_name": "v1.1.0",
+  "created_at": "2026-10-25T17:59:53Z",
+  "published_at": "2026-10-25T18:00:11Z",
+  "prerelease": false,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.1.0-rc.574",
+  "created_at": "2026-10-25T12:57:20Z",
+  "published_at": "2026-10-25T13:12:38Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.1.0-rc.573",
+  "created_at": "2026-10-23T16:13:38Z",
+  "published_at": "2026-10-23T16:29:28Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.1.0-rc.571",
+  "created_at": "2026-10-23T13:48:24Z",
+  "published_at": "2026-10-23T14:05:54Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.1.0-rc.570",
+  "created_at": "2026-10-23T13:23:20Z",
+  "published_at": "2026-10-23T13:34:30Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.569",
+  "created_at": "2026-10-23T13:04:40Z",
+  "published_at": "2026-10-23T13:19:48Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.568",
+  "created_at": "2026-10-23T12:46:23Z",
+  "published_at": "2026-10-23T13:02:20Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.567",
+  "created_at": "2026-10-20T23:43:49Z",
+  "published_at": "2026-10-20T23:58:52Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.566",
+  "created_at": "2026-10-20T23:05:28Z",
+  "published_at": "2026-10-20T23:19:27Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.563",
+  "created_at": "2026-10-20T12:36:27Z",
+  "published_at": "2026-10-20T12:52:25Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.562",
+  "created_at": "2026-10-19T23:53:30Z",
+  "published_at": "2026-10-20T00:07:16Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.560",
+  "created_at": "2026-10-19T22:49:53Z",
+  "published_at": "2026-10-19T23:05:17Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.559",
+  "created_at": "2026-10-19T22:13:59Z",
+  "published_at": "2026-10-19T22:29:46Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.558",
+  "created_at": "2026-10-19T16:59:00Z",
+  "published_at": "2026-10-19T17:12:22Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.556",
+  "created_at": "2026-10-19T14:31:11Z",
+  "published_at": "2026-10-19T14:47:50Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.555",
+  "created_at": "2026-10-19T00:22:14Z",
+  "published_at": "2026-10-19T00:38:06Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.554",
+  "created_at": "2026-10-18T23:27:24Z",
+  "published_at": "2026-10-18T23:42:58Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.552",
+  "created_at": "2026-10-17T13:09:23Z",
+  "published_at": "2026-10-17T13:25:08Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.551",
+  "created_at": "2026-10-17T00:26:56Z",
+  "published_at": "2026-10-17T00:42:07Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.550",
+  "created_at": "2026-10-16T19:27:37Z",
+  "published_at": "2026-10-16T19:43:12Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.549",
+  "created_at": "2026-10-15T17:37:26Z",
+  "published_at": "2026-10-15T17:56:44Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "v1.0.1",
+  "created_at": "2026-10-14T13:31:22Z",
+  "published_at": "2026-10-14T13:31:42Z",
+  "prerelease": false,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.548",
+  "created_at": "2026-10-14T23:58:08Z",
+  "published_at": "2026-10-15T00:11:01Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.542",
+  "created_at": "2026-10-14T23:18:16Z",
+  "published_at": "2026-10-14T23:35:33Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.2-rc.540",
+  "created_at": "2026-10-14T22:53:06Z",
+  "published_at": "2026-10-14T23:10:27Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.1-rc.534",
+  "created_at": "2026-10-14T10:38:40Z",
+  "published_at": "2026-10-14T10:54:39Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.1-rc.533",
+  "created_at": "2026-10-14T08:55:50Z",
+  "published_at": "2026-10-14T09:11:40Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "v1.0.0",
+  "created_at": "2026-10-13T19:50:52Z",
+  "published_at": "2026-10-13T19:51:12Z",
+  "prerelease": false,
+  "draft": false
+ },
+ {
+  "tag_name": "v0.52.0",
+  "created_at": "2026-10-13T10:52:49Z",
+  "published_at": "2026-10-13T10:53:37Z",
+  "prerelease": false,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-1.0.0-rc.530",
+  "created_at": "2026-10-13T19:43:06Z",
+  "published_at": "2026-10-13T19:57:59Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.52.0-rc.526",
+  "created_at": "2026-10-13T09:42:42Z",
+  "published_at": "2026-10-13T09:50:12Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.52.0-rc.525",
+  "created_at": "2026-10-12T07:21:45Z",
+  "published_at": "2026-10-12T07:29:04Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.52.0-rc.524",
+  "created_at": "2026-10-11T17:53:49Z",
+  "published_at": "2026-10-11T18:01:42Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.523",
+  "created_at": "2026-10-11T12:24:17Z",
+  "published_at": "2026-10-11T12:31:30Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.522",
+  "created_at": "2026-10-09T23:45:12Z",
+  "published_at": "2026-10-09T23:52:20Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.521",
+  "created_at": "2026-10-09T20:29:46Z",
+  "published_at": "2026-10-09T20:35:49Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.520",
+  "created_at": "2026-10-09T15:42:36Z",
+  "published_at": "2026-10-09T15:50:00Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.519",
+  "created_at": "2026-10-08T18:13:20Z",
+  "published_at": "2026-10-08T18:19:38Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.518",
+  "created_at": "2026-10-08T18:00:50Z",
+  "published_at": "2026-10-08T18:08:14Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.517",
+  "created_at": "2026-10-08T17:45:03Z",
+  "published_at": "2026-10-08T17:51:26Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.516",
+  "created_at": "2026-10-07T16:04:17Z",
+  "published_at": "2026-10-07T16:11:56Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.515",
+  "created_at": "2026-10-07T00:25:47Z",
+  "published_at": "2026-10-07T00:33:12Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.514",
+  "created_at": "2026-10-06T23:49:12Z",
+  "published_at": "2026-10-06T23:56:50Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.513",
+  "created_at": "2026-10-06T23:16:24Z",
+  "published_at": "2026-10-06T23:23:22Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.512",
+  "created_at": "2026-10-06T23:01:45Z",
+  "published_at": "2026-10-06T23:09:17Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.511",
+  "created_at": "2026-10-06T22:45:12Z",
+  "published_at": "2026-10-06T22:52:30Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.510",
+  "created_at": "2026-10-06T22:17:02Z",
+  "published_at": "2026-10-06T22:23:05Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.509",
+  "created_at": "2026-10-06T10:18:28Z",
+  "published_at": "2026-10-06T10:26:04Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.506",
+  "created_at": "2026-10-05T17:30:21Z",
+  "published_at": "2026-10-05T17:38:12Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.505",
+  "created_at": "2026-10-05T17:20:34Z",
+  "published_at": "2026-10-05T17:28:09Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.504",
+  "created_at": "2026-10-05T17:10:41Z",
+  "published_at": "2026-10-05T17:18:21Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.503",
+  "created_at": "2026-10-03T16:03:05Z",
+  "published_at": "2026-10-03T16:10:25Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.502",
+  "created_at": "2026-10-03T15:55:55Z",
+  "published_at": "2026-10-03T16:03:04Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.501",
+  "created_at": "2026-10-03T14:55:12Z",
+  "published_at": "2026-10-03T15:01:13Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.500",
+  "created_at": "2026-10-03T14:40:52Z",
+  "published_at": "2026-10-03T14:48:04Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.499",
+  "created_at": "2026-10-03T14:12:35Z",
+  "published_at": "2026-10-03T14:19:33Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.498",
+  "created_at": "2026-10-03T13:00:27Z",
+  "published_at": "2026-10-03T13:07:39Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.497",
+  "created_at": "2026-10-03T00:22:04Z",
+  "published_at": "2026-10-03T00:29:54Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.496",
+  "created_at": "2026-10-03T00:13:54Z",
+  "published_at": "2026-10-03T00:21:49Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "v0.51.0",
+  "created_at": "2026-10-02T13:33:07Z",
+  "published_at": "2026-10-02T13:33:54Z",
+  "prerelease": false,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.495",
+  "created_at": "2026-10-02T23:36:00Z",
+  "published_at": "2026-10-02T23:42:09Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.1-rc.494",
+  "created_at": "2026-10-02T15:12:00Z",
+  "published_at": "2026-10-02T15:19:58Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.486",
+  "created_at": "2026-10-02T13:14:09Z",
+  "published_at": "2026-10-02T13:22:04Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.484",
+  "created_at": "2026-10-02T06:28:28Z",
+  "published_at": "2026-10-02T06:35:46Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.483",
+  "created_at": "2026-10-01T14:34:47Z",
+  "published_at": "2026-10-01T14:44:10Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.482",
+  "created_at": "2026-10-01T09:27:25Z",
+  "published_at": "2026-10-01T09:34:41Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.481",
+  "created_at": "2026-10-01T00:24:25Z",
+  "published_at": "2026-10-01T00:31:41Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.480",
+  "created_at": "2026-09-30T22:06:04Z",
+  "published_at": "2026-09-30T22:12:19Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.479",
+  "created_at": "2026-09-30T16:33:50Z",
+  "published_at": "2026-09-30T16:42:39Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.478",
+  "created_at": "2026-09-28T22:16:10Z",
+  "published_at": "2026-09-28T22:23:45Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.473",
+  "created_at": "2026-09-28T01:01:10Z",
+  "published_at": "2026-09-28T01:08:18Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.472",
+  "created_at": "2026-09-28T00:19:26Z",
+  "published_at": "2026-09-28T00:27:02Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.471",
+  "created_at": "2026-09-27T23:28:12Z",
+  "published_at": "2026-09-27T23:36:01Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.469",
+  "created_at": "2026-09-27T22:27:16Z",
+  "published_at": "2026-09-27T22:33:40Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.468",
+  "created_at": "2026-09-26T21:26:25Z",
+  "published_at": "2026-09-26T21:33:24Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.467",
+  "created_at": "2026-09-26T14:02:05Z",
+  "published_at": "2026-09-26T14:09:15Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.466",
+  "created_at": "2026-09-26T13:19:35Z",
+  "published_at": "2026-09-26T13:26:37Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.465",
+  "created_at": "2026-09-26T00:34:51Z",
+  "published_at": "2026-09-26T00:42:25Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.464",
+  "created_at": "2026-09-25T23:59:14Z",
+  "published_at": "2026-09-26T00:06:40Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.463",
+  "created_at": "2026-09-25T23:50:03Z",
+  "published_at": "2026-09-25T23:55:46Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.462",
+  "created_at": "2026-09-25T23:24:34Z",
+  "published_at": "2026-09-25T23:31:27Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.461",
+  "created_at": "2026-09-25T22:50:50Z",
+  "published_at": "2026-09-25T22:57:38Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.460",
+  "created_at": "2026-09-25T22:25:25Z",
+  "published_at": "2026-09-25T22:32:01Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.51.0-rc.459",
+  "created_at": "2026-09-25T10:06:39Z",
+  "published_at": "2026-09-25T10:14:06Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.50.1-rc.457",
+  "created_at": "2026-09-25T09:46:19Z",
+  "published_at": "2026-09-25T09:53:34Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "v0.50.0",
+  "created_at": "2026-09-24T10:01:59Z",
+  "published_at": "2026-09-24T10:02:31Z",
+  "prerelease": false,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.50.1-rc.456",
+  "created_at": "2026-09-24T22:37:21Z",
+  "published_at": "2026-09-24T22:44:26Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.50.0-rc.453",
+  "created_at": "2026-09-24T07:45:56Z",
+  "published_at": "2026-09-24T07:51:31Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.50.0-rc.452",
+  "created_at": "2026-09-23T20:09:18Z",
+  "published_at": "2026-09-23T20:15:39Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.50.0-rc.451",
+  "created_at": "2026-09-21T14:58:44Z",
+  "published_at": "2026-09-21T15:06:26Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.50.0-rc.450",
+  "created_at": "2026-09-21T05:46:40Z",
+  "published_at": "2026-09-21T05:52:52Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.50.0-rc.449",
+  "created_at": "2026-09-20T18:23:39Z",
+  "published_at": "2026-09-20T18:30:47Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.50.0-rc.444",
+  "created_at": "2026-09-18T23:11:20Z",
+  "published_at": "2026-09-18T23:18:19Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.50.0-rc.443",
+  "created_at": "2026-09-18T22:31:35Z",
+  "published_at": "2026-09-18T22:37:08Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.50.0-rc.442",
+  "created_at": "2026-09-18T00:24:05Z",
+  "published_at": "2026-09-18T00:31:31Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.50.0-rc.441",
+  "created_at": "2026-09-17T23:31:23Z",
+  "published_at": "2026-09-17T23:38:50Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.50.0-rc.439",
+  "created_at": "2026-09-14T18:21:46Z",
+  "published_at": "2026-09-14T18:28:37Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.50.0-rc.438",
+  "created_at": "2026-09-13T23:20:47Z",
+  "published_at": "2026-09-13T23:28:04Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.50.0-rc.437",
+  "created_at": "2026-09-13T22:59:57Z",
+  "published_at": "2026-09-13T23:07:07Z",
+  "prerelease": true,
+  "draft": false
+ },
+ {
+  "tag_name": "dev-0.50.0-rc.436",
+  "created_at": "2026-09-13T22:37:18Z",
+  "published_at": "2026-09-13T22:43:15Z",
+  "prerelease": true,
+  "draft": false
+ }
+]

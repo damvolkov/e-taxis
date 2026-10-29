@@ -1,0 +1,407 @@
+{
+  "$ref": "#/$defs/Report",
+  "$defs": {
+    "Report": {
+      "title": "Report",
+      "description": "report: the assessment as written — `verdict` is what stood after the adversary; `proposed` the verdict\nstep's own, which differs only when the review does not stand.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "verdict": {
+          "$ref": "#/$defs/Ring"
+        },
+        "proposed": {
+          "$ref": "#/$defs/Ring"
+        },
+        "stands": {
+          "type": "boolean"
+        },
+        "landing": {
+          "$ref": "#/$defs/Landing"
+        },
+        "command": {
+          "type": "string"
+        },
+        "candidate": {
+          "$ref": "#/$defs/Candidate"
+        },
+        "incumbent": {
+          "type": "string"
+        },
+        "overlap": {
+          "$ref": "#/$defs/Overlap"
+        },
+        "health": {
+          "$ref": "#/$defs/Health"
+        },
+        "stats": {
+          "$ref": "#/$defs/Stats"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "objections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Objection"
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "name",
+        "date",
+        "path",
+        "verdict",
+        "proposed",
+        "stands",
+        "landing",
+        "command",
+        "candidate",
+        "incumbent",
+        "overlap",
+        "health",
+        "stats"
+      ]
+    },
+    "Ring": {
+      "title": "Ring",
+      "description": "The radar's rings: what a machine can act on.",
+      "enum": [
+        "adopt",
+        "hold",
+        "reject",
+        "trial"
+      ]
+    },
+    "Landing": {
+      "title": "Landing",
+      "description": "Where the lesson lands, by the Triad.",
+      "enum": [
+        "e-arkhetypo",
+        "e-nous",
+        "e-taxis",
+        "none"
+      ]
+    },
+    "Candidate": {
+      "title": "Candidate",
+      "description": "intake: the technology resolved to what can be fetched and installed; `notes` say what was refused and why.",
+      "type": "object",
+      "properties": {
+        "tech": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "repo": {
+          "type": "string",
+          "default": ""
+        },
+        "package": {
+          "type": "string",
+          "default": ""
+        },
+        "registry": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Registry"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "topic": {
+          "type": "string",
+          "default": ""
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "tech",
+        "name"
+      ]
+    },
+    "Registry": {
+      "title": "Registry",
+      "description": "Where a package is published: the downloads and the dependents are read from there.",
+      "enum": [
+        "crates",
+        "npm",
+        "pypi"
+      ]
+    },
+    "Overlap": {
+      "title": "Overlap",
+      "description": "flow-gen-research's fit: what the candidate does to the inventory.",
+      "enum": [
+        "complements",
+        "none",
+        "overlaps",
+        "replaces"
+      ]
+    },
+    "Health": {
+      "title": "Health",
+      "description": "health: dated KPIs from no-auth sources. A field a source could not give is null and its source is in\n`failed`; `sources` names where every field that has a value was read.",
+      "type": "object",
+      "properties": {
+        "measured_at": {
+          "type": "string"
+        },
+        "last_release": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "releases_per_year": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "downloads_month": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "dependents": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "scorecard": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "license": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "open_issue_ratio": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "contributors": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sources": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "failed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "measured_at"
+      ]
+    },
+    "Stats": {
+      "title": "Stats",
+      "description": "stats: the interval of the paired difference (candidate - baseline, in the metric's units) against the\nthreshold; `secondary` describes, never decides.",
+      "type": "object",
+      "properties": {
+        "metric": {
+          "type": "string"
+        },
+        "outcome": {
+          "$ref": "#/$defs/Outcome"
+        },
+        "candidate": {
+          "type": "string",
+          "default": ""
+        },
+        "baseline": {
+          "type": "string",
+          "default": ""
+        },
+        "pairs": {
+          "type": "integer",
+          "default": 0
+        },
+        "mean": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "low": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "high": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "threshold": {
+          "type": "number",
+          "default": 0.0
+        },
+        "higher_is_better": {
+          "type": "boolean",
+          "default": true
+        },
+        "resamples": {
+          "type": "integer",
+          "default": 0
+        },
+        "confidence": {
+          "type": "number",
+          "default": 0.0
+        },
+        "secondary": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "reason": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "metric",
+        "outcome"
+      ]
+    },
+    "Outcome": {
+      "title": "Outcome",
+      "enum": [
+        "better",
+        "no difference",
+        "not measured",
+        "worse"
+      ]
+    },
+    "Objection": {
+      "title": "Objection",
+      "type": "object",
+      "properties": {
+        "claim": {
+          "type": "string"
+        },
+        "refuted": {
+          "type": "boolean"
+        },
+        "evidence": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "claim",
+        "refuted"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

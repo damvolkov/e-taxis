@@ -1,0 +1,186 @@
+{
+  "$ref": "#/$defs/Healths",
+  "$defs": {
+    "Healths": {
+      "title": "Healths",
+      "description": "health: every incumbent and every rival, measured at one instant.",
+      "type": "object",
+      "properties": {
+        "measured_at": {
+          "type": "string"
+        },
+        "subjects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Vital"
+          }
+        }
+      },
+      "required": [
+        "measured_at",
+        "subjects"
+      ]
+    },
+    "Vital": {
+      "title": "Vital",
+      "description": "One subject's health (soa-assess's KPIs), its stars, and whether its hot path is Rust or C/C++ — `basis`\nsays, reading by reading, how that was decided.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "health": {
+          "$ref": "#/$defs/Health"
+        },
+        "rust": {
+          "type": "boolean"
+        },
+        "basis": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "stars": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "name",
+        "health",
+        "rust",
+        "basis"
+      ]
+    },
+    "Health": {
+      "title": "Health",
+      "description": "health: dated KPIs from no-auth sources. A field a source could not give is null and its source is in\n`failed`; `sources` names where every field that has a value was read.",
+      "type": "object",
+      "properties": {
+        "measured_at": {
+          "type": "string"
+        },
+        "last_release": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "releases_per_year": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "downloads_month": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "dependents": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "scorecard": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "license": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "open_issue_ratio": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "contributors": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sources": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "failed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "measured_at"
+      ]
+    }
+  }
+}

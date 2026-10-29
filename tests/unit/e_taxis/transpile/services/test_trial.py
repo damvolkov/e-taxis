@@ -28,7 +28,7 @@ async def test_trial_holds_when_the_harness_sent_everything(
 ) -> None:
     tree = await GitNous(nous_root, None).load()
     slots = {**tree.persona["base"]["slots"], **tree.persona["tekton"]["slots"]}
-    ids = [ident for entity in ("skill", "agent") for ident in tree.entities[entity]]
+    ids = [ident for entity in ("skill", "agent", "workflow") for ident in tree.entities[entity]]
     fence.body = msgspec.json.encode({"system": [*slots.values(), *ids]})
     report = await trial.run(GitNous(nous_root, None), "claudecode", capture)
     assert report.held
@@ -84,3 +84,19 @@ async def test_trial_refusals(
     edit(CC, change)
     with pytest.raises(TranspileError, match=match):
         await trial.run(GitNous(nous_root, None), "claudecode", capture)
+
+
+@pytest.mark.parametrize(("domains", "expected"), [(["tekton"], 1), (["nomos"], 0)], ids=["tekton", "nomos"])
+async def test_trial_expects_a_workflow_only_in_its_domains(
+    trial: TrialService,
+    fence,
+    capture,
+    nous_root: Path,
+    edit: Callable[[str, Callable[[Any], None]], None],
+    domains: list[str],
+    expected: int,
+) -> None:
+    edit("core/tekton/workflows/converge/workflow.yaml", lambda w: w.update({"domains": domains}))
+    fence.body = b'{"system": ["converge"]}'
+    report = await trial.run(GitNous(nous_root, None), "claudecode", capture)
+    assert {sight.entity: sight.expected for sight in report.sights}["workflow"] == expected

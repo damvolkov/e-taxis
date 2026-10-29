@@ -1,0 +1,7 @@
+parts:
+  valkey:
+    kind: service
+    what: The open Redis fork, shared state
+  searxng:
+    kind: service
+    what: Metasearch

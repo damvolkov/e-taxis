@@ -1,0 +1,8 @@
+{
+ "name": "express",
+ "repository": {
+  "url": "git+https://github.com/expressjs/express.git",
+  "type": "git"
+ },
+ "homepage": "https://expressjs.com/"
+}

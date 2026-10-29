@@ -19,6 +19,8 @@ if TYPE_CHECKING:
 ### v2 on purpose: total ownership models every settings key; #81 retired the reminder hook and tree-sitter, pinned
 ### Serena and guided codebase-memory in OpenCode only; the fixture holds four instances, not the corpus.
 CHANGED = {"settings.json", "opencode.jsonc"}
+### v2 on purpose (2026-10-28): a workflow's steps go through `taxis workflow step` and `put`, walked in the foreground.
+WALKED = {f"workflows/{ident}.md" for ident in ("converge", "emaintenance", "reverse-distill", "smaintenance")}
 ### v2 adds ## Plans, ## Agents (2026-10-27) and renamed ## The three pillars ## The Triad (2026-10-28): cut on both sides.
 PERSONA = {"CLAUDE.md", "AGENTS.md"}
 ### where v1 rendered the golden: its `{out}`, replaced on both sides before comparing.
@@ -32,7 +34,7 @@ async def test_golden_files_match_byte_for_byte(
     out = tmp_path / backend
     projection = await RunService(CheckService()).run(GitNous(nous_root, None), backend, out)
     golden = golden_root / backend
-    shared = [path for path in projection.files if (golden / path).is_file() and path not in CHANGED]
+    shared = [path for path in projection.files if (golden / path).is_file() and path not in CHANGED | WALKED]
     mismatched = [
         path
         for path in shared

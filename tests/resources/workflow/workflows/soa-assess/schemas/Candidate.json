@@ -1,0 +1,61 @@
+{
+  "$ref": "#/$defs/Candidate",
+  "$defs": {
+    "Candidate": {
+      "title": "Candidate",
+      "description": "intake: the technology resolved to what can be fetched and installed; `notes` say what was refused and why.",
+      "type": "object",
+      "properties": {
+        "tech": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "repo": {
+          "type": "string",
+          "default": ""
+        },
+        "package": {
+          "type": "string",
+          "default": ""
+        },
+        "registry": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Registry"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "topic": {
+          "type": "string",
+          "default": ""
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "tech",
+        "name"
+      ]
+    },
+    "Registry": {
+      "title": "Registry",
+      "description": "Where a package is published: the downloads and the dependents are read from there.",
+      "enum": [
+        "crates",
+        "npm",
+        "pypi"
+      ]
+    }
+  }
+}
