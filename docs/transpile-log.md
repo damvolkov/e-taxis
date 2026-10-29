@@ -272,3 +272,47 @@ trial gates on the 2.x line. The README lists every command; a test fails when o
 **Open.** The activation probe's OpenCode sandbox (eval, not trial) still hangs: it runs `opencode run` without a
 served port, the same 2.x constraint the trial now meets — next: the same served-probe pattern in the coder adapter.
 
+
+## 2026-10-28 · One house hook vocabulary, realized by data, proven in the sandbox
+
+**Done.** The core's `hooks` module is now the house vocabulary (e-nous `core/schema.yaml`): one field per moment of
+an agent loop, snake_case, never a product's name — `session_start`, `turn_end`, `tool_before`, … 21 in all, each a
+list of `{run, matchers, backends}`. Each tekton spec realizes it in `native.hooks` and translates house tools in
+`native.tools` (lifted out of the `denied` row, which now reads `native.tools`). `transforms/hooks.py` holds the
+shared rule (`reaching_hooks`, `native_hook`, `tool_hook`, `matchers_hook`, `command_hook`); `claude_hooks` renders
+`settings.json#hooks` from it; the new `opencode_hooks` renders `hooks/hooks.json`, which one generic e-nous asset,
+`plugins/hooks.js`, registers on the OpenCode v2 plugin API: Claude Code's stdin fields, `/bin/sh -c` like Claude,
+exit 2 as `reopen` (ctx.session.prompt), `throw`, `refuse` (permission deny) or `none`. `reaches` moved to
+`transforms/backends.py` (hooks and claudecode import each other's neighbours otherwise). The trial gained a turn:
+`Probe.reply` makes `HttpCapture` answer the Anthropic or OpenAI route — the named tool once, then a closing text,
+streamed when asked — and `Probe.linger` keeps a served harness up while the hooks of the answer fire; a config
+module's sight (`sees.hooks`) expects every `command` its rows render and reads an `strace -e trace=execve` log.
+`transpile run --check` fails (exit 32, `DriftError`) on any plan finding.
+
+**Evidence.** Fenced, real binaries (Claude Code 2.1.312, OpenCode 2.2.0), this branch's e-nous: claudecode hooks
+4/4, opencode 1/1, persona/skills/agents/commands unchanged. A `compact_before` hook is reported missing (the sight
+is not trivial). With an invalid plan planted and a `tool_before` exiting 2, the plans law and the denial reach the
+model on both harnesses (`tests/e2e/test_trial.py::test_trial_hooks_block_where_the_moment_allows`). The same probe
+on `main` with OpenCode 2.2.0: the plans law never reaches the model — `plugins/plans.js` waited for `session.idle`,
+which 2.2.0 does not emit. `transpile run` planned against the live HOME: no finding on `settings.json` or the agents'
+`disallowedTools` (byte-identical render); OpenCode only misses the two new files. Unit 1075 passed, coverage 100 %;
+`node --test` 8/8 with three mutants killed.
+
+**Decided alone.**
+- A fields module, not `map<event, …>`: a map key is documentation in the grammar, so only fields close the
+  vocabulary. The schema's "no field in advance" yields here to the owner's ask for the whole vocabulary; out of it,
+  the Claude product features with no agnostic meaning (Setup, TeammateIdle, MessageDisplay, Worktree*, Task*,
+  Elicitation*, UserPromptExpansion).
+- Data, not generated code: rulesync generates a plugin with the commands baked in, and its `stop` drops the exit
+  code. Here the spec renders JSON and one runtime reads it; exit 2 keeps Claude's meaning on OpenCode.
+- stdin speaks Claude Code's field names (`session_id`, `cwd`, `stop_hook_active`, `tool_name`, `tool_input`): the
+  de-facto contract other harnesses and rulesync follow; `hook_event_name` is left out — it would carry a product name.
+- OpenCode realizes only what was proven on 2.2.0 in the sandbox; any other event refuses the render of a hook that
+  reaches it. Two facts found there and written into the runtime: `await`ing `ctx.session.hook`/`ctx.permission.hook`
+  inside `setup` deadlocks the server, and `session.idle` is gone.
+- `domain`, not `on`, as the realization key: PyYAML (YAML 1.1) reads `on` as `true`.
+- `strace` in the trial: the only witness that a harness exec'd a command without editing the render.
+
+**Open.** `~/.config/opencode/plugins/plans.js` is outside every governed directory: landing leaves it — delete it by
+hand. The e2e tests that read the real e-nous (`test_plane`, `test_workflow`) fail against its `feat/soa` HEAD (a
+workflow `use` field `main` does not know yet); the Hermes e2e fails on a missing hermes venv. Neither is this change.

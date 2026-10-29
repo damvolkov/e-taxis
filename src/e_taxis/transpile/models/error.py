@@ -40,3 +40,9 @@ class TrialError(TranspileError):
     """A phantom harness that did not show what the render put in its tree."""
 
     exit_code: ClassVar[int] = 22
+
+
+class DriftError(TranspileError):
+    """`transpile run --check` planned the live tree apart from the render: the plan is printed, this carries the count."""
+
+    exit_code: ClassVar[int] = 32

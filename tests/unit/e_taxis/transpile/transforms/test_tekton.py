@@ -1,5 +1,6 @@
 """tests/unit/e_taxis/transpile/transforms/tekton: each backend's table equals its spec's contracts, and each holds."""
 
+from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -28,18 +29,78 @@ async def test_tekton_telemetry_names_each_signal(ctx: RowContext) -> None:
     }
 
 
-async def test_tekton_hooks_one_entry_per_matcher_none_without(ctx: RowContext) -> None:
+async def test_tekton_hooks_claude_names_each_house_event(ctx: RowContext) -> None:
     hooks: dict[str, list[dict[str, Any]]] = {
-        "Start": [{"matchers": ["a", "b"], "run": ["node", "{out}/x y"]}],
-        "Stop": [{"run": ["bash"]}],
+        "session_start": [{"matchers": ["startup", "resume"], "run": ["node", "{out}/x y"]}],
+        "tool_before": [{"matchers": ["edit", "bash"], "run": ["guard"]}, {"run": ["all"], "backends": ["opencode"]}],
+        "turn_end": [{"run": ["bash"]}],
+        "session_end": [{"run": ["far"], "backends": ["opencode"]}],
     }
     assert claudecode.claude_hooks(hooks, ctx) == {
-        "Start": [
-            {"matcher": "a", "hooks": [{"type": "command", "command": "node '/out/x y'"}]},
-            {"matcher": "b", "hooks": [{"type": "command", "command": "node '/out/x y'"}]},
-        ],
+        "SessionStart": [{"matcher": "startup|resume", "hooks": [{"type": "command", "command": "node '/out/x y'"}]}],
+        "PreToolUse": [{"matcher": "Edit|Write|NotebookEdit|Bash", "hooks": [{"type": "command", "command": "guard"}]}],
         "Stop": [{"hooks": [{"type": "command", "command": "bash"}]}],
     }
+
+
+@pytest.mark.parametrize(
+    ("hooks", "match"),
+    [
+        ({"model_before": [{"run": ["x"]}]}, "`model_before` has no realization"),
+        ({"tool_before": [{"matchers": ["todo"], "run": ["x"]}]}, "`todo` is a house tool"),
+    ],
+    ids=["event", "tool"],
+)
+async def test_tekton_hooks_refuse_what_claude_cannot_realize(
+    ctx: RowContext, hooks: dict[str, Any], match: str
+) -> None:
+    with pytest.raises(RenderError, match=match):
+        claudecode.claude_hooks(hooks, ctx)
+
+
+async def test_tekton_hooks_opencode_binds_each_hook(nous_tree: NousTree, ctx: RowContext) -> None:
+    native = nous_tree.specs["tekton/opencode"]["native"]
+    hooks: dict[str, list[dict[str, Any]]] = {
+        "session_start": [{"matchers": ["startup"], "run": ["a"]}, {"run": ["c"], "backends": ["claudecode"]}],
+        "tool_after": [{"matchers": ["bash", "edit"], "run": ["b", "{out}"]}],
+    }
+    assert opencode.opencode_hooks(hooks, replace(ctx, native=native)) == [
+        {
+            "event": "session_start",
+            "domain": "event",
+            "name": "session.created",
+            "when": {"parentID": None},
+            "effect": "none",
+            "matchers": [],
+            "command": "a",
+        },
+        {
+            "event": "tool_after",
+            "domain": "tool",
+            "name": "execute.after",
+            "when": {"status": "completed"},
+            "effect": "none",
+            "matchers": ["shell", "edit", "write"],
+            "command": "b /out",
+        },
+    ]
+
+
+@pytest.mark.parametrize(
+    ("hooks", "match"),
+    [
+        ({"session_start": [{"matchers": ["resume"], "run": ["x"]}]}, r"honours only \['startup'\], not \['resume'\]"),
+        ({"turn_end": [{"matchers": ["any"], "run": ["x"]}]}, r"honours only \[\]"),
+        ({"compact_before": [{"run": ["x"]}]}, "`compact_before` has no realization"),
+        ({"tool_before": [{"matchers": ["lsp"], "run": ["x"]}]}, "`lsp` is a house tool"),
+    ],
+    ids=["origin", "none-admitted", "event", "tool"],
+)
+async def test_tekton_hooks_refuse_what_opencode_cannot_realize(
+    nous_tree: NousTree, ctx: RowContext, hooks: dict[str, Any], match: str
+) -> None:
+    with pytest.raises(RenderError, match=match):
+        opencode.opencode_hooks(hooks, replace(ctx, native=nous_tree.specs["tekton/opencode"]["native"]))
 
 
 @pytest.mark.parametrize(

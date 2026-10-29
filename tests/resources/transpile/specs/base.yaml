@@ -39,7 +39,7 @@ doctrine:
 # ─── Types ──────────────────────────────────────────────────────────────────
 # Named words the kinds use as types, in the grammar of core/schema.yaml.
 types:
-  entity: {shape: str, doc: "a key of core/schema.yaml · entities, or persona, or config"}
+  entity: {shape: str, doc: "a key of core/schema.yaml · entities, or persona, or config — in a trial's sees, also a config module (hooks)"}
   probe:  {shape: str, doc: "the name of one of the trial's probes"}
   name:   {shape: str, doc: "a placeholder or transform name"}
 
@@ -155,7 +155,7 @@ kinds:
     setup:    {type: "list<list<str>>", default: [], doc: "argv run once before the probes"}
     overlays: {type: "list<{path: str, format: str, swap: map<str, str>, set: map<str, any>, extend: map<str, list<any>>}>", default: [], doc: "the render bent to the fake endpoint; the next apply restores it. A swap key '@<core-path>' stands for every value it resolves to (never a copied URL)"}
     probes:   {type: "list<Probe>", required: true}
-    sees:     {type: "map<entity, list<probe>>", required: true, doc: "which probe proves each section landed"}
+    sees:     {type: "map<entity, list<probe>>", required: true, doc: "which probe proves each section landed; a config module (hooks) expects every `command` its rows render"}
     pipeline: {type: "map<str, any>", doc: "a harness-specific end-to-end check (OpenHuman's memory): opaque to the model, read by its trial"}
     notes:    {type: str, default: ""}
     # Placeholders: ${home} ${tree} ${llm} ${path} ${profile} ${port} ${turn} ${document} ${name} ${mcp} ${nonce}
@@ -169,6 +169,8 @@ kinds:
     ready:   {type: "list<str>", doc: "polled until it succeeds"}
     timeout: {type: int, default: 120}
     wait:    {type: int, default: 0}
+    reply:   {type: "{tool: str, input: map<str, any>}", doc: "the fake model answers instead of refusing: `tool` called once, the first time a request offers it, then a text that ends the turn — the hooks of a turn fire"}
+    linger:  {type: int, default: 0, doc: "seconds a served harness stays up after argv returns: what fires after the answer (turn_end) gets to run"}
 
 # ─── Grammar ────────────────────────────────────────────────────────────────
 grammar:

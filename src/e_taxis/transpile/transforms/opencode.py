@@ -6,10 +6,11 @@ from typing import TYPE_CHECKING, Any, Final
 
 from e_taxis.transpile.engine.combinators import tier
 from e_taxis.transpile.models.error import RenderError
-from e_taxis.transpile.transforms.claudecode import reaches
+from e_taxis.transpile.transforms.backends import reaches
+from e_taxis.transpile.transforms.hooks import command_hook, matchers_hook, native_hook, reaching_hooks
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable, Mapping, Sequence
 
     from e_taxis.transpile.engine.context import RowContext
 
@@ -120,6 +121,24 @@ def mcp_opencode(value: Mapping[str, Mapping[str, Any]], ctx: RowContext) -> dic
     }
 
 
+def opencode_hooks(value: Mapping[str, Sequence[Mapping[str, Any]]], ctx: RowContext) -> list[dict[str, Any]]:
+    """One binding per hook that reaches OpenCode: where plugins/hooks.js registers it, and the command it runs."""
+    return [
+        {
+            "event": event,
+            "domain": native["domain"],
+            "name": native["name"],
+            "when": dict(native.get("when") or {}),
+            "effect": native["effect"],
+            "matchers": matchers_hook(event, hook, native, ctx),
+            "command": command_hook(hook, ctx),
+        }
+        for event, hooks in reaching_hooks(value, BACKEND)
+        for native in (native_hook(event, ctx),)
+        for hook in hooks
+    ]
+
+
 ##### TABLE #####
 TRANSFORMS: Final[Mapping[str, Callable[[Any, RowContext], Any]]] = MappingProxyType(
     {
@@ -127,6 +146,7 @@ TRANSFORMS: Final[Mapping[str, Callable[[Any, RowContext], Any]]] = MappingProxy
         "agents_registry": agents_registry,
         "providers_tree": providers_tree,
         "npm_dependency": npm_dependency,
+        "opencode_hooks": opencode_hooks,
         "mcp_opencode": mcp_opencode,
     }
 )

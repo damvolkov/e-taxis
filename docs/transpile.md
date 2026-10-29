@@ -39,6 +39,7 @@ taxis transpile run     --target T|all [--nous PATH] [--ref …] [--out DIR] [--
 taxis transpile reverse --target T|all [--nous PATH] [--ref …] [--json]                       # T4
 taxis transpile trial   --target T [--nous PATH] [--ref …] [--json]          # the real harness, fenced, on the render
                                                                              # OpenCode: the pinned v2.2.0, served probes (2026-10-28)
+                                                                             # an answered turn (`reply`) proves every hook command ran
 ```
 
 Without `--nous`, the checkout is located: the ladder is the README's "One system".

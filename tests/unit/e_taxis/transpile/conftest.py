@@ -5,6 +5,7 @@ instance of each entity, copied from e-nous: the law must find nothing blocking 
 file of the copy in place, so a test states only the mutation it makes."""
 
 import re
+import shlex
 import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -18,9 +19,10 @@ import yaml
 from e_taxis.transpile.adapters.nous import GitNous
 from e_taxis.transpile.engine.context import RowContext
 from e_taxis.transpile.engine.model import CoreModel, SpecModel
+from e_taxis.transpile.transforms.backends import reaches
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable
+    from collections.abc import AsyncIterator, Callable, Mapping
 
     from pytest_resources import Resources
 
@@ -63,6 +65,7 @@ class FakeCapture:
     def __init__(self) -> None:
         self.received: list[bytes] = []
         self.served = 0
+        self.replies: list[Mapping[str, Any] | None] = []
 
     @property
     def url(self) -> str:
@@ -77,6 +80,9 @@ class FakeCapture:
 
     def clear(self) -> None:
         self.received.clear()
+
+    def answer(self, reply: Mapping[str, Any] | None) -> None:
+        self.replies.append(reply)
 
     @asynccontextmanager
     async def serve(self) -> AsyncIterator[FakeCapture]:
@@ -96,13 +102,15 @@ class FakeFence:
         self.envs: list[dict[str, str]] = []
         self.served: list[tuple[str, ...]] = []
         self.codes: list[int] = []
+        self.printer: Callable[[tuple[str, ...]], str] | None = None
 
     async def run(self, argv, *, env, cwd, writable, ports, limit) -> TrialRun:
         self.argvs.append(tuple(argv))
         self.envs.append(dict(env))
         self.capture.received.append(self.body)
         code = self.codes.pop(0) if self.codes else 1
-        return TrialRun(argv=tuple(argv), code=code, seconds=0.0, stdout=self.stdout)
+        stdout = self.printer(tuple(argv)) if self.printer else self.stdout
+        return TrialRun(argv=tuple(argv), code=code, seconds=0.0, stdout=stdout)
 
     async def canary(self, inside: Path, outside: Path) -> bool:
         return self.holds
@@ -121,6 +129,23 @@ class ListRecorder:
 
     def record(self, *effects: Any) -> None:
         self.effects.extend(effects)
+
+
+@pytest.fixture
+def hooked(nous_root: Path) -> Callable[[str, str], Callable[[tuple[str, ...]], str]]:
+    """A trace printer for one backend: every hook command the fixture core sends it, under the probe's own home."""
+
+    def printer(backend: str, tree: str) -> Callable[[tuple[str, ...]], str]:
+        hooks = eserde.load(nous_root / "core/tekton/config/hooks.yaml")
+        commands = [
+            shlex.join(arg.replace("{out}", f"HOME/{tree}") for arg in hook["run"])
+            for found in hooks.values()
+            for hook in found
+            if reaches(hook, backend)
+        ]
+        return lambda argv: "\n".join(commands).replace("HOME", argv[-1].removesuffix("/exec.log"))
+
+    return printer
 
 
 @pytest.fixture
@@ -154,7 +179,9 @@ def golden_root() -> Path:
 def ctx(nous_tree: NousTree) -> RowContext:
     """The tekton facet's config, claudecode's natives, `{out}` bound to /out."""
     return RowContext(
-        config=nous_tree.config["tekton"], native={"names": {"alibaba": "nomos-alibaba"}}, bindings={"out": "/out"}
+        config=nous_tree.config["tekton"],
+        native={**nous_tree.specs["tekton/claudecode"]["native"], "names": {"alibaba": "nomos-alibaba"}},
+        bindings={"out": "/out"},
     )
 
 
