@@ -10,6 +10,7 @@ run folder, where every step left its ledger row."""
 
 from dataclasses import dataclass
 from enum import StrEnum, auto
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Final
 
 import msgspec
@@ -36,6 +37,9 @@ PARENT: Final[tuple[str, ...]] = (
 )
 PLUMBING: Final[tuple[str, ...]] = ("Bash(taxis workflow step *)", "Bash(taxis workflow put *)", "Read", "Glob", "Grep")
 LEAD: Final[str] = "orchestrator"
+### `claude -p` waits for its background workflow only 10 idle minutes by default, then stops it and drops its result:
+### the wait is unbounded here — taxis's own harness limit bounds the run.
+WAIT: Final[Mapping[str, str]] = MappingProxyType({"CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS": "0"})
 
 
 ##### TYPES #####
@@ -80,7 +84,8 @@ class ClaudeHarness:
             "--",
             f"/{workflow} {msgspec.json.encode(dict(args)).decode()}",
         )
-        return self._agent.read(await self._command.run(*argv, limit=self._limit, cwd=cwd)).text
+        said = await self._command.run(*argv, limit=self._limit, cwd=cwd, env=WAIT)
+        return self._agent.read(said).text
 
 
 class OpencodeHarness:

@@ -21,9 +21,10 @@ async def test_harness_claude_runs_the_dynamic_workflow_granted_its_agents(
 ) -> None:
     fake_command.answers[("env",)] = msgspec.json.encode({"result": "walked", "modelUsage": {}}).decode()
     said = await ClaudeHarness(fake_command, claude_agent, 60.0).run("w", ARGS, ("builder", "scout"), cwd=tmp_path)
-    argv = list(fake_command.calls[0][0])
+    argv, env = list(fake_command.calls[0][0]), fake_command.calls[0][1]
     grants = argv[argv.index("--allowedTools") + 1].split(",")
     assert said == "walked"
+    assert env == {"CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS": "0"}
     assert argv[:3] == ["env", "-u", "CLAUDECODE"]
     assert argv[argv.index("--add-dir") + 1] == "/nous"
     assert argv[-1] == '/w {"value":"v","rundir":"/abs/run","nous":"/nous"}'
