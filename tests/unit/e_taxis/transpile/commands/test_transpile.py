@@ -126,7 +126,9 @@ def test_transpile_trial_reports_and_fails_when_not_held(
     assert msgspec.json.decode(out)["backend"] == "claudecode"
     tree = anyio.run(GitNous(nous_root, None).load)
     slots = [*tree.persona["base"]["slots"].values(), *tree.persona["tekton"]["slots"].values()]
-    fence.body = msgspec.json.encode([*slots, *tree.entities["skill"], *tree.entities["agent"]])
+    fence.body = msgspec.json.encode(
+        [*slots, *tree.entities["skill"], *tree.entities["agent"], *tree.entities["workflow"]]
+    )
     code, out, _ = taxis("transpile", "trial", "--target", "claudecode", "--nous", str(nous_root), "--worktree")
     assert code == 0
     assert "· held" in out

@@ -149,7 +149,8 @@ class TrialService:
 
     @staticmethod
     def _run_expected(tree: NousTree, spec: Mapping[str, Any], projection: Projection, entity: str) -> tuple[str, ...]:
-        """What an entity must show: every non-empty persona text it renders, or every id of its instances."""
+        """What an entity must show: every non-empty persona text it renders, or every id of its instances that reach
+        this harness (an instance naming its `domains` reaches only theirs)."""
         match entity:
             case "persona":
                 return tuple(
@@ -159,7 +160,14 @@ class TrialService:
                     if placement.section == PERSONA and (text := str(placement.value).strip())
                 )
             case _:
-                return tuple(sorted(tree.entities.get(entity, {}))) if entity in spec["map"] else ()
+                instances = tree.entities.get(entity, {}) if entity in spec["map"] else {}
+                return tuple(
+                    sorted(
+                        ident
+                        for ident, raw in instances.items()
+                        if spec["harness"] in raw.get("domains", (spec["harness"],))
+                    )
+                )
 
     async def _run_probe(
         self,

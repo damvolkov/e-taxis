@@ -269,4 +269,5 @@ trial:
     persona: [session]                  # CLAUDE.md verbatim in `system`
     skill: [session]                    # the Skill tool lists every skill
     agent: [session]                    # the Agent tool lists every subagent
+    workflow: [session]                 # every saved workflow is offered to the session as /<id>
   notes: "The session fails with 400 on purpose: the request already arrived, and it is what is read. Verified 2026-10-06 on 2.1.291 under the Landlock fence: 31/31 skills, 11/11 agents."
