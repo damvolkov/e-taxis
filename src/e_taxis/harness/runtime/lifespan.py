@@ -13,13 +13,13 @@ from dataclasses import dataclass
 
 from structlog.typing import BindableLogger
 
-from e_taxis.core.logger import logger, setup
-from e_taxis.core.proxy import LazyProxy
-from e_taxis.core.settings import Settings
-from e_taxis.core.settings import settings as st
-from e_taxis.core.state import State
 from e_taxis.harness.models.session import Session
 from e_taxis.harness.runtime.deps import Deps
+from e_taxis.infra.logger import logger, setup
+from e_taxis.infra.proxy import LazyProxy
+from e_taxis.infra.settings import Settings
+from e_taxis.infra.settings import settings as st
+from e_taxis.infra.state import State
 
 
 ##### SECTION #####

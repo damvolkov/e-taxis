@@ -44,7 +44,7 @@ class Common(Struct, frozen=True, kw_only=True):
     """The shared tree a system draws modules from: where it lives, its package, modules never exported, detachable units."""
 
     root: str
-    package: str = "e_core"
+    package: str = "e_infra"
     skip: tuple[str, ...] = ()
     detach: tuple[Detach, ...] = ()
 

@@ -65,7 +65,7 @@ async def extract(url: str, ref: str, path: str, *, dest: Path, cache: Path = CA
     Args:
         url: the git remote.
         ref: a branch, a tag or a full commit.
-        path: the directory to unpack, e.g. projects/python/core.
+        path: the directory to unpack, e.g. projects/python/infra.
         dest: the directory to land it in.
         cache: root of the bare clones.
     """

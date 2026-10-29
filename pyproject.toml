@@ -87,7 +87,7 @@ dev = [
     { include-group = "lint" },
     { include-group = "test" },
     "prek>=0.4",
-    ### structural rewrite of arkhetypo's e-core at materialization time (scripts/materialize.py); parses real 3.14 syntax.
+    ### structural rewrite of arkhetypo's e-infra at materialization time (scripts/materialize.py); parses real 3.14 syntax.
     "libcst>=1.9",
 ]
 
@@ -113,9 +113,10 @@ fallback-version = "0.0.0"
 ### the four sections materialize inside e_taxis from arkhetypo (never committed — see .gitignore): artifacts ship them despite the VCS ignore.
 ### `adapters` is listed by file: the project's own adapters share the folder and are committed as normal.
 artifacts = [
-    "src/e_taxis/core/",
+    "src/e_taxis/infra/",
     "src/e_taxis/processors/",
     ### `ops` and `adapters` are shared homes: the generated files ship by name, the project's own are committed as normal.
+    "src/e_taxis/ops/crypto.py",
     "src/e_taxis/ops/file.py",
     "src/e_taxis/ops/image.py",
     "src/e_taxis/ops/registry.py",
@@ -126,8 +127,10 @@ artifacts = [
     "src/e_taxis/adapters/docling.py",
     "src/e_taxis/adapters/http.py",
     "src/e_taxis/adapters/otel.py",
+    "src/e_taxis/adapters/pgqueuer.py",
     "src/e_taxis/adapters/ports.py",
     "src/e_taxis/adapters/postgres.py",
+    "src/e_taxis/adapters/queue.py",
     "src/e_taxis/adapters/redis.py",
     "src/e_taxis/adapters/sqlite.py",
 ]
@@ -176,9 +179,9 @@ known-first-party = ["e_taxis"]
 ### pydantic and msgspec resolve these classes' annotations at runtime: their imports must stay real.
 runtime-evaluated-base-classes = [
     "pydantic.BaseModel",
-    "e_taxis.core.settings.base.BaseSettings",
+    "e_taxis.infra.config.base.BaseSettings",
     "msgspec.Struct",
-    "e_taxis.core.struct.CheckedStruct",
+    "e_taxis.infra.struct.CheckedStruct",
 ]
 
 [tool.ruff.lint.flake8-tidy-imports]
@@ -214,13 +217,14 @@ markers = ["slow: slow tests (deselect with -m 'not slow')"]
 ##### COVERAGE #####
 [tool.coverage.run]
 ### the materialized sections are tested at their source (arkhetypo): the gate covers the project tool alone.
-### `adapters` is shared: the e-core files are omitted by name, the project's own stay under the gate.
+### `adapters` is shared: the e-infra files are omitted by name, the project's own stay under the gate.
 ### `project` is the e-management engine ported ahead of its suite (the entry becomes cyclopts cards first, F3.1):
 ### interim omit — the gate must not lie about code it has not seen tested. Remove when tests/unit/e_taxis/project is green.
 omit = [
-    "*/src/e_taxis/core/*",
+    "*/src/e_taxis/infra/*",
     "*/src/e_taxis/processors/*",
     "*/src/e_taxis/project/*",
+    "*/src/e_taxis/ops/crypto.py",
     "*/src/e_taxis/ops/file.py",
     "*/src/e_taxis/ops/image.py",
     "*/src/e_taxis/ops/registry.py",
@@ -231,8 +235,10 @@ omit = [
     "*/src/e_taxis/adapters/docling.py",
     "*/src/e_taxis/adapters/http.py",
     "*/src/e_taxis/adapters/otel.py",
+    "*/src/e_taxis/adapters/pgqueuer.py",
     "*/src/e_taxis/adapters/ports.py",
     "*/src/e_taxis/adapters/postgres.py",
+    "*/src/e_taxis/adapters/queue.py",
     "*/src/e_taxis/adapters/redis.py",
     "*/src/e_taxis/adapters/sqlite.py",
 ]

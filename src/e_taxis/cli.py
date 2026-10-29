@@ -39,7 +39,7 @@ typo fails the gate, never a user.
     taxis logo NAMES [--out DIR] [--prefix P] [--background HEX] [--foreground HEX] [--force]
     taxis repo resolve URL REF                     # the commit a branch, tag or sha names
     taxis repo tree    URL REF [PATH]              # every file the remote holds at REF
-    taxis repo extract URL REF PATH --dest DIR     # unpack it; `make core` uses exactly this
+    taxis repo extract URL REF PATH --dest DIR     # unpack it; `make infra` uses exactly this
 """
 
 import sys
