@@ -177,7 +177,7 @@ known-first-party = ["e_taxis"]
 ### pydantic and msgspec resolve these classes' annotations at runtime: their imports must stay real.
 runtime-evaluated-base-classes = [
     "pydantic.BaseModel",
-    "e_taxis.infra.settings.base.BaseSettings",
+    "e_taxis.infra.config.base.BaseSettings",
     "msgspec.Struct",
     "e_taxis.infra.struct.CheckedStruct",
 ]
