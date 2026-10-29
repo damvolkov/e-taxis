@@ -44,8 +44,7 @@ async def test_inventory_reads_every_plane_three_way(
     assert {(f.subject, f.status, f.direction) for f in taken.stale} == {
         ("src/e_proj/adapters/ports.py", FactStatus.DIVERGED, Direction.BEHIND),
         (".gitattributes", FactStatus.MISSING, None),
-        ("make core-check", FactStatus.MISSING, None),
-        ("make common-check", FactStatus.MISSING, None),
+        ("make infra-check", FactStatus.MISSING, None),
         (".templates.yaml", FactStatus.MISSING, None),
     }
     by = {f.subject: f for f in taken.facts}
@@ -54,7 +53,7 @@ async def test_inventory_reads_every_plane_three_way(
     assert by["pytest-resources"].detail == "blueprint: none"
     assert by["src/e_proj/ops/file.py"].detail.startswith("project +1 -0, template +1 -1 since base")
     assert by["src/e_proj/adapters/http.py"].detail.endswith(
-        "1/2 of its new definitions already in projects/python/core/src/e_core/adapters/thing.py"
+        "1/2 of its new definitions already in projects/python/infra/src/e_infra/adapters/thing.py"
     )
     assert "removals only" not in by["prek.toml"].detail
 
@@ -92,7 +91,7 @@ async def test_inventory_without_a_base_reads_a_plain_divergence(
     manifest = await DistillScope(command).intake(await DistillScope(command).guard(project, (), "", ""))
     taken = await DistillInventory(command, harness=harness, blueprint=templates, ref="main").take(manifest)
     http = next(f for f in taken.facts if f.subject == "src/e_proj/adapters/http.py")
-    assert (http.direction, http.detail) == (None, "+5 -0 vs projects/python/core/src/e_core/adapters/http.py")
+    assert (http.direction, http.detail) == (None, "+5 -0 vs projects/python/infra/src/e_infra/adapters/http.py")
 
 
 async def test_inventory_unpackaged_project_skips_the_package_planes(

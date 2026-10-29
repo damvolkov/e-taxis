@@ -365,14 +365,14 @@ def held() -> Callable[[Path], Any]:
 ##### DISTILL #####
 IDENTITY = ("-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", "-c", "init.defaultBranch=main")
 TEMPLATES_V1 = {
-    "projects/python/core/src/e_core/adapters/http.py": "x = 1\n",
-    "projects/python/core/src/e_core/adapters/ports.py": "p = 1\n",
-    "projects/python/core/src/e_core/adapters/thing.py": "class Thing:\n    pass\n",
-    "projects/python/core/src/e_core/ops/file.py": "f = 1\n",
-    "projects/python/core/src/e_core/ops/same.py": "s = 1\n",
-    "projects/python/core/common/prek.toml": "a = 1\n",
-    "projects/python/core/common/gitattributes": "* text\n",
-    "projects/python/api/Makefile": "lint:\n\t@true\ncore-check:\n\t@true\ncommon-check:\n\t@true\n",
+    "projects/python/infra/src/e_infra/adapters/http.py": "x = 1\n",
+    "projects/python/infra/src/e_infra/adapters/ports.py": "p = 1\n",
+    "projects/python/infra/src/e_infra/adapters/thing.py": "class Thing:\n    pass\n",
+    "projects/python/infra/src/e_infra/ops/file.py": "f = 1\n",
+    "projects/python/infra/src/e_infra/ops/same.py": "s = 1\n",
+    "projects/python/infra/prek.toml": "a = 1\n",
+    "projects/python/infra/.gitattributes": "* text\n",
+    "projects/python/api/Makefile": "lint:\n\t@true\ninfra-check:\n\t@true\n",
     "projects/python/api/pyproject.toml": '[project]\nname = "e-api"\ndependencies = ["psqlpy>=0.1"]\n[tool.ruff]\nline-length = 120\n',
     "projects/python/api/src/e_api/router/x.py": "",
     "projects/python/api/tests/unit/test_x.py": "",
@@ -380,8 +380,8 @@ TEMPLATES_V1 = {
     "scripts/release.sh": "",
     "projects/templates.yml": (
         "templates:\n  api:\n    source: projects/python/api\n    package: e_api\n    brand: e-api\n    materials:\n"
-        "      - {src: projects/python/core/common/prek.toml, dst: prek.toml}\n"
-        "      - {src: projects/python/core/common/gitattributes, dst: .gitattributes}\n"
+        "      - {src: projects/python/infra/prek.toml, dst: prek.toml}\n"
+        "      - {src: projects/python/infra/.gitattributes, dst: .gitattributes}\n"
     ),
 }
 PROJECT_COPY = {
@@ -474,8 +474,8 @@ async def cores(tmp_path: Path, git, tree, commit) -> tuple[Path, Path, Path, st
     tree(
         templates,
         {
-            "projects/python/core/src/e_core/adapters/ports.py": "p = 2\n",
-            "projects/python/core/src/e_core/ops/file.py": "f = 2\n",
+            "projects/python/infra/src/e_infra/adapters/ports.py": "p = 2\n",
+            "projects/python/infra/src/e_infra/ops/file.py": "f = 2\n",
         },
     )
     await commit(templates, "v2")

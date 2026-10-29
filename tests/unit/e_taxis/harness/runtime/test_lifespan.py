@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from e_taxis.core.state import State
 from e_taxis.harness.models.session import Session
 from e_taxis.harness.runtime.lifespan import CoreState, lifespan
+from e_taxis.infra.state import State
 
 if TYPE_CHECKING:
     from pathlib import Path

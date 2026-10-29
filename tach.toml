@@ -11,9 +11,9 @@ root_module = "forbid"
 # Ordered high → low: a layer may import lower layers, importing upward fails.
 # The harness branch owns the command tree (cli), its composition root (runtime), the use cases (services)
 # and its contracts (models). The transpile and workflow branches take the same layers: commands → services →
-# engine (processors) → adapters → models. The materialized sections and the shared floor — `adapters` (e-core files beside
-# the project's own), `core`, `ops`, `processors` — sit below and serve every branch, harness and project alike.
-layers = ["cli", "runtime", "services", "processors", "adapters", "core", "ops", "models"]
+# engine (processors) → adapters → models. The materialized sections and the shared floor — `adapters` (e-infra files beside
+# the project's own), `infra`, `ops`, `processors` — sit below and serve every branch, harness and project alike.
+layers = ["cli", "runtime", "services", "processors", "adapters", "infra", "ops", "models"]
 
 [rules]
 unused_ignore_directives = "error"
@@ -55,8 +55,8 @@ layer = "processors"
 depends_on = []
 
 [[modules]]
-path = "e_taxis.core"
-layer = "core"
+path = "e_taxis.infra"
+layer = "infra"
 depends_on = []
 
 [[modules]]

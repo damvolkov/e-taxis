@@ -8,7 +8,6 @@ from e_taxis.adapters.catalog import FileCatalog
 from e_taxis.adapters.downloader import WreqDownloader
 from e_taxis.adapters.ports import StorePort
 from e_taxis.adapters.runner import ProcessRunner
-from e_taxis.core.state import State
 from e_taxis.harness.models.ports import CatalogPort, ProbePort, RunnerPort, UndoPort
 from e_taxis.harness.models.session import Session
 from e_taxis.harness.runtime.deps import Deps
@@ -18,6 +17,7 @@ from e_taxis.harness.services.doctor import DoctorService
 from e_taxis.harness.services.plan import PlanService
 from e_taxis.harness.services.uninstall import UninstallService
 from e_taxis.harness.services.verify import VerifyService
+from e_taxis.infra.state import State
 from e_taxis.transpile.adapters.capture import HttpCapture
 from e_taxis.transpile.models.ports import CapturePort
 from e_taxis.transpile.services.trial import TrialService

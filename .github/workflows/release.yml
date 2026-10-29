@@ -80,13 +80,13 @@ jobs:
           ref: ${{ steps.pin.outputs.ref }}
           path: .arkhetypo
           persist-credentials: false
-      - name: Pin Python as the template does (make common)
+      - name: Pin Python as the template does (make infra)
         shell: bash
-        run: cp .arkhetypo/projects/python/core/common/python-version .python-version
+        run: cp .arkhetypo/projects/python/infra/.python-version .python-version
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
-      - name: Materialize core/ops/adapters from the pinned arkhetypo — the wheel ships them
+      - name: Materialize infra/ops/adapters from the pinned arkhetypo — the wheel ships them
         env:
-          E_CORE_SRC: .arkhetypo/projects/python/core/src/e_core
+          E_INFRA_SRC: .arkhetypo/projects/python/infra/src/e_infra
           PYTHONUTF8: "1"
         run: uv run python scripts/materialize.py
       - name: Build (version resolved from the checked-out tag)

@@ -36,8 +36,6 @@ from e_taxis.adapters.probe import ShellProbe
 from e_taxis.adapters.runner import ProcessRunner
 from e_taxis.adapters.sqlite import SQLiteAdapter
 from e_taxis.adapters.undo import EffectUndo
-from e_taxis.core.settings import settings as st
-from e_taxis.core.state import State
 from e_taxis.harness.models.catalog import Primitive
 from e_taxis.harness.models.ports import (
     CatalogPort,
@@ -56,6 +54,8 @@ from e_taxis.harness.services.plan import PlanService
 from e_taxis.harness.services.resolver import ResolverService
 from e_taxis.harness.services.uninstall import UninstallService
 from e_taxis.harness.services.verify import VerifyService
+from e_taxis.infra.settings import settings as st
+from e_taxis.infra.state import State
 from e_taxis.transpile.adapters.capture import HttpCapture
 from e_taxis.transpile.adapters.fence import LandrunFence
 from e_taxis.transpile.models.ports import CapturePort

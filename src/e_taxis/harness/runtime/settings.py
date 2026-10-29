@@ -12,7 +12,7 @@ from pathlib import Path
 
 from pydantic import AliasChoices, Field
 
-from e_taxis.core.settings.base import BaseSettings
+from e_taxis.infra.settings.base import BaseSettings
 from e_taxis.workflow.models.plane import Cadence
 
 ##### DEFAULTS #####
