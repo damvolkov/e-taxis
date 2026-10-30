@@ -8,18 +8,17 @@ contract: what a unit drags in, what would go if it dropped, and what the system
 
 from msgspec import Struct
 
-SCHEMA = 1
+SCHEMA = 2
 
 
 ##### TYPES #####
 class Unit(Struct, frozen=True, kw_only=True):
-    """One exportable node of the common tree: a module or package, what it depends on and what it drags along."""
+    """One exportable node of the common tree: a module file, what it depends on and what it drags along."""
 
     key: str
     area: str
     name: str
     files: tuple[str, ...]
-    package: bool = False
     tests: tuple[str, ...] = ()
     deps: tuple[str, ...] = ()
     dependents: tuple[str, ...] = ()

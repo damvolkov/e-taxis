@@ -11,15 +11,15 @@ forgets it; an effect that cannot be reverted is named, never silently dropped."
 import time
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
-from types import TracebackType
 from typing import ClassVar, Self
 
 import msgspec
 
-from e_taxis.adapters.ports import StorePort
 from e_taxis.harness.models.error import JournalError, PrimitiveError
 from e_taxis.harness.models.journal import Journal, JournalEffect
 from e_taxis.harness.models.ports import UndoPort
+from e_taxis.ports.provider import Isolation, Locality, ProviderSpec, Workload
+from e_taxis.ports.store import StorePort
 
 ##### DEFAULTS #####
 PREFIX: str = "journal:"
@@ -30,7 +30,7 @@ class StoreJournal:
     """Satisfies StorePort and RecorderPort; reads pass through, writes and effects are recorded, the run is
     filed on `__aexit__`. `world` reverts effects on undo."""
 
-    name: ClassVar[str] = "journal"
+    spec: ClassVar[ProviderSpec] = ProviderSpec("journal", Locality.EMBEDDED, Workload.IO_BOUND, Isolation.LOOP)
 
     __slots__ = ("_command", "_depth", "_effects", "_inner", "_world", "_writes")
 
@@ -85,16 +85,17 @@ class StoreJournal:
     async def __aenter__(self) -> Self:
         return self
 
-    async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: TracebackType | None
-    ) -> None:
+    async def __aexit__(self, *exc: object) -> None:
         ### a failed store-only run changed the store partially at most: filing it would make undo restore a half-state;
         ### a run with effects changed the world, failed or not, and only a filed entry lets undo reach it.
-        match (exc_type, bool(self._writes), bool(self._effects)):
-            case (_, _, True) | (None, True, _):
+        match (exc[0] is not None, bool(self._writes), bool(self._effects)):
+            case (_, _, True) | (False, True, _):
                 await self._commit_file()
             case _:
                 pass
+
+    async def health(self) -> bool:
+        return await self._inner.health()
 
     async def get(self, key: str) -> bytes | None:
         return await self._inner.get(key)

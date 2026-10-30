@@ -30,8 +30,8 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
     from pathlib import Path
 
-    from e_taxis.adapters.ports import StorePort
     from e_taxis.harness.models.ports import RecorderPort, RunnerPort
+    from e_taxis.ports.store import StorePort
     from e_taxis.transpile.models.nous import NousTree
     from e_taxis.transpile.models.ports import NousPort
     from e_taxis.transpile.models.projection import Projection

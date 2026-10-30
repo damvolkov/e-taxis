@@ -54,7 +54,7 @@ common-src: ## resolve the pinned ref on arkhetypo's remote and fetch its common
 	@rm -rf $(COMMON_HEAD) && mkdir -p $(COMMON_HEAD)
 	@uv run taxis repo extract $(ARKHETYPO_URL) $(ARKHETYPO_REF) projects/python/common --dest $(COMMON_HEAD)
 
-common: $(COMMON_FETCH) ## materialize arkhetypo's e-infra into e_taxis.{infra,ops,adapters,processors} via a structural rewrite, and the shared root files into the project root
+common: $(COMMON_FETCH) ## materialize arkhetypo's e-infra into e_taxis.{engines,infra,ops,ports,processors,providers} via a structural rewrite, and the shared root files into the project root
 	@uv run python scripts/materialize.py
 	@cp $(COMMON_ROOT)/prek.toml prek.toml
 	@cp $(COMMON_ROOT)/.gitattributes .gitattributes
@@ -122,9 +122,8 @@ logo: ## deterministic wordmarks into assets/ [names: make logo NAMES="taxis tem
 clean: ## remove caches + build artifacts + materialized common
 	@find . -type d \( -name __pycache__ -o -name .pytest_cache -o -name .ruff_cache \) -exec rm -rf {} + 2>/dev/null || true
 	@rm -rf dist build *.egg-info .coverage .coverage.* .ty_cache prek.toml .gitattributes .python-version src/e_taxis/.materialized.json
-	@rm -rf src/e_taxis/infra src/e_taxis/processors
-	@rm -f src/e_taxis/ops/crypto.py src/e_taxis/ops/file.py src/e_taxis/ops/image.py src/e_taxis/ops/registry.py src/e_taxis/ops/wrappers.py
-	@rm -f src/e_taxis/adapters/anytomd.py src/e_taxis/adapters/awa.py src/e_taxis/adapters/base.py src/e_taxis/adapters/docling.py src/e_taxis/adapters/http.py src/e_taxis/adapters/otel.py src/e_taxis/adapters/pgqueuer.py src/e_taxis/adapters/ports.py src/e_taxis/adapters/postgres.py src/e_taxis/adapters/queue.py src/e_taxis/adapters/redis.py src/e_taxis/adapters/sqlite.py
+	@rm -rf src/e_taxis/engines src/e_taxis/infra src/e_taxis/ports src/e_taxis/processors src/e_taxis/providers
+	@rm -f src/e_taxis/ops/crypto.py src/e_taxis/ops/file.py src/e_taxis/ops/hash.py src/e_taxis/ops/image.py src/e_taxis/ops/registry.py src/e_taxis/ops/wrappers.py
 	@printf "$(GREEN)✓ clean$(RESET)\n"
 
 %:

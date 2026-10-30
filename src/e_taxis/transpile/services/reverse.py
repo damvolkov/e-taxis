@@ -21,7 +21,7 @@ from e_taxis.transpile.services.run import RunService
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from e_taxis.adapters.ports import StorePort
+    from e_taxis.ports.store import StorePort
     from e_taxis.transpile.models.ports import NousPort
 
 

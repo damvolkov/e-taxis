@@ -5,7 +5,7 @@ gets a runner and a downloader that touch nothing — the real ones are tested o
 
 from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Self
 
 import anyio
 import pytest
@@ -14,6 +14,7 @@ from e_taxis.cli import build
 from e_taxis.harness.models.error import DownloadError, RunnerError
 from e_taxis.harness.models.ports import DownloaderPort, RunnerPort
 from e_taxis.harness.runtime.deps import Deps
+from e_taxis.ports.provider import Isolation, Locality, ProviderSpec, Workload
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
@@ -26,10 +27,19 @@ if TYPE_CHECKING:
 class MemoryStore:
     """StorePort over a dict: the services and the journal are tested against the port, not against sqlite."""
 
-    name: ClassVar[str] = "memory"
+    spec: ClassVar[ProviderSpec] = ProviderSpec("memory", Locality.EMBEDDED, Workload.IO_BOUND, Isolation.LOOP)
 
     def __init__(self) -> None:
         self.data: dict[str, bytes] = {}
+
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(self, *exc: object) -> None:
+        return None
+
+    async def health(self) -> bool:
+        return True
 
     async def get(self, key: str) -> bytes | None:
         return self.data.get(key)

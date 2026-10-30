@@ -33,7 +33,7 @@ class Scaffold:
     def _fs_text(self, path: Path) -> str | None:
         try:
             return path.read_text()
-        except SyntaxError, ValueError:
+        except SyntaxError, ValueError, FileNotFoundError:
             return None
 
     def _fs_files(self, base: Path) -> Iterator[Path]:

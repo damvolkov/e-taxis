@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from e_taxis.adapters.sqlite import SQLiteAdapter
 from e_taxis.harness.runtime.journal import StoreJournal
+from e_taxis.providers.drivers.store.sqlite import SqliteDriver
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 async def _file(command: str, writes: dict[str, bytes], world: UndoPort) -> None:
-    async with SQLiteAdapter() as store, StoreJournal(store, world=world, command=command, depth=50) as journal:
+    async with SqliteDriver() as store, StoreJournal(store, world=world, command=command, depth=50) as journal:
         _ = [await journal.set(key, value) for key, value in writes.items()]
 
 

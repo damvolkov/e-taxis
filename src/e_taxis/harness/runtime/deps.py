@@ -1,6 +1,6 @@
 """runtime.deps: injection by declared type — the one place ports meet adapters, built on demand, once per run.
 
-This is the composition root of the hexagon: `SQLiteAdapter`, `FileCatalog`, `ShellProbe`, the runner, the
+This is the composition root of the hexagon: `SqliteDriver`, `FileCatalog`, `ShellProbe`, the runner, the
 downloader and every primitive adapter are named here and nowhere else; the store is wrapped in the undo
 journal and handed on as a bare `StorePort` (and as the services' recorder), the catalog and the probe reach
 the services as their ports, the primitives as one frozen table Primitive → adapter. The run's home, Claude's
@@ -24,7 +24,6 @@ from rich.console import Console
 
 from e_taxis.adapters.catalog import FileCatalog
 from e_taxis.adapters.downloader import WreqDownloader
-from e_taxis.adapters.ports import StorePort
 from e_taxis.adapters.primitives.binary import BinaryPrimitive
 from e_taxis.adapters.primitives.compose import ComposePrimitive
 from e_taxis.adapters.primitives.file import FilePrimitive
@@ -35,7 +34,6 @@ from e_taxis.adapters.primitives.settings import SettingsPrimitive
 from e_taxis.adapters.primitives.uv import UvPrimitive
 from e_taxis.adapters.probe import ShellProbe
 from e_taxis.adapters.runner import ProcessRunner
-from e_taxis.adapters.sqlite import SQLiteAdapter
 from e_taxis.adapters.undo import EffectUndo
 from e_taxis.harness.models.catalog import Primitive
 from e_taxis.harness.models.ports import (
@@ -57,6 +55,8 @@ from e_taxis.harness.services.uninstall import UninstallService
 from e_taxis.harness.services.verify import VerifyService
 from e_taxis.infra.settings import settings as st
 from e_taxis.infra.state import State
+from e_taxis.ports.store import StorePort
+from e_taxis.providers.drivers.store.sqlite import SqliteDriver
 from e_taxis.schedule.adapters.systemd import UserSystemd
 from e_taxis.schedule.services.schedule import ScheduleService
 from e_taxis.transpile.adapters.capture import HttpCapture
@@ -149,9 +149,9 @@ class Deps:
 
     async def _resolve_store(self) -> StoreJournal:
         """The local store behind the undo journal: every command write is revertible by construction."""
-        store = await self._stack.enter_async_context(SQLiteAdapter())
+        store = await self._stack.enter_async_context(SqliteDriver())
         world = await self.resolve(UndoPort)
-        journal = StoreJournal(store, world=world, command=self._state.session.command, depth=st.cli.cli_history)
+        journal = StoreJournal(store, world=world, command=self._state.session.command, depth=st.cli.history)
         return await self._stack.enter_async_context(journal)
 
     async def _resolve_settings(self) -> TaxisSettings:

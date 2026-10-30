@@ -3,9 +3,9 @@
 libcst parses each source file as real 3.14 syntax (PEP 695 included, verified against the whole
 `e_infra` tree) and rewrites *only* the import nodes: `e_infra.<section> → e_taxis.<section>`; every
 result is re-parsed with `ast.parse` and scanned for leftovers before it is written. Sections land
-under their upstream names — `src/e_taxis/{infra,ops,adapters,processors}` — because materialized code
-is part of the project and the wheel ships one root, never a global `infra` or `adapters`. `ops` and
-`adapters` are shared homes — the project keeps code beside generated files there — so the write is
+under their upstream names — `src/e_taxis/{infra,ops,ports,providers,engines,processors}` — because materialized code
+is part of the project and the wheel ships one root, never a global `infra` or `providers`. `ops` is a
+shared home — the project keeps code beside generated files there — so the write is
 never destructive: each run lands what the sections expect, prunes only what its own manifest lists
 and the new run does not, and records the rest in `src/e_taxis/.materialized.json` — the generator's
 memory, because untracked project code is never its to touch. `make common` materializes into `src/`;
@@ -37,14 +37,36 @@ PACKAGE: Final[str] = "e_taxis"
 COMMON_SRC: Path = Path(
     os.environ.get("E_COMMON_SRC", ROOT.parent / "e-arkhetypo" / "projects" / "python" / "common" / "src" / "e_infra")
 )
-SECTIONS: tuple[str, ...] = ("adapters", "infra", "ops", "processors")
+SECTIONS: tuple[str, ...] = ("engines", "infra", "ops", "ports", "processors", "providers")
 DEST: Final[Mapping[str, str]] = MappingProxyType({section: f"{PACKAGE}/{section}" for section in SECTIONS})
 ### the TUI header belongs to the boilerplate wizard, not to a running service: same topology as the old sed.
 ### the compose tool belongs to the stack, not to a running service.
-EXCLUDES: frozenset[str] = frozenset({"ops/tui.py", "ops/snap.py", "ops/compose.py"})
-### `ops` and `adapters` are shared homes: only the manifest owns there — committed code is the project's.
-### `infra` and `processors` are dedicated: anything tracked inside is a violation the gate must flag.
-SHARED: Final[frozenset[str]] = frozenset({"ops", "adapters"})
+### a provider whose library the project does not ship stays upstream, with its config: croniter (dispatch engine),
+### asyncpg and pgqueuer (the second queue), theine, rtrafilatura, anytomd and tokenizers (TEI embed).
+EXCLUDES: frozenset[str] = frozenset(
+    {
+        "ops/tui.py",
+        "ops/snap.py",
+        "ops/compose.py",
+        "engines/dispatch.py",
+        "infra/config/engines/dispatch.py",
+        "providers/drivers/database/asyncpg.py",
+        "infra/config/providers/drivers/database/asyncpg.py",
+        "providers/drivers/queue/pgqueuer.py",
+        "infra/config/providers/drivers/queue/pgqueuer.py",
+        "providers/adapters/cache/theine.py",
+        "infra/config/providers/adapters/cache/theine.py",
+        "providers/adapters/extract/rtrafilatura.py",
+        "providers/adapters/markdown/anytomd.py",
+        "infra/config/providers/adapters/markdown/anytomd.py",
+        "providers/drivers/embed/tei.py",
+        "infra/config/providers/drivers/embed/tei.py",
+    }
+)
+### `ops` is the shared home: only the manifest owns there — committed code is the project's (logo, repo).
+### every other section is dedicated: anything tracked inside is a violation the gate must flag.
+### `e_taxis.adapters` is the project's own tree, never a section.
+SHARED: Final[frozenset[str]] = frozenset({"ops"})
 
 
 ##### REWRITE #####
@@ -230,7 +252,7 @@ def check(dest_root: Path) -> int:
         ]
         match issues:
             case []:
-                print("✓ materialized e_taxis.{infra,ops,adapters,processors} in sync")
+                print("✓ materialized e_taxis.{engines,infra,ops,ports,processors,providers} in sync")
                 return 0
             case _:
                 print("✗ drift from arkhetypo (run make common):")
@@ -251,7 +273,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return check(ROOT)
         case _:
             materialize(ROOT)
-            print("✓ materialized arkhetypo e-infra into e_taxis.{infra,ops,adapters,processors}")
+            print("✓ materialized arkhetypo e-infra into e_taxis.{engines,infra,ops,ports,processors,providers}")
             return 0
 
 
