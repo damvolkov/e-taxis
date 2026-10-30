@@ -3,7 +3,7 @@
 The landing must leave nothing to do (a second plan is empty), and undoing every
 recorded effect, newest first, must leave the sandbox as it was: no file, no registration."""
 
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 import msgspec
 import pytest
@@ -12,6 +12,7 @@ from e_taxis.adapters.primitives.file import FilePrimitive
 from e_taxis.adapters.primitives.settings import SettingsPrimitive
 from e_taxis.adapters.runner import ProcessRunner
 from e_taxis.adapters.undo import EffectUndo
+from e_taxis.ports.provider import Isolation, Locality, ProviderSpec, Workload
 from e_taxis.transpile.adapters.nous import GitNous
 from e_taxis.transpile.services.check import CheckService
 from e_taxis.transpile.services.land import LandService
@@ -24,10 +25,19 @@ pytestmark = pytest.mark.slow
 
 
 class DictStore:
-    name: ClassVar[str] = "dict"
+    spec: ClassVar[ProviderSpec] = ProviderSpec("dict", Locality.EMBEDDED, Workload.IO_BOUND, Isolation.LOOP)
 
     def __init__(self) -> None:
         self.data: dict[str, bytes] = {}
+
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(self, *exc: object) -> None:
+        return None
+
+    async def health(self) -> bool:
+        return True
 
     async def get(self, key: str) -> bytes | None:
         return self.data.get(key)

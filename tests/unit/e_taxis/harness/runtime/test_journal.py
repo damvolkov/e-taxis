@@ -2,11 +2,11 @@
 
 import pytest
 
-from e_taxis.adapters.ports import StorePort
 from e_taxis.harness.models.error import JournalError
 from e_taxis.harness.models.journal import JournalCommand, JournalFile, JournalKey
 from e_taxis.harness.models.ports import RecorderPort
 from e_taxis.harness.runtime.journal import PREFIX, StoreJournal
+from e_taxis.ports.store import StorePort
 
 PLACED = JournalFile(path="/bin/x", before=None)
 KEYED = JournalKey(file="/s.json", path=("env", "A"), created=2)
@@ -17,6 +17,10 @@ def test_journal_satisfies_the_store_and_recorder_ports(store, undoer) -> None:
     journal = StoreJournal(store, world=undoer, command="x", depth=5)
     assert isinstance(journal, StorePort)
     assert isinstance(journal, RecorderPort)
+
+
+async def test_journal_health_is_the_stores(store, undoer) -> None:
+    assert await StoreJournal(store, world=undoer, command="x", depth=5).health() is True
 
 
 async def test_journal_undo_restores_the_value_before_the_first_write(store, undoer) -> None:

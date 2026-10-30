@@ -110,29 +110,20 @@ bump = true
 fallback-version = "0.0.0"
 
 [tool.hatch.build]
-### the four sections materialize inside e_taxis from arkhetypo (never committed — see .gitignore): artifacts ship them despite the VCS ignore.
-### `adapters` is listed by file: the project's own adapters share the folder and are committed as normal.
+### the sections materialize inside e_taxis from arkhetypo (never committed — see .gitignore): artifacts ship them despite the VCS ignore.
 artifacts = [
+    "src/e_taxis/engines/",
     "src/e_taxis/infra/",
+    "src/e_taxis/ports/",
     "src/e_taxis/processors/",
-    ### `ops` and `adapters` are shared homes: the generated files ship by name, the project's own are committed as normal.
+    "src/e_taxis/providers/",
+    ### `ops` is the shared home: the generated files ship by name, the project's own are committed as normal.
     "src/e_taxis/ops/crypto.py",
     "src/e_taxis/ops/file.py",
+    "src/e_taxis/ops/hash.py",
     "src/e_taxis/ops/image.py",
     "src/e_taxis/ops/registry.py",
     "src/e_taxis/ops/wrappers.py",
-    "src/e_taxis/adapters/anytomd.py",
-    "src/e_taxis/adapters/awa.py",
-    "src/e_taxis/adapters/base.py",
-    "src/e_taxis/adapters/docling.py",
-    "src/e_taxis/adapters/http.py",
-    "src/e_taxis/adapters/otel.py",
-    "src/e_taxis/adapters/pgqueuer.py",
-    "src/e_taxis/adapters/ports.py",
-    "src/e_taxis/adapters/postgres.py",
-    "src/e_taxis/adapters/queue.py",
-    "src/e_taxis/adapters/redis.py",
-    "src/e_taxis/adapters/sqlite.py",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -217,30 +208,22 @@ markers = ["slow: slow tests (deselect with -m 'not slow')"]
 ##### COVERAGE #####
 [tool.coverage.run]
 ### the materialized sections are tested at their source (arkhetypo): the gate covers the project tool alone.
-### `adapters` is shared: the e-infra files are omitted by name, the project's own stay under the gate.
+### `ops` is shared: the e-infra files are omitted by name, the project's own stay under the gate.
 ### `project` is the e-management engine ported ahead of its suite (the entry becomes cyclopts cards first, F3.1):
 ### interim omit — the gate must not lie about code it has not seen tested. Remove when tests/unit/e_taxis/project is green.
 omit = [
+    "*/src/e_taxis/engines/*",
     "*/src/e_taxis/infra/*",
+    "*/src/e_taxis/ports/*",
     "*/src/e_taxis/processors/*",
+    "*/src/e_taxis/providers/*",
     "*/src/e_taxis/project/*",
     "*/src/e_taxis/ops/crypto.py",
     "*/src/e_taxis/ops/file.py",
+    "*/src/e_taxis/ops/hash.py",
     "*/src/e_taxis/ops/image.py",
     "*/src/e_taxis/ops/registry.py",
     "*/src/e_taxis/ops/wrappers.py",
-    "*/src/e_taxis/adapters/anytomd.py",
-    "*/src/e_taxis/adapters/awa.py",
-    "*/src/e_taxis/adapters/base.py",
-    "*/src/e_taxis/adapters/docling.py",
-    "*/src/e_taxis/adapters/http.py",
-    "*/src/e_taxis/adapters/otel.py",
-    "*/src/e_taxis/adapters/pgqueuer.py",
-    "*/src/e_taxis/adapters/ports.py",
-    "*/src/e_taxis/adapters/postgres.py",
-    "*/src/e_taxis/adapters/queue.py",
-    "*/src/e_taxis/adapters/redis.py",
-    "*/src/e_taxis/adapters/sqlite.py",
 ]
 source_pkgs = ["e_taxis"]
 branch = true

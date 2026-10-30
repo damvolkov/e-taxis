@@ -5,7 +5,7 @@ run's branch (committed work only, never the checkout) against the published e-a
 and e-nous's lib.md files and MCP wiring, and writes one `Fact` per thing the cores lack or say differently:
 
 - `library` — a dependency no skill's lib.md names (and which template systems already use it);
-- `module` — a module of system infra's layers the blueprint lacks, or one the project's copy diverged from;
+- `module` — a module of the common blueprint's layers the blueprint lacks, or one the project's copy diverged from;
 - `common` — a shared project file (a system's `materials` in the blueprint manifest) the project changed;
 - `service` — a service the project runs (compose, systemd units) that no stack service is;
 - `project` — a top-level package no template system has, or a scaffold file that departs from its system's copy;
@@ -37,14 +37,14 @@ if TYPE_CHECKING:
     from e_taxis.workflow.models.ports import CommandPort
 
 ##### DEFAULTS #####
-LAYERS: Final[tuple[str, ...]] = ("adapters", "infra", "ops", "processors")
+LAYERS: Final[tuple[str, ...]] = ("engines", "infra", "ops", "ports", "processors", "providers")
 TARGET: Final[re.Pattern[str]] = re.compile(r"^([A-Za-z0-9][\w-]*):(?!=)", re.MULTILINE)
 NAME: Final[re.Pattern[str]] = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 COMPOSE: Final[re.Pattern[str]] = re.compile(r"(docker-)?compose[\w.-]*\.ya?ml")
 SCAFFOLD: Final[tuple[str, ...]] = ("Dockerfile", "Makefile", "tach.toml", "pyproject.toml", "properdocs.yml")
 TOOLS: Final[re.Pattern[str]] = re.compile(r"^\[tool\..*", re.MULTILINE | re.DOTALL)
 DEFINITION: Final[re.Pattern[str]] = re.compile(r"^(?:async\s+def|def|class)\s+(\w+)", re.MULTILINE)
-GATES: Final[tuple[str, ...]] = ("infra-check",)
+GATES: Final[tuple[str, ...]] = ("common-check",)
 ### where things sit in the two trees, by path shape: the captured segment is the name that counts.
 STACKED: Final[re.Pattern[str]] = re.compile(r"stack/[^/]+/([^/]+)/.+")
 SYSTEMS: Final[re.Pattern[str]] = re.compile(r"projects/python/([^/]+)/.*")
@@ -176,12 +176,12 @@ class DistillInventory:
                 return await self._base_recorded(commit, theirs, normal)
 
     async def _common_defines(self, name: str) -> set[str]:
-        """The files of system infra that define `name` in the published tree (none: git grep exits 1)."""
+        """The files of the common blueprint that define `name` in the published tree (none: git grep exits 1)."""
         ### POSIX classes, not `\s`/`\b`: git grep -E runs the platform's regex, and BSD's (macOS) knows neither.
         pattern = rf"^(async[[:space:]]+def|def|class)[[:space:]]+{name}([^[:alnum:]_]|$)"
         try:
             said = await self._common_git(
-                self._blueprint, "grep", "-l", "-E", pattern, self._ref, "--", "projects/python/infra/src"
+                self._blueprint, "grep", "-l", "-E", pattern, self._ref, "--", "projects/python/common/src"
             )
         except CommandError:
             return set()
@@ -291,12 +291,12 @@ class DistillInventory:
         return strip.sub(r"\1", text)
 
     async def _take_modules(self, scope: ScopeInventory) -> list[Fact]:
-        """Project infra's layers, wherever the project keeps them: `src/<layer>/` as generated, or inside its package."""
+        """The common blueprint's layers, wherever the project keeps them: `src/<layer>/` as generated, or inside its package."""
         layout = re.compile(rf"src/(?:{re.escape(scope.package)}/)?((?:{'|'.join(LAYERS)})/.+\.py)")
         strip = re.compile(rf"\b(?:e_infra|{re.escape(scope.package)})\.({'|'.join(LAYERS)})\b")
         normal = partial(self._modules_normal, strip)
         pairs = sorted(
-            (local, f"projects/python/infra/src/e_infra/{found.group(1)}")
+            (local, f"projects/python/common/src/e_infra/{found.group(1)}")
             for local in scope.files
             if (found := layout.fullmatch(local)) and not local.endswith("__init__.py")
         )
@@ -316,7 +316,7 @@ class DistillInventory:
         materials = [(m["src"], m["dst"]) for m in self._common_system(scope).get("materials", [])]
         missing = [
             self._common_fact(
-                Plane.COMMON, local, FactStatus.MISSING, f"`make infra` copies it from {source}", local, fresh=False
+                Plane.COMMON, local, FactStatus.MISSING, f"`make common` copies it from {source}", local, fresh=False
             )
             for source, local in materials
             if local not in scope.files

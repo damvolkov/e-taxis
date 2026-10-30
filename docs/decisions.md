@@ -90,3 +90,25 @@ traces to the Technology Radar, whose rings (adopt, trial, assess, hold) are thi
 word reads the scope broad to narrow.
 **Rejected.** horizon- (horizon scanning fits the field survey only, not the two that look at what we run); recon-
 (memorable, no vocabulary behind it); a three-word id (the scope fits one word).
+
+## 2026-10-30 — The dependency graph sees nested namespace modules; schema 2
+
+**Decision.** A graph unit is every module file under an area at any depth, keyed by its path without `.py`
+(`providers/drivers/store/redis`); an area is any top-level `src` directory but the app package that holds a module at
+any depth. An import resolves to the longest unit key that prefixes its dotted name, so `from X import Y` lands on
+`X.Y` when that is a module. A unit owns exactly one file, so `Unit.package` is gone and `SCHEMA` is 2; the drift
+semantics and every other field are unchanged. A core unit's tests are `test_<name>*.py` beside the mirrored folder.
+**Evidence.** On the six-section `e_infra` the lock now lists 55 (api), 81 (cli), 78 (graph) and 64 (tui) units, one
+per module file (counted against `rglob`), where the one-level rule saw none of `providers/drivers/*/*`.
+**Rejected.** Keeping packages as units (namespace packages carry no `__init__`, nothing to detect); resolving by
+the first two segments (wrong for any depth beyond one).
+
+## 2026-10-30 — e_taxis materializes six sections and leaves out what it has no library for
+
+**Decision.** `make common` lands `engines, infra, ops, ports, processors, providers` in `e_taxis`; `e_taxis.adapters`
+is the project's own tree again. The materializer excludes the dispatch engine (croniter), asyncpg and pgqueuer,
+theine, rtrafilatura, anytomd and the TEI embed driver, each with its config, because the project ships none of those
+libraries. A prune rule on a file the template does not hold is a no-op, like a pattern that does not match.
+**Evidence.** `ty` reported every one as an unresolved import with the sections whole; the generation matrix hit the
+missing `compose.yml` on cli and tui through the shared finalize rule.
+**Rejected.** Adding six dependencies only to type-check code never run; an `unresolved-import` ignore (hides real breaks).

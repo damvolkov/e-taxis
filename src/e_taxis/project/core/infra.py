@@ -1,7 +1,7 @@
 """core.infra: the assembler — a loaded CI library plus one project's tokens become the files under ``.github/``.
 
 Pure and deterministic: no filesystem, no clock. The same library, tokens and selection always emit the
-same bytes, which is what lets ``make infra-check`` diff a system against the library and makes the
+same bytes, which is what lets ``make common-check`` diff a system against the library and makes the
 sandbox test meaningful. A selection is legal only when every chosen feature's ``requires`` is chosen,
 every token its fragments demands arrives, and a replacing feature (the rust one) folds away what it
 replaces. Tokens are `{{lower_case}}`; `${{ github.* }}` never matches and is left exactly as written.

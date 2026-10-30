@@ -1,11 +1,12 @@
 """ops.graph: the dependency analysis of a system — Rust-parsed imports, discovered unit catalog, and the pure graph algebra over them.
 
 Three stages, each a named total: ``imports_of`` reads one file's concrete syntax tree; ``catalog`` walks a project's
-``src/`` into units; ``resolve`` turns unit edges into levels, dependents and lock state. The transitive machinery
+``src/`` into units — every module file under an area, at any depth, keyed by its path without ``.py``; ``resolve`` turns unit edges into levels, dependents and lock state. The transitive machinery
 lives in ``ops.deps`` and is shared with the stack parser; this module is what is specific to a *system*: the AST
 import extraction and the unit catalog.
 """
 
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 import libcst as cst
@@ -19,10 +20,7 @@ if TYPE_CHECKING:
 
     from e_taxis.project.models.manifest import Common
 
-PY_SUFFIX: str = ".py"
 INIT_NAME: str = "__init__.py"
-MIN_DOTS: int = 2
-SKIP_NAMES: frozenset[str] = frozenset({"__pycache__", INIT_NAME})
 
 
 ##### PARSING #####
@@ -38,10 +36,10 @@ def _dotted(node: cst.BaseExpression | None) -> str | None:
             return None
 
 
-def _unit(dotted: str, areas: frozenset[str]) -> str | None:
-    """``adapters.base`` → ``adapters/base``; a head that is not a common area (the app itself) names no unit."""
+def _unit(dotted: str, keys: frozenset[str]) -> str | None:
+    """``providers.drivers.store.redis.RedisDriver`` → ``providers/drivers/store/redis``: the longest unit key that prefixes the name."""
     parts = dotted.split(".")
-    return f"{parts[0]}/{parts[1]}" if len(parts) >= MIN_DOTS and parts[0] in areas else None
+    return next((key for size in range(len(parts), 0, -1) if (key := "/".join(parts[:size])) in keys), None)
 
 
 def _from_dots(node: cst.ImportFrom) -> tuple[str, ...]:
@@ -76,68 +74,51 @@ class _Refs(cst.CSTVisitor):
         self.dots.extend(_import_dots(node))
 
 
-def imports_of(text: str, areas: frozenset[str]) -> frozenset[str]:
-    """Every common unit a source file references, read from its concrete syntax tree."""
+def imports_of(text: str, keys: frozenset[str]) -> frozenset[str]:
+    """Every unit of ``keys`` a source file references, read from its concrete syntax tree."""
     visitor = _Refs()
     cst.parse_module(text).visit(visitor)
-    return frozenset(unit for dot in visitor.dots if (unit := _unit(dot, areas)))
+    return frozenset(unit for dot in visitor.dots if (unit := _unit(dot, keys)))
 
 
 ##### DISCOVERY #####
-def _pyfiles(base: Path) -> Iterator[Path]:
-    return (p for p in sorted(base.rglob("*.py")) if "__pycache__" not in p.parts)
+def _modules(base: Path) -> Iterator[Path]:
+    """Every module file under ``base`` at any depth: namespace packages carry no ``__init__``, and one that does is no unit."""
+    return (p for p in sorted(base.rglob("*.py")) if "__pycache__" not in p.parts and p.name != INIT_NAME)
 
 
 def areas_of(src: Path, package: str) -> tuple[str, ...]:
-    """The top-level ``src`` directories that are neither the app package nor empty of code."""
-    return tuple(sorted(p.name for p in src.iterdir() if p.is_dir() and p.name != package and any(p.glob("*.py"))))
-
-
-def _cells(src: Path, areas: tuple[str, ...]) -> Iterator[tuple[str, Path, bool]]:
-    """Each candidate unit as (area, path, is_package): flat modules and one-level packages, nothing else."""
-    return (
-        (area, child, child.is_dir())
-        for area in areas
-        for child in sorted((src / area).iterdir())
-        if child.name not in SKIP_NAMES
-        and ((child.is_file() and child.suffix == PY_SUFFIX) or (child.is_dir() and (child / INIT_NAME).is_file()))
+    """The top-level ``src`` directories that are not the app package and hold a module at any depth."""
+    return tuple(
+        sorted(
+            p.name for p in src.iterdir() if p.is_dir() and p.name != package and next(_modules(p), None) is not None
+        )
     )
 
 
-def _key(area: str, child: Path, *, is_package: bool) -> str:
-    return f"{area}/{child.name if is_package else child.stem}"
-
-
-def _rel(system: Path, path: Path) -> str:
-    return path.relative_to(system).as_posix()
-
-
-def catalog(src: Path, areas: tuple[str, ...]) -> tuple[dict[str, tuple[str, ...]], dict[str, bool]]:
-    """The unit catalog: the project-relative files each unit owns, and whether it is a package."""
+def catalog(src: Path, areas: tuple[str, ...]) -> dict[str, tuple[str, ...]]:
+    """The unit catalog: each module's key (its path under ``src`` without ``.py``) and the project-relative file it owns."""
     system = src.parent
-    cells = list(_cells(src, areas))
-    files = {
-        _key(area, child, is_package=pkg): tuple(
-            sorted(_rel(system, p) for p in ([child] if not pkg else _pyfiles(child)))
-        )
-        for area, child, pkg in cells
+    return {
+        module.relative_to(src).with_suffix("").as_posix(): (module.relative_to(system).as_posix(),)
+        for area in areas
+        for module in _modules(src / area)
     }
-    packages = {_key(area, child, is_package=pkg): pkg for area, child, pkg in cells}
-    return files, packages
 
 
 def core_tests(common: Common, common_dir: Path, keys: Collection[str]) -> dict[str, tuple[str, ...]]:
-    """The core tests each unit owns, spelled as the destination paths they materialize to in a generated project."""
+    """The core tests each unit owns, spelled as the destination paths they materialize to in a generated project.
+
+    A unit ``a/b/c`` owns ``test_c*.py`` beside the mirrored path ``tests/unit/<package>/a/b``."""
     root = common_dir / "tests" / "unit" / common.package
-    return {
-        key: tuple(
-            f"tests/unit/{key.partition('/')[0]}/{name}"
-            for name in sorted(p.name for p in (root / key.partition("/")[0]).glob(f"test_{key.partition('/')[2]}*.py"))
-        )
-        if (root / key.partition("/")[0]).is_dir()
-        else ()
-        for key in keys
-    }
+    return {key: _owned_tests(root, PurePosixPath(key)) for key in keys}
+
+
+def _owned_tests(root: Path, key: PurePosixPath) -> tuple[str, ...]:
+    return tuple(
+        f"tests/unit/{key.parent.as_posix()}/{test.name}"
+        for test in sorted((root / key.parent).glob(f"test_{key.name}*.py"))
+    )
 
 
 ##### SYSTEM ALGEBRA #####
@@ -171,7 +152,6 @@ def resolve(
     keys: Collection[str],
     files_of: Mapping[str, tuple[str, ...]],
     tests_of: Mapping[str, tuple[str, ...]],
-    package_of: Mapping[str, bool],
     imports_map: Mapping[str, frozenset[str]],
     root_files: Collection[str],
     detach: frozenset[str],
@@ -187,7 +167,6 @@ def resolve(
             key=key,
             area=key.partition("/")[0],
             name=key.partition("/")[2],
-            package=package_of[key],
             files=files_of[key],
             tests=tests_of.get(key, ()),
             deps=tuple(sorted(deps[key])),

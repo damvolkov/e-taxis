@@ -34,7 +34,7 @@ class CoreState:
 @asynccontextmanager
 async def lifespan(session: Session) -> AsyncIterator[Deps]:
     """The run: configure logging, seal `core` + `session` into the graph, hand the provider to the launcher."""
-    setup(env=st.app.app_env, level=logging.DEBUG if session.verbose else logging.WARNING, stream=sys.stderr)
+    setup(env=st.app.env, level=logging.DEBUG if session.verbose else logging.WARNING, stream=sys.stderr)
     state = State(core=CoreState(settings=st, logger=logger), session=session)
     state.seal()
     logger.debug("run start", command=session.command, step="START")

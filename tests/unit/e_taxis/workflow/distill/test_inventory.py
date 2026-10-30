@@ -16,16 +16,16 @@ async def test_inventory_reads_every_plane_three_way(
     command: ShellCommand, cores: tuple[Path, Path, Path, str], tree
 ) -> None:
     templates, harness, project, v1 = cores
-    tree(project, {"src/e_proj/adapters/uncommitted.py": ""})
+    tree(project, {"src/e_proj/providers/adapters/uncommitted.py": ""})
     manifest = await DistillScope(command).intake(await DistillScope(command).guard(project, (), "", ""))
     taken = await DistillInventory(command, harness=harness, blueprint=templates, ref="main").take(manifest)
     found = {(f.plane, f.subject, f.status, f.direction) for f in taken.facts}
     assert found == {
         (Plane.LIBRARY, "psqlpy", FactStatus.ABSENT, None),
         (Plane.LIBRARY, "pytest-resources", FactStatus.ABSENT, None),
-        (Plane.MODULE, "src/e_proj/adapters/http.py", FactStatus.DIVERGED, Direction.AHEAD),
+        (Plane.MODULE, "src/e_proj/providers/adapters/http.py", FactStatus.DIVERGED, Direction.AHEAD),
         (Plane.MODULE, "src/e_proj/ops/file.py", FactStatus.DIVERGED, Direction.BOTH),
-        (Plane.MODULE, "src/e_proj/adapters/postgres.py", FactStatus.ABSENT, None),
+        (Plane.MODULE, "src/e_proj/providers/drivers/postgres.py", FactStatus.ABSENT, None),
         (Plane.COMMON, "prek.toml", FactStatus.DIVERGED, Direction.AHEAD),
         (Plane.SERVICE, "tei", FactStatus.ABSENT, None),
         (Plane.SERVICE, "redis", FactStatus.ABSENT, None),
@@ -42,9 +42,9 @@ async def test_inventory_reads_every_plane_three_way(
         (Plane.OPS, "tests/bench/", FactStatus.ABSENT, None),
     }
     assert {(f.subject, f.status, f.direction) for f in taken.stale} == {
-        ("src/e_proj/adapters/ports.py", FactStatus.DIVERGED, Direction.BEHIND),
+        ("src/e_proj/ports/ports.py", FactStatus.DIVERGED, Direction.BEHIND),
         (".gitattributes", FactStatus.MISSING, None),
-        ("make infra-check", FactStatus.MISSING, None),
+        ("make common-check", FactStatus.MISSING, None),
         (".templates.yaml", FactStatus.MISSING, None),
     }
     by = {f.subject: f for f in taken.facts}
@@ -52,8 +52,8 @@ async def test_inventory_reads_every_plane_three_way(
     assert by["psqlpy"].detail == "blueprint: api"
     assert by["pytest-resources"].detail == "blueprint: none"
     assert by["src/e_proj/ops/file.py"].detail.startswith("project +1 -0, template +1 -1 since base")
-    assert by["src/e_proj/adapters/http.py"].detail.endswith(
-        "1/2 of its new definitions already in projects/python/infra/src/e_infra/adapters/thing.py"
+    assert by["src/e_proj/providers/adapters/http.py"].detail.endswith(
+        "1/2 of its new definitions already in projects/python/common/src/e_infra/providers/adapters/thing.py"
     )
     assert "removals only" not in by["prek.toml"].detail
 
@@ -67,15 +67,15 @@ async def test_inventory_takes_the_recorded_base(
         project,
         {
             ".templates.yaml": f"system: projects/python/api\ncommit: {head}\ndirty: false\n",
-            "src/e_proj/adapters/thing.py": "",
+            "src/e_proj/providers/adapters/thing.py": "",
         },
     )
     await commit(project, "chore: origin")
     manifest = await DistillScope(command).intake(await DistillScope(command).guard(project, (), "", ""))
     taken = await DistillInventory(command, harness=harness, blueprint=templates, ref="main").take(manifest)
-    ports = next(f for f in taken.facts if f.subject == "src/e_proj/adapters/ports.py")
+    ports = next(f for f in taken.facts if f.subject == "src/e_proj/ports/ports.py")
     assert (ports.direction, ports.base) == (Direction.AHEAD, head)
-    thing = next(f for f in taken.facts if f.subject == "src/e_proj/adapters/thing.py")
+    thing = next(f for f in taken.facts if f.subject == "src/e_proj/providers/adapters/thing.py")
     assert thing.detail.endswith("removals only: what the generator pruned or the project does not use")
     assert ".templates.yaml" not in {f.subject for f in taken.stale}
     assert v1 != head
@@ -90,8 +90,11 @@ async def test_inventory_without_a_base_reads_a_plain_divergence(
     await commit(project, "chore: a lost origin")
     manifest = await DistillScope(command).intake(await DistillScope(command).guard(project, (), "", ""))
     taken = await DistillInventory(command, harness=harness, blueprint=templates, ref="main").take(manifest)
-    http = next(f for f in taken.facts if f.subject == "src/e_proj/adapters/http.py")
-    assert (http.direction, http.detail) == (None, "+5 -0 vs projects/python/infra/src/e_infra/adapters/http.py")
+    http = next(f for f in taken.facts if f.subject == "src/e_proj/providers/adapters/http.py")
+    assert (http.direction, http.detail) == (
+        None,
+        "+5 -0 vs projects/python/common/src/e_infra/providers/adapters/http.py",
+    )
 
 
 async def test_inventory_unpackaged_project_skips_the_package_planes(

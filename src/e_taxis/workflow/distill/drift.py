@@ -1,6 +1,6 @@
 """distill.drift: where the project departs from the blueprint it materialized, as its own checks say.
 
-No diff of our own: a project born from e-arkhetypo carries `make infra-check`. This runs it read-only
+No diff of our own: a project born from e-arkhetypo carries `make common-check`. This runs it read-only
 and turns its verdict into evidence; a project without it is simply not checked."""
 
 import re
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 ##### DEFAULTS #####
 ISSUE: Final[re.Pattern[str]] = re.compile(r"^\s{2}(\S+): (.+)$")
-TARGETS: Final[tuple[str, ...]] = ("infra-check",)
+TARGETS: Final[tuple[str, ...]] = ("common-check",)
 MAKE: float = 300.0
 SAID: int = 300
 
@@ -40,7 +40,7 @@ class DistillDrift:
         except CommandError as drifted:
             said = drifted.stdout or str(drifted)
             issues = tuple(
-                DriftEvidence(path=found.group(1), template=f"projects/python/infra: {found.group(2)}")
+                DriftEvidence(path=found.group(1), template=f"projects/python/common: {found.group(2)}")
                 for line in said.splitlines()
                 if (found := ISSUE.match(line))
             )

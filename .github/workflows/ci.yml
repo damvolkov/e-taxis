@@ -30,16 +30,16 @@ jobs:
           ref: ${{ steps.pin.outputs.ref }}
           path: .arkhetypo
           persist-credentials: false
-      - name: Pin Python as the template does (make infra)
+      - name: Pin Python as the template does (make common)
         shell: bash
-        run: cp .arkhetypo/projects/python/infra/.python-version .python-version
+        run: cp .arkhetypo/projects/python/common/.python-version .python-version
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
       - name: Sync env
         run: uv sync
       - name: Materialize infra/ops/adapters from the pinned arkhetypo
         shell: bash
         env:
-          E_INFRA_SRC: .arkhetypo/projects/python/infra/src/e_infra
+          E_COMMON_SRC: .arkhetypo/projects/python/common/src/e_infra
           PYTHONUTF8: "1"
         run: uv run python scripts/materialize.py
       - name: Static gates
@@ -74,16 +74,16 @@ jobs:
           ref: ${{ steps.pin.outputs.ref }}
           path: .arkhetypo
           persist-credentials: false
-      - name: Pin Python as the template does (make infra)
+      - name: Pin Python as the template does (make common)
         shell: bash
-        run: cp .arkhetypo/projects/python/infra/.python-version .python-version
+        run: cp .arkhetypo/projects/python/common/.python-version .python-version
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
       - name: Sync env
         run: uv sync
       - name: Materialize infra/ops/adapters from the pinned arkhetypo
         shell: bash
         env:
-          E_INFRA_SRC: .arkhetypo/projects/python/infra/src/e_infra
+          E_COMMON_SRC: .arkhetypo/projects/python/common/src/e_infra
           PYTHONUTF8: "1"
         run: uv run python scripts/materialize.py
       - name: Unit tests + coverage gate
