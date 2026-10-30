@@ -8,8 +8,8 @@ is part of the project and the wheel ships one root, never a global `infra` or `
 `adapters` are shared homes — the project keeps code beside generated files there — so the write is
 never destructive: each run lands what the sections expect, prunes only what its own manifest lists
 and the new run does not, and records the rest in `src/e_taxis/.materialized.json` — the generator's
-memory, because untracked project code is never its to touch. `make infra` materializes into `src/`;
-`make infra-check` materializes into a throwaway tree under `/tmp` and diffs, so both modes run the
+memory, because untracked project code is never its to touch. `make common` materializes into `src/`;
+`make common-check` materializes into a throwaway tree under `/tmp` and diffs, so both modes run the
 exact same generation path and the drift-check cannot lie about a second one.
 """
 
@@ -33,9 +33,9 @@ if TYPE_CHECKING:
 
 ROOT: Path = Path(__file__).resolve().parents[1]
 PACKAGE: Final[str] = "e_taxis"
-### a standalone repo: the infra lives in the e-arkhetypo checkout beside it; E_INFRA_SRC points elsewhere.
-INFRA_SRC: Path = Path(
-    os.environ.get("E_INFRA_SRC", ROOT.parent / "e-arkhetypo" / "projects" / "python" / "infra" / "src" / "e_infra")
+### a standalone repo: the common blueprint lives in the e-arkhetypo checkout beside it; E_COMMON_SRC points elsewhere.
+COMMON_SRC: Path = Path(
+    os.environ.get("E_COMMON_SRC", ROOT.parent / "e-arkhetypo" / "projects" / "python" / "common" / "src" / "e_infra")
 )
 SECTIONS: tuple[str, ...] = ("adapters", "infra", "ops", "processors")
 DEST: Final[Mapping[str, str]] = MappingProxyType({section: f"{PACKAGE}/{section}" for section in SECTIONS})
@@ -139,8 +139,8 @@ def _sources(section: str) -> list[Path]:
     """Every .py of one section, in stable order, minus the excluded files."""
     return [
         path
-        for path in sorted((INFRA_SRC / section).rglob("*.py"))
-        if "__pycache__" not in path.parts and str(path.relative_to(INFRA_SRC)) not in EXCLUDES
+        for path in sorted((COMMON_SRC / section).rglob("*.py"))
+        if "__pycache__" not in path.parts and str(path.relative_to(COMMON_SRC)) not in EXCLUDES
     ]
 
 
@@ -152,8 +152,8 @@ def _target(section: str, rel: Path) -> Path:
 def _expected() -> dict[Path, str]:
     """Every file the sections must hold, keyed by its path under `src`, rewritten and ready to write."""
     return {
-        _target(section, path.relative_to(INFRA_SRC)): rewrite_source(
-            path.read_text(), str(path.relative_to(INFRA_SRC))
+        _target(section, path.relative_to(COMMON_SRC)): rewrite_source(
+            path.read_text(), str(path.relative_to(COMMON_SRC))
         )
         for section in SECTIONS
         for path in _sources(section)
@@ -163,7 +163,7 @@ def _expected() -> dict[Path, str]:
 def _manifest(dest_root: Path) -> frozenset[Path]:
     """What the last run materialized, relative to `src`. No manifest is a tree that was never generated:
     the previous set is empty, and this run only writes and remembers. The manifest is what keeps a
-    project file beside generated code safe between `make infra` runs: git knows only what is committed."""
+    project file beside generated code safe between `make common` runs: git knows only what is committed."""
     listing = dest_root / MANIFEST
     return frozenset(map(Path, json.loads(listing.read_text()) if listing.is_file() else []))
 
@@ -233,7 +233,7 @@ def check(dest_root: Path) -> int:
                 print("✓ materialized e_taxis.{infra,ops,adapters,processors} in sync")
                 return 0
             case _:
-                print("✗ drift from arkhetypo (run make infra):")
+                print("✗ drift from arkhetypo (run make common):")
                 print("\n".join(f"  {issue}" for issue in issues))
                 return 1
     finally:

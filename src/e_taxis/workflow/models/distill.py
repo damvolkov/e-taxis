@@ -75,24 +75,26 @@ class BlueprintArea(StrEnum):
 
 
 class Project(StrEnum):
-    """projects/python/: the project blueprints; `infra` is what every project materializes."""
+    """projects/python/: the project blueprints; `common` is what every project materializes."""
 
     API = "api"
     CLI = "cli"
+    COMMON = "common"
     GRAPH = "graph"
-    INFRA = "infra"
     MCP = "mcp"
     TUI = "tui"
 
 
-class InfraLayer(StrEnum):
-    """projects/python/infra: the sections materialized into every project, and its shared root files (`common`)."""
+class CommonLayer(StrEnum):
+    """projects/python/common: the sections materialized into every project, and its shared root files (`materials`)."""
 
-    ADAPTERS = "adapters"
+    ENGINES = "engines"
     INFRA = "infra"
     OPS = "ops"
+    PORTS = "ports"
     PROCESSORS = "processors"
-    COMMON = "common"
+    PROVIDERS = "providers"
+    MATERIALS = "materials"
 
 
 class StackCategory(StrEnum):
@@ -246,9 +248,9 @@ class BlueprintTarget(
             case BlueprintArea.PROJECT if not self.new and self.unit not in Project.__members__.values():
                 return (f"no project {self.unit} (set `new` to create one)",)
             case BlueprintArea.PROJECT if (
-                self.unit == Project.INFRA and self.layer and self.layer not in InfraLayer.__members__.values()
+                self.unit == Project.COMMON and self.layer and self.layer not in CommonLayer.__members__.values()
             ):
-                return (f"project infra has no layer {self.layer}",)
+                return (f"project common has no layer {self.layer}",)
             case BlueprintArea.STACK if self.unit.split("/")[0] not in StackCategory.__members__.values():
                 return (f"no stack category {self.unit.split('/')[0]}",)
             case BlueprintArea.STACK if "/" not in self.unit:
@@ -262,9 +264,9 @@ class BlueprintTarget(
     def plane(self) -> Plane:
         """The plane this place is — from where it sits, never chosen."""
         match self:
-            case BlueprintTarget(area=BlueprintArea.PROJECT, unit=Project.INFRA, layer=InfraLayer.COMMON):
+            case BlueprintTarget(area=BlueprintArea.PROJECT, unit=Project.COMMON, layer=CommonLayer.MATERIALS):
                 return Plane.COMMON
-            case BlueprintTarget(area=BlueprintArea.PROJECT, unit=Project.INFRA):
+            case BlueprintTarget(area=BlueprintArea.PROJECT, unit=Project.COMMON):
                 return Plane.MODULE
             case BlueprintTarget(area=BlueprintArea.PROJECT):
                 return Plane.PROJECT
@@ -275,8 +277,8 @@ class BlueprintTarget(
 
     @property
     def inherited(self) -> bool:
-        """Whether every project inherits this place when it materializes its infra."""
-        return self.area is BlueprintArea.PROJECT and self.unit == Project.INFRA
+        """Whether every project inherits this place when it materializes common."""
+        return self.area is BlueprintArea.PROJECT and self.unit == Project.COMMON
 
 
 type Target = HarnessTarget | BlueprintTarget
@@ -297,7 +299,7 @@ class CodeEvidence(
 
 
 class DriftEvidence(msgspec.Struct, frozen=True, kw_only=True, tag="drift", forbid_unknown_fields=True):
-    """A file where the project departs from the template it materialized (infra-check)."""
+    """A file where the project departs from the template it materialized (common-check)."""
 
     path: str
     template: str

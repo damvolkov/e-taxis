@@ -5,14 +5,14 @@ MODULE   ?= e_taxis
 ARKHETYPO_URL ?= https://github.com/damvolkov/e-arkhetypo.git
 ### The pinned ref of arkhetypo (.arkhetypo-ref: a tag, a branch or a commit), read off its public remote
 ### by `taxis repo` — deterministic git plumbing, never a working tree: a change lands here only by bumping the
-### pin. An offline box points the url at the checkout beside it: `make infra ARKHETYPO_URL=file://../e-arkhetypo`.
+### pin. An offline box points the url at the checkout beside it: `make common ARKHETYPO_URL=file://../e-arkhetypo`.
 ARKHETYPO_REF ?= $(shell cat .arkhetypo-ref)
-INFRA_HEAD ?= $(HOME)/.cache/e-taxis/arkhetypo-head
-E_INFRA_SRC ?= $(INFRA_HEAD)/projects/python/infra/src/e_infra
-export E_INFRA_SRC
-INFRA_ROOT := $(abspath $(E_INFRA_SRC)/../..)
+COMMON_HEAD ?= $(HOME)/.cache/e-taxis/arkhetypo-head
+E_COMMON_SRC ?= $(COMMON_HEAD)/projects/python/common/src/e_infra
+export E_COMMON_SRC
+COMMON_ROOT := $(abspath $(E_COMMON_SRC)/../..)
 ### a source handed in from outside (a checkout, CI) is read as is: only the cache is fetched from the pin.
-INFRA_FETCH := $(if $(filter environment command,$(firstword $(origin E_INFRA_SRC))),,infra-src)
+COMMON_FETCH := $(if $(filter environment command,$(firstword $(origin E_COMMON_SRC))),,common-src)
 TESTARGS  =
 LOGO_ARGS =
 NAMES     =
@@ -31,14 +31,14 @@ MAKEFLAGS += --no-print-directory
 export PYTHONPATH := $(CURDIR)/src
 
 ##### TARGETS #####
-.PHONY: infra-src help install sync lock infra infra-check lint type arch validate harden hooks test cov check ci run logo release ci-vars clean
+.PHONY: common-src help install sync lock common common-check lint type arch validate harden hooks test cov check ci run logo release ci-vars clean
 
 help:
-	@printf "$(BOLD)$(CYAN)$(PROJECT)$(RESET) $(GRAY)· uv · cyclopts · ruff · ty · tach · pytest — arkhetypo's e-infra materialized into e_taxis from $(E_INFRA_SRC)$(RESET)\n\n"
+	@printf "$(BOLD)$(CYAN)$(PROJECT)$(RESET) $(GRAY)· uv · cyclopts · ruff · ty · tach · pytest — arkhetypo's e-infra materialized into e_taxis from $(E_COMMON_SRC)$(RESET)\n\n"
 	@awk 'BEGIN{FS=":.*##"} /^[a-z][a-zA-Z0-9_-]*:.*##/{printf "  $(GREEN)%-12s$(RESET) $(GRAY)%s$(RESET)\n",$$1,$$2}' $(MAKEFILE_LIST)
 
 # — env —
-install: infra ## full setup: materialize shared assets + sync deps + git hooks
+install: common ## full setup: materialize shared assets + sync deps + git hooks
 	@uv sync
 	@uv run prek install
 	@printf "$(GREEN)✓ ready$(RESET)\n"
@@ -46,30 +46,30 @@ install: infra ## full setup: materialize shared assets + sync deps + git hooks
 sync: ## sync all deps (main + dev)
 	@uv sync
 
-lock: infra ## refresh uv lockfile (against the current materialized infra)
+lock: common ## refresh uv lockfile (against the current materialized common)
 	@uv lock
 
-# — infra —
-infra-src: ## resolve the pinned ref on arkhetypo's remote and fetch its infra blueprint into the cache via `taxis repo`
-	@rm -rf $(INFRA_HEAD) && mkdir -p $(INFRA_HEAD)
-	@uv run taxis repo extract $(ARKHETYPO_URL) $(ARKHETYPO_REF) projects/python/infra --dest $(INFRA_HEAD)
+# — common —
+common-src: ## resolve the pinned ref on arkhetypo's remote and fetch its common blueprint into the cache via `taxis repo`
+	@rm -rf $(COMMON_HEAD) && mkdir -p $(COMMON_HEAD)
+	@uv run taxis repo extract $(ARKHETYPO_URL) $(ARKHETYPO_REF) projects/python/common --dest $(COMMON_HEAD)
 
-infra: $(INFRA_FETCH) ## materialize arkhetypo's e-infra into e_taxis.{infra,ops,adapters,processors} via a structural rewrite, and the shared root files into the project root
+common: $(COMMON_FETCH) ## materialize arkhetypo's e-infra into e_taxis.{infra,ops,adapters,processors} via a structural rewrite, and the shared root files into the project root
 	@uv run python scripts/materialize.py
-	@cp $(INFRA_ROOT)/prek.toml prek.toml
-	@cp $(INFRA_ROOT)/.gitattributes .gitattributes
-	@cp $(INFRA_ROOT)/.python-version .python-version
-	@cp $(INFRA_ROOT)/.github/dependabot.yml .github/dependabot.yml
-	@cp $(INFRA_ROOT)/.github/CODEOWNERS .github/CODEOWNERS
+	@cp $(COMMON_ROOT)/prek.toml prek.toml
+	@cp $(COMMON_ROOT)/.gitattributes .gitattributes
+	@cp $(COMMON_ROOT)/.python-version .python-version
+	@cp $(COMMON_ROOT)/.github/dependabot.yml .github/dependabot.yml
+	@cp $(COMMON_ROOT)/.github/CODEOWNERS .github/CODEOWNERS
 
-infra-check: $(INFRA_FETCH) ## fail if the materialized sections or the shared root files drifted from arkhetypo's infra
+common-check: $(COMMON_FETCH) ## fail if the materialized sections or the shared root files drifted from projects/python/common
 	@uv run python scripts/materialize.py --check
-	@diff $(INFRA_ROOT)/prek.toml prek.toml \
-	 && diff $(INFRA_ROOT)/.gitattributes .gitattributes \
-	 && diff $(INFRA_ROOT)/.python-version .python-version \
-	 && diff $(INFRA_ROOT)/.github/dependabot.yml .github/dependabot.yml \
-	 && diff $(INFRA_ROOT)/.github/CODEOWNERS .github/CODEOWNERS \
-	 && printf "$(GREEN)✓ infra in sync$(RESET)\n"
+	@diff $(COMMON_ROOT)/prek.toml prek.toml \
+	 && diff $(COMMON_ROOT)/.gitattributes .gitattributes \
+	 && diff $(COMMON_ROOT)/.python-version .python-version \
+	 && diff $(COMMON_ROOT)/.github/dependabot.yml .github/dependabot.yml \
+	 && diff $(COMMON_ROOT)/.github/CODEOWNERS .github/CODEOWNERS \
+	 && printf "$(GREEN)✓ common in sync$(RESET)\n"
 
 # — gates —
 lint: ## ruff check + format
@@ -99,8 +99,8 @@ cov: ## run tests with coverage gate (fail under 100%)
 	@uv run pytest tests --cov --cov-report=term-missing
 
 # — aggregate —
-check: lint type arch validate infra-check test ## fast local gate: lint + type + arch + validate + drift + test
-ci: lint type arch validate harden infra-check cov ## full pipeline: every gate CI runs, in one command
+check: lint type arch validate common-check test ## fast local gate: lint + type + arch + validate + drift + test
+ci: lint type arch validate harden common-check cov ## full pipeline: every gate CI runs, in one command
 
 # — release —
 release: ## cut a GitHub release via the release workflow [args: patch|minor|major]
@@ -119,7 +119,7 @@ run: ## run the cli, `taxis` [args: forwarded, e.g. make run project list]
 logo: ## deterministic wordmarks into assets/ [names: make logo NAMES="taxis templates" — knobs: LOGO_ARGS="--force"; bare names as goals only while they spell no target]
 	@uv run taxis logo $(ARGS) $(NAMES) $(LOGO_ARGS)
 
-clean: ## remove caches + build artifacts + materialized infra
+clean: ## remove caches + build artifacts + materialized common
 	@find . -type d \( -name __pycache__ -o -name .pytest_cache -o -name .ruff_cache \) -exec rm -rf {} + 2>/dev/null || true
 	@rm -rf dist build *.egg-info .coverage .coverage.* .ty_cache prek.toml .gitattributes .python-version src/e_taxis/.materialized.json
 	@rm -rf src/e_taxis/infra src/e_taxis/processors

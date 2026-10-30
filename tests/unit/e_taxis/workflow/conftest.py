@@ -383,14 +383,14 @@ def held() -> Callable[[Path], Any]:
 ##### DISTILL #####
 IDENTITY = ("-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", "-c", "init.defaultBranch=main")
 TEMPLATES_V1 = {
-    "projects/python/infra/src/e_infra/adapters/http.py": "x = 1\n",
-    "projects/python/infra/src/e_infra/adapters/ports.py": "p = 1\n",
-    "projects/python/infra/src/e_infra/adapters/thing.py": "class Thing:\n    pass\n",
-    "projects/python/infra/src/e_infra/ops/file.py": "f = 1\n",
-    "projects/python/infra/src/e_infra/ops/same.py": "s = 1\n",
-    "projects/python/infra/prek.toml": "a = 1\n",
-    "projects/python/infra/.gitattributes": "* text\n",
-    "projects/python/api/Makefile": "lint:\n\t@true\ninfra-check:\n\t@true\n",
+    "projects/python/common/src/e_infra/providers/adapters/http.py": "x = 1\n",
+    "projects/python/common/src/e_infra/ports/ports.py": "p = 1\n",
+    "projects/python/common/src/e_infra/providers/adapters/thing.py": "class Thing:\n    pass\n",
+    "projects/python/common/src/e_infra/ops/file.py": "f = 1\n",
+    "projects/python/common/src/e_infra/ops/same.py": "s = 1\n",
+    "projects/python/common/prek.toml": "a = 1\n",
+    "projects/python/common/.gitattributes": "* text\n",
+    "projects/python/api/Makefile": "lint:\n\t@true\ncommon-check:\n\t@true\n",
     "projects/python/api/pyproject.toml": '[project]\nname = "e-api"\ndependencies = ["psqlpy>=0.1"]\n[tool.ruff]\nline-length = 120\n',
     "projects/python/api/src/e_api/router/x.py": "",
     "projects/python/api/tests/unit/test_x.py": "",
@@ -398,25 +398,24 @@ TEMPLATES_V1 = {
     "scripts/release.sh": "",
     "projects/templates.yml": (
         "templates:\n  api:\n    source: projects/python/api\n    package: e_api\n    brand: e-api\n    materials:\n"
-        "      - {src: projects/python/infra/prek.toml, dst: prek.toml}\n"
-        "      - {src: projects/python/infra/.gitattributes, dst: .gitattributes}\n"
+        "      - {src: projects/python/common/prek.toml, dst: prek.toml}\n"
+        "      - {src: projects/python/common/.gitattributes, dst: .gitattributes}\n"
     ),
 }
 PROJECT_COPY = {
     "README.md": "x\n",
-    "src/e_proj/adapters/http.py": "x = 1\n",
-    "src/e_proj/adapters/ports.py": "p = 1\n",
+    "src/e_proj/providers/adapters/http.py": "x = 1\n",
+    "src/e_proj/ports/ports.py": "p = 1\n",
     "src/e_proj/ops/file.py": "f = 1\n",
     "src/e_proj/ops/same.py": "s = 1\n",
-    "src/e_proj/adapters/__init__.py": "",
     "prek.toml": "a = 1\n",
     "pyproject.toml": '[project]\nname = "e-proj"\ndependencies = []\n[tool.ruff]\nline-length = 120\n',
 }
 PROJECT_WORK = {
     "pyproject.toml": '[project]\nname = "e-proj"\ndependencies = ["msgspec>=0.1", "psqlpy>=0.1", 7]\n'
     '[dependency-groups]\ntest = ["pytest-resources[serde]>=0.3"]\n[tool.ruff]\nline-length = 100\n',
-    "src/e_proj/adapters/http.py": "x = 1\ny = 2\nclass Thing:\n    pass\ndef novel():\n    pass\n",
-    "src/e_proj/adapters/postgres.py": "",
+    "src/e_proj/providers/adapters/http.py": "x = 1\ny = 2\nclass Thing:\n    pass\ndef novel():\n    pass\n",
+    "src/e_proj/providers/drivers/postgres.py": "",
     "src/e_proj/ops/file.py": "f = 1\ng = 1\n",
     "src/e_proj/mcp/tools.py": "",
     "src/e_proj/retrieval/hybrid.py": "",
@@ -492,8 +491,8 @@ async def cores(tmp_path: Path, git, tree, commit) -> tuple[Path, Path, Path, st
     tree(
         templates,
         {
-            "projects/python/infra/src/e_infra/adapters/ports.py": "p = 2\n",
-            "projects/python/infra/src/e_infra/ops/file.py": "f = 2\n",
+            "projects/python/common/src/e_infra/ports/ports.py": "p = 2\n",
+            "projects/python/common/src/e_infra/ops/file.py": "f = 2\n",
         },
     )
     await commit(templates, "v2")

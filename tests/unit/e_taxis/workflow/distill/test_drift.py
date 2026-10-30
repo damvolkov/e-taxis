@@ -15,22 +15,22 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     ("said", "expected"),
     [
-        ("printf 'x drift:\\n  ops/image.py: missing\\n'", [("ops/image.py", "projects/python/infra: missing")]),
-        ("echo something else", [("infra-check", "something else")]),
+        ("printf 'x drift:\\n  ops/image.py: missing\\n'", [("ops/image.py", "projects/python/common: missing")]),
+        ("echo something else", [("common-check", "something else")]),
     ],
     ids=["issues", "verbatim"],
 )
 async def test_drift_reads_the_projects_own_check(
     command: ShellCommand, tmp_path: Path, said: str, expected: list[tuple[str, str]]
 ) -> None:
-    (tmp_path / "Makefile").write_text(f"infra-check:\n\t@{said}; exit 1\n")
+    (tmp_path / "Makefile").write_text(f"common-check:\n\t@{said}; exit 1\n")
     found = await DistillDrift(command).check(tmp_path)
     assert found.checked
     assert [(f.path, f.template) for f in found.files] == expected
 
 
 async def test_drift_clean_checks(command: ShellCommand, tmp_path: Path) -> None:
-    (tmp_path / "Makefile").write_text("infra-check:\n\t@true\n")
+    (tmp_path / "Makefile").write_text("common-check:\n\t@true\n")
     found = await DistillDrift(command).check(tmp_path)
     assert (found.checked, found.files) == (True, ())
 
